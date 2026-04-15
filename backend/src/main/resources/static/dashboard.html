@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="tr" class="pos-terminal-scale">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Panel — Bodrum Aqua Park</title>
+	<script src="/js/ui-scale-head.js"></script>
+	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
+	<link rel="stylesheet" href="/css/viewport-test.css" />
+	<link rel="stylesheet" href="/css/login.css" />
+	<style>
+		.dash { max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+		.dash h1 { margin: 0 0 0.5rem; font-size: 1.75rem; letter-spacing: -0.03em; }
+		.dash p { color: var(--text-muted); margin: 0 0 1.5rem; }
+		.dash-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+		.btn-outline { background: transparent; color: var(--accent); border: 1px solid rgba(45, 212, 191, 0.4); box-shadow: none; width: auto; padding: 0.65rem 1.1rem; font-size: 0.88rem; }
+		.btn-outline:hover { filter: brightness(1.1); background: var(--accent-dim); }
+	</style>
+</head>
+<body>
+	<div class="page" style="align-items: flex-start;">
+		<div class="grid-overlay" aria-hidden="true"></div>
+		<div class="dash">
+			<main class="card">
+				<h1>Hoş geldiniz</h1>
+				<p id="welcome-msg">Oturum açıldı. Yönetim paneli burada geliştirilecek.</p>
+				<div class="dash-actions">
+					<button type="button" class="btn btn-outline" id="logout-btn">Çıkış yap</button>
+					<a class="btn btn-outline" href="/api/info" style="text-decoration: none; display: inline-flex; align-items: center;">API bilgisi</a>
+				</div>
+			</main>
+		</div>
+	</div>
+	<script src="/js/viewport-test.js" defer></script>
+	<script>
+		(function () {
+			if (!sessionStorage.getItem("aqua_token")) {
+				window.location.replace("/index.html");
+				return;
+			}
+			window.location.replace("/pos.html");
+		})();
+	</script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="tr" class="pos-pos-split">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Yönetim — Bodrum Aqua Park</title>
+	<script src="/js/ui-scale-head.js"></script>
+	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
+	<link rel="stylesheet" href="/css/viewport-test.css" />
+	<link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+	<div class="pos-main-scale pos-main-scale--admin" id="pos-main-scale">
+	<div class="admin-page">
+		<header class="admin-header">
+			<div>
+				<h1>Yönetim paneli</h1>
+				<p class="admin-sub">Kullanıcılar, ürünler ve kart tanımları (yalnızca yönetici)</p>
+			</div>
+			<div class="admin-header-actions">
+				<a class="btn btn-ghost" href="/pos.html">← POS’a dön</a>
+			</div>
+		</header>
+
+		<nav class="admin-tabs" role="tablist" aria-label="Yönetim bölümleri">
+			<button type="button" class="admin-tab active" role="tab" aria-selected="true" data-panel="users" id="tab-users">Kullanıcılar</button>
+			<button type="button" class="admin-tab" role="tab" aria-selected="false" data-panel="products" id="tab-products">Ürün tanımları</button>
+			<button type="button" class="admin-tab" role="tab" aria-selected="false" data-panel="cards" id="tab-cards">Kartlar</button>
+			<button type="button" class="admin-tab" role="tab" aria-selected="false" data-panel="printer" id="tab-printer">Fiş yazıcı</button>
+		</nav>
+
+		<div id="admin-alert" class="admin-alert" hidden role="alert"></div>
+
+		<div id="admin-panel-users">
+		<section class="admin-card">
+			<h2>Yeni kullanıcı</h2>
+			<form id="form-create" class="admin-form-grid">
+				<div class="field">
+					<label for="c-userId">Sicil no</label>
+					<input id="c-userId" name="userId" required maxlength="64" autocomplete="off" />
+				</div>
+				<div class="field">
+					<label for="c-password">Parola</label>
+					<input id="c-password" name="password" type="password" required minlength="4" maxlength="128" autocomplete="new-password" />
+				</div>
+				<div class="field">
+					<label for="c-displayName">Display ad</label>
+					<input id="c-displayName" name="displayName" maxlength="120" placeholder="İsteğe bağlı" />
+				</div>
+				<div class="field">
+					<label for="c-role">Rol</label>
+					<select id="c-role" name="role" required>
+						<option value="CASHIER">Kasiyer</option>
+						<option value="SUPERVISOR">Süpervizör</option>
+						<option value="ADMIN">Yönetici</option>
+					</select>
+				</div>
+				<div class="admin-perm-panel">
+					<div class="field field-sale-areas">
+						<span class="label-block">Satış alanları</span>
+						<p class="field-hint">Yönetici için boş bırakılırsa tüm alanlar atanır. Kasiyer için en az bir alan seçin.</p>
+						<div class="admin-perm-main-row">
+							<div class="sale-area-checks">
+								<label><input type="checkbox" name="sale-area" value="BEVERAGE" /> <span>İçecek</span></label>
+								<label><input type="checkbox" name="sale-area" value="BAKERY" /> <span>Fırın</span></label>
+								<label><input type="checkbox" name="sale-area" value="ALCOHOL" /> <span>Alkollü içecekler</span></label>
+								<label><input type="checkbox" name="sale-area" value="ICE_CREAM" /> <span>Dondurmalar</span></label>
+							</div>
+							<div class="admin-pos-options">
+								<div class="field field-check">
+									<label><input type="checkbox" id="c-ticket" checked /> <span>Kart satış (bilet) ekranı</span></label>
+								</div>
+								<div class="field field-check field-check--with-hint">
+									<label><input type="checkbox" id="c-balance" checked /> <span>Bakiye yükleme ekranı</span></label>
+									<p class="field-hint field-hint--nested">Bakiye kapalı ve yalnızca fırın alanı varsa POS’ta bu yerde fırın ürünleri açılır.</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="field field-actions">
+					<button type="submit" class="btn btn-primary" id="btn-create">Oluştur</button>
+				</div>
+			</form>
+		</section>
+
+		<section class="admin-card">
+			<h2>Kayıtlı kullanıcılar</h2>
+			<div class="table-wrap">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>Sicil</th>
+							<th>Ad</th>
+							<th>Rol</th>
+							<th>Kart</th>
+							<th>Bakiye</th>
+							<th>Satış alanları</th>
+							<th>Durum</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="users-tbody"></tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="admin-card" id="edit-panel" hidden>
+			<h2 id="edit-title">Kullanıcı düzenle</h2>
+			<form id="form-edit" class="admin-form-grid">
+				<input type="hidden" id="e-id" />
+				<div class="field">
+					<label for="e-userId">Sicil no</label>
+					<input id="e-userId" readonly disabled />
+				</div>
+				<div class="field">
+					<label for="e-password">Yeni parola</label>
+					<input id="e-password" type="password" minlength="4" maxlength="128" autocomplete="new-password" placeholder="Değiştirmek için doldurun" />
+				</div>
+				<div class="field">
+					<label for="e-displayName">Display ad</label>
+					<input id="e-displayName" maxlength="120" />
+				</div>
+				<div class="field">
+					<label for="e-role">Rol</label>
+					<select id="e-role">
+						<option value="CASHIER">Kasiyer</option>
+						<option value="SUPERVISOR">Süpervizör</option>
+						<option value="ADMIN">Yönetici</option>
+					</select>
+				</div>
+				<div class="admin-perm-panel">
+					<div class="field field-sale-areas">
+						<span class="label-block">Satış alanları</span>
+						<p class="field-hint">Yönetici için boş bırakılırsa tüm alanlar atanır.</p>
+						<div class="admin-perm-main-row">
+							<div class="sale-area-checks" id="e-sale-area-checks">
+								<label><input type="checkbox" name="sale-area" value="BEVERAGE" /> <span>İçecek</span></label>
+								<label><input type="checkbox" name="sale-area" value="BAKERY" /> <span>Fırın</span></label>
+								<label><input type="checkbox" name="sale-area" value="ALCOHOL" /> <span>Alkollü içecekler</span></label>
+								<label><input type="checkbox" name="sale-area" value="ICE_CREAM" /> <span>Dondurmalar</span></label>
+							</div>
+							<div class="admin-pos-options admin-pos-options--three">
+								<div class="field field-check">
+									<label><input type="checkbox" id="e-ticket" /> <span>Kart satış (bilet) ekranı</span></label>
+								</div>
+								<div class="field field-check">
+									<label><input type="checkbox" id="e-balance" /> <span>Bakiye yükleme ekranı</span></label>
+								</div>
+								<div class="field field-check">
+									<label><input type="checkbox" id="e-active" /> <span>Aktif</span></label>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="field field-actions">
+					<button type="submit" class="btn btn-primary">Kaydet</button>
+					<button type="button" class="btn btn-ghost" id="btn-edit-cancel">İptal</button>
+				</div>
+			</form>
+		</section>
+		</div>
+
+		<div id="admin-panel-products" hidden>
+			<section class="admin-card admin-card--products">
+				<h2>Ürün tanımları</h2>
+				<p class="admin-sub admin-sub--inline">Satış alanlarına göre ürün ve fiyatlar. Satış işlemi POS’taki <strong>Ürün satış</strong> ekranından yapılır.</p>
+				<div class="admin-catalog-toolbar">
+					<button type="button" class="btn btn-primary" id="btn-admin-catalog-add">+ Yeni ürün</button>
+				</div>
+				<div id="admin-catalog-root" class="admin-catalog-root"></div>
+				<p id="admin-catalog-empty" class="admin-catalog-empty-hint" hidden>Satış alanı bulunamadı.</p>
+			</section>
+		</div>
+
+		<div id="admin-panel-cards" hidden>
+			<section class="admin-card">
+				<h2>Yeni kart tanımla</h2>
+				<p class="admin-sub admin-sub--inline">
+					Kart okuyucunun verdiği UID ile aynı biçimde girin (veya manuel). Aynı UID iki kez eklenemez.
+					<a class="admin-inline-link" href="/rfid-test.html" target="_blank" rel="noopener">Okuyucu bağlantı testi</a>
+					(HID / seri ayırımı için).
+				</p>
+				<form id="form-issue-card" class="admin-form-grid">
+					<div class="field">
+						<label for="card-issue-uid">Kart UID</label>
+						<input
+							id="card-issue-uid"
+							class="card-issue-uid-input"
+							name="uid"
+							required
+							maxlength="128"
+							autocomplete="off"
+							autocapitalize="off"
+							spellcheck="false"
+							placeholder="Önce kutuya tıklayın, sonra kartı okutun"
+						/>
+						<p id="card-issue-uid-status" class="field-hint card-uid-status card-uid-status--wait" role="status" aria-live="polite"></p>
+					</div>
+					<div class="field">
+						<label for="card-issue-balance">İlk bakiye (₺)</label>
+						<input id="card-issue-balance" type="number" step="0.01" min="0" value="5000" required />
+					</div>
+					<div class="field field-actions">
+						<button type="submit" class="btn btn-primary" id="btn-issue-card">Kartı tanımla</button>
+					</div>
+				</form>
+			</section>
+		</div>
+
+		<div id="admin-panel-printer" hidden>
+			<section class="admin-card">
+				<h2>Fiş yazıcı testi (Sewoo / ESC-POS)</h2>
+				<p class="admin-sub admin-sub--inline">
+					<strong>Windows:</strong> Aygıt Yöneticisi → <em>Bağlantı noktaları (COM ve LPT)</em> → COM numarası.
+					<strong>Mac:</strong> Terminal’de <code>ls /dev/cu.*</code> — yazıcı takılıyken çıkan ad (örn.
+					<code>/dev/cu.usbserial-…</code>) genelde doğru porttur; listede yoksa aşağıya elle yazın.
+					Yazı çıkmazsa <strong>baud</strong>’u 115200 veya 9600 deneyin. Hâlâ boşsa: yazıcı USB’sini çıkarıp
+					<code>ls /dev/cu.*</code> tekrar — kaybolan satır gerçekten bu yazıcıdır; başka bir USB çubuğu (FTDI)
+					yanlışlıkla seçilmiş olabilir. <strong>Test modu</strong>nda önce <em>minimal</em> veya <em>kesim yok</em> deneyin.
+				</p>
+				<div class="admin-form-grid">
+					<div class="field">
+						<label for="printer-port">Seri port (liste)</label>
+						<select id="printer-port"></select>
+					</div>
+					<div class="field">
+						<label for="printer-port-manual">Port (elle — liste boşsa zorunlu)</label>
+						<input
+							type="text"
+							id="printer-port-manual"
+							placeholder="Örn. COM3 veya /dev/cu.usbserial-0001"
+							autocomplete="off"
+							spellcheck="false"
+						/>
+					</div>
+					<div class="field">
+						<label for="printer-baud">Hız (baud)</label>
+						<select id="printer-baud">
+							<option value="9600">9600</option>
+							<option value="115200">115200</option>
+							<option value="19200">19200</option>
+							<option value="38400">38400</option>
+						</select>
+					</div>
+					<div class="field">
+						<label for="printer-mode">Test modu</label>
+						<select id="printer-mode" title="Kesim bazı cihazlarda sorun çıkarır; önce minimal veya kesimsiz deneyin">
+							<option value="full">Tam (metin + kesim)</option>
+							<option value="nocut">Metin, kesim yok</option>
+							<option value="minimal">Minimal (sadece TEST satırı)</option>
+						</select>
+					</div>
+					<div class="field field-actions">
+						<button type="button" class="btn btn-primary" id="btn-printer-test">Test fişi yazdır</button>
+						<button type="button" class="btn btn-ghost" id="btn-printer-refresh">Portları yenile</button>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+
+	<div id="admin-modal-product" class="admin-modal" hidden role="dialog" aria-modal="true" aria-labelledby="admin-modal-product-title">
+		<div class="admin-modal-backdrop" id="admin-modal-product-backdrop"></div>
+		<div class="admin-modal-panel">
+			<h2 id="admin-modal-product-title">Ürün</h2>
+			<form id="admin-form-product" class="admin-modal-form">
+				<input type="hidden" id="admin-prod-id" value="" />
+				<div class="field">
+					<label for="admin-prod-sale-area">Satış alanı</label>
+					<select id="admin-prod-sale-area" required></select>
+				</div>
+				<div class="field">
+					<label for="admin-prod-name">Ürün adı</label>
+					<input id="admin-prod-name" type="text" required maxlength="255" autocomplete="off" />
+				</div>
+				<div class="field">
+					<label for="admin-prod-price">Fiyat (₺)</label>
+					<input id="admin-prod-price" type="number" step="0.01" min="0" required />
+				</div>
+				<div class="field">
+					<label for="admin-prod-stock">Stok (boş = sınırsız)</label>
+					<input id="admin-prod-stock" type="number" min="0" step="1" />
+				</div>
+				<div class="field field-check" id="admin-prod-active-wrap" hidden>
+					<label><input type="checkbox" id="admin-prod-active" checked /> Aktif</label>
+				</div>
+				<div class="admin-modal-actions">
+					<button type="submit" class="btn btn-primary">Kaydet</button>
+					<button type="button" class="btn btn-ghost" id="admin-btn-modal-cancel">İptal</button>
+					<button type="button" class="btn btn-danger" id="admin-btn-modal-delete" hidden>Pasifleştir</button>
+				</div>
+			</form>
+		</div>
+	</div>
+	</div>
+
+	<script src="/js/admin.js" defer></script>
+	<script src="/js/viewport-test.js" defer></script>
+</body>
+</html>

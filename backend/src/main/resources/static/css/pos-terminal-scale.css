@@ -1,0 +1,60 @@
+/*
+ * =============================================================================
+ * Bodrum Aqua Park — ORTAK ARAYÜZ ÖLÇEĞİ (tek CSS dosyası)
+ * =============================================================================
+ * Tüm HTML sayfaları bu dosyayı ilk stil olarak yüklemelidir:
+ *   <link rel="stylesheet" href="/css/pos-terminal-scale.css" />
+ * İsteğe bağlı: aynı ölçek değişkenini ilk boyamada uygulamak için
+ *   <script src="/js/ui-scale-head.js"></script>  (stylesheet’ten hemen önce)
+ *
+ * Değişken: --pos-terminal-ui-scale (varsayılan :root içinde)
+ * Kalıcı kullanıcı değeri: localStorage "aqua_pos_ui_scale" (POS footer’dan)
+ * Performans modu: ?posPerf=1 veya sessionStorage "aqua_pos_perf" → zoom kapatılır
+ *
+ * HTML sınıfı seçimi (ikisini aynı anda kullanmayın):
+ *   • pos-terminal-scale  → Tüm sayfa zoom (giriş, dashboard, rfid-test)
+ *   • pos-pos-split       → Sadece #pos-main-scale içeriği zoom; kök zoom:1 (POS, yönetim)
+ * =============================================================================
+ */
+
+:root {
+	/* Varsayılan açılış %124; kullanıcı footer’daki Ölçek ile değiştirir (localStorage aqua_pos_ui_scale) */
+	--pos-terminal-ui-scale: 1.24;
+}
+
+/* --- Tam sayfa ölçek (giriş, dashboard, okuyucu testi) --- */
+html.pos-terminal-scale {
+	zoom: var(--pos-terminal-ui-scale);
+}
+
+html.pos-perf.pos-terminal-scale {
+	zoom: 1;
+}
+
+/* --- Ayrılmış düzen: üst içerik ölçeklenir (POS, yönetim) --- */
+html.pos-pos-split {
+	zoom: 1;
+}
+
+.pos-pos-split .pos-main-scale {
+	zoom: var(--pos-terminal-ui-scale);
+	flex: 1 1 0;
+	min-height: 0;
+	min-width: 0;
+	max-width: 100%;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+html.pos-perf.pos-pos-split .pos-main-scale {
+	zoom: 1;
+}
+
+/* Yönetim: uzun içerik kaydırılabilir */
+.pos-pos-split .pos-main-scale.pos-main-scale--admin {
+	flex: none;
+	min-height: 100vh;
+	min-height: 100dvh;
+	overflow: auto;
+}

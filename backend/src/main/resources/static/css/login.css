@@ -1,0 +1,740 @@
+/* Bodrum Aqua Park — giriş (varsayılan açık tema, dashboard vb.) */
+
+:root {
+	--bg-top: #ffffff;
+	--bg-bottom: #f1f5f9;
+	--accent: #0d9488;
+	--accent-dim: rgba(13, 148, 136, 0.14);
+	--accent-glow: rgba(13, 148, 136, 0.2);
+	--text: #0f172a;
+	--text-muted: #64748b;
+	--glass: #ffffff;
+	--glass-border: rgba(148, 163, 184, 0.35);
+	--btn-primary: linear-gradient(125deg, #22d3ee 0%, #14b8a6 45%, #0d9488 100%);
+	--radius: 1.25rem;
+	--font: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+	font-family: var(--font);
+	-webkit-font-smoothing: antialiased;
+}
+
+body:not(.login-premium) {
+	background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+	background-attachment: fixed;
+	color: var(--text);
+}
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* ——— Premium koyu POS giriş (yalnızca index) ——— */
+body.login-premium {
+	--text: #f1f5f9;
+	--text-muted: #94a3b8;
+	--accent: #2dd4bf;
+	--accent-dim: rgba(45, 212, 191, 0.18);
+	--glass: rgba(17, 24, 39, 0.65);
+	--glass-border: rgba(45, 212, 191, 0.14);
+	color: #e2e8f0;
+	background: #0b1120;
+	background-image:
+		radial-gradient(ellipse 100% 80% at 70% -10%, rgba(13, 148, 136, 0.22), transparent 55%),
+		radial-gradient(ellipse 60% 50% at 0% 100%, rgba(20, 184, 166, 0.08), transparent 50%),
+		linear-gradient(180deg, #0b1120 0%, #111827 38%, #0f172a 100%);
+	background-attachment: fixed;
+}
+
+.page--premium {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	padding: clamp(1rem, 3vw, 2rem);
+	padding-top: clamp(1.5rem, 4vh, 2.75rem);
+	position: relative;
+	overflow: hidden;
+}
+
+.page-premium-bg {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+	overflow: hidden;
+}
+
+.premium-orb {
+	position: absolute;
+	border-radius: 50%;
+	filter: blur(80px);
+	opacity: 0.45;
+}
+
+.premium-orb--a {
+	width: min(70vw, 560px);
+	height: min(70vw, 560px);
+	background: radial-gradient(circle, rgba(45, 212, 191, 0.35) 0%, transparent 68%);
+	top: -25%;
+	right: -15%;
+	animation: premium-float 22s ease-in-out infinite;
+}
+
+.premium-orb--b {
+	width: min(55vw, 420px);
+	height: min(55vw, 420px);
+	background: radial-gradient(circle, rgba(20, 184, 166, 0.2) 0%, transparent 70%);
+	bottom: -20%;
+	left: -10%;
+	animation: premium-float 28s ease-in-out infinite reverse;
+}
+
+@keyframes premium-float {
+	0%,
+	100% {
+		transform: translate(0, 0) scale(1);
+	}
+	50% {
+		transform: translate(-16px, 12px) scale(1.06);
+	}
+}
+
+.premium-watermark {
+	position: absolute;
+	opacity: 0.045;
+	pointer-events: none;
+}
+
+.premium-watermark--lock {
+	width: min(42vw, 280px);
+	height: min(42vw, 280px);
+	left: 4%;
+	top: 18%;
+	background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232dd4bf' stroke-width='1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z'/%3E%3C/svg%3E")
+		center / contain no-repeat;
+}
+
+.premium-watermark--shield {
+	width: min(38vw, 240px);
+	height: min(38vw, 240px);
+	right: 6%;
+	top: 12%;
+	background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232dd4bf' stroke-width='1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z'/%3E%3C/svg%3E")
+		center / contain no-repeat;
+}
+
+.grid-overlay--dark {
+	background-image: linear-gradient(rgba(45, 212, 191, 0.04) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(45, 212, 191, 0.04) 1px, transparent 1px);
+	background-size: 40px 40px;
+	mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, black 25%, transparent 85%);
+	opacity: 0.9;
+}
+
+body.login-premium .grid-overlay {
+	z-index: 1;
+}
+
+.login-version {
+	position: relative;
+	z-index: 2;
+	flex-shrink: 0;
+	margin: 0.75rem 0 0;
+	text-align: center;
+	font-size: 0.65rem;
+	font-weight: 500;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: rgba(148, 163, 184, 0.45);
+}
+
+.shell {
+	position: relative;
+	z-index: 2;
+	width: 100%;
+	max-width: 440px;
+}
+
+.login-shell {
+	max-width: min(1320px, 100%);
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.login-brand-top {
+	text-align: center;
+	margin: 0 auto clamp(4rem, 8vw, 6.5rem);
+	width: 100%;
+	max-width: 42rem;
+	flex-shrink: 0;
+}
+
+.login-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(440px, 560px);
+	gap: clamp(1.25rem, 3.5vw, 3.25rem);
+	align-items: stretch;
+	min-height: 0;
+}
+
+@media (min-width: 1100px) {
+	.login-layout {
+		grid-template-columns: minmax(0, 1fr) minmax(500px, 620px);
+	}
+}
+
+.login-form-col {
+	min-width: 0;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.login-keypad-col {
+	position: relative;
+	min-width: 0;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.brand--premium .brand-badge {
+	background: rgba(15, 23, 42, 0.6);
+	border: 1px solid rgba(45, 212, 191, 0.22);
+	color: #5eead4;
+	letter-spacing: 0.14em;
+}
+
+.brand--premium h1 {
+	color: #f8fafc;
+	text-shadow: 0 1px 24px rgba(45, 212, 191, 0.15);
+}
+
+.brand--premium p {
+	color: #94a3b8;
+}
+
+.card--premium {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	background: linear-gradient(155deg, rgba(17, 24, 39, 0.88) 0%, rgba(15, 23, 42, 0.78) 100%);
+	border: 1px solid rgba(45, 212, 191, 0.16);
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+		0 24px 56px -24px rgba(0, 0, 0, 0.55),
+		0 0 80px -40px rgba(13, 148, 136, 0.25);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+}
+
+.card--premium .footer-note--premium {
+	margin-top: auto;
+	padding-top: 1rem;
+}
+
+.card-title-premium {
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: #5eead4;
+	margin: 0 0 1.1rem;
+	opacity: 0.95;
+}
+
+body.login-premium .field label {
+	color: #cbd5e1;
+	font-size: 0.8rem;
+	letter-spacing: 0.04em;
+}
+
+.input-wrap--premium svg {
+	color: rgba(94, 234, 212, 0.55);
+}
+
+body.login-premium .input-wrap input {
+	background: rgba(15, 23, 42, 0.85);
+	border: 1px solid rgba(71, 85, 105, 0.55);
+	color: #f1f5f9;
+	padding-top: 0.95rem;
+	padding-bottom: 0.95rem;
+	font-size: 1.05rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.04em;
+}
+
+body.login-premium .input-wrap input::placeholder {
+	color: rgba(148, 163, 184, 0.45);
+}
+
+body.login-premium .input-wrap input:hover {
+	border-color: rgba(45, 212, 191, 0.28);
+}
+
+body.login-premium .input-wrap input:focus {
+	border-color: rgba(45, 212, 191, 0.55);
+	box-shadow: 0 0 0 3px var(--accent-dim);
+	background: rgba(15, 23, 42, 0.95);
+}
+
+body.login-premium .field.field-active label {
+	color: #5eead4;
+}
+
+.btn--premium-secondary {
+	margin-top: 0.5rem;
+	background: linear-gradient(135deg, rgba(45, 212, 191, 0.2) 0%, rgba(13, 148, 136, 0.35) 100%);
+	color: #ccfbf1;
+	border: 1px solid rgba(45, 212, 191, 0.35);
+	box-shadow: 0 8px 28px -12px rgba(13, 148, 136, 0.45);
+}
+
+.btn--premium-secondary:hover {
+	filter: brightness(1.08);
+	border-color: rgba(45, 212, 191, 0.5);
+}
+
+.alert--premium.error {
+	background: rgba(127, 29, 29, 0.45);
+	border: 1px solid rgba(248, 113, 113, 0.35);
+	color: #fecaca;
+	backdrop-filter: blur(8px);
+}
+
+.footer-note--premium {
+	color: rgba(148, 163, 184, 0.65);
+}
+
+.footer-note--premium span {
+	color: #5eead4;
+}
+
+/* Sağ panel — büyük numpad (sol kart ile aynı yükseklik) */
+.keypad-panel--premium {
+	position: relative;
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	background: linear-gradient(165deg, rgba(17, 24, 39, 0.92) 0%, rgba(15, 23, 42, 0.88) 100%);
+	border: 1px solid rgba(45, 212, 191, 0.16);
+	border-radius: 1.35rem;
+	padding: 1.25rem 1.25rem 1.15rem;
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+		0 24px 56px -24px rgba(0, 0, 0, 0.55),
+		0 0 80px -40px rgba(13, 148, 136, 0.2);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+}
+
+.login-numpad {
+	display: flex;
+	flex-direction: column;
+	gap: 0.6rem;
+	flex: 1 1 auto;
+	min-height: 0;
+	width: 100%;
+	justify-content: center;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.np-row {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.6rem;
+	width: 100%;
+}
+
+.np-key {
+	min-height: 4.35rem;
+	padding: 0.5rem 0.55rem;
+	font-family: inherit;
+	font-size: clamp(1.45rem, 2.8vw, 1.85rem);
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	color: #f8fafc;
+	background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+	border: 1px solid rgba(71, 85, 105, 0.65);
+	border-radius: 0.9rem;
+	cursor: pointer;
+	touch-action: manipulation;
+	box-shadow:
+		0 2px 0 rgba(255, 255, 255, 0.06) inset,
+		0 8px 20px -10px rgba(0, 0, 0, 0.45);
+	transition: transform 0.1s, border-color 0.2s, filter 0.2s, box-shadow 0.2s;
+}
+
+.np-key:hover {
+	border-color: rgba(45, 212, 191, 0.45);
+	filter: brightness(1.08);
+	box-shadow:
+		0 2px 0 rgba(255, 255, 255, 0.08) inset,
+		0 10px 28px -12px rgba(13, 148, 136, 0.35);
+}
+
+.np-key:active {
+	transform: scale(0.97);
+}
+
+.np-key--back {
+	font-size: 1.35rem;
+	color: #cbd5e1;
+	background: linear-gradient(180deg, #475569 0%, #334155 100%);
+}
+
+.np-key--enter {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #042f2e;
+	background: linear-gradient(165deg, #5eead4 0%, #14b8a6 48%, #0d9488 100%);
+	border-color: rgba(45, 212, 191, 0.55);
+	box-shadow:
+		0 2px 0 rgba(255, 255, 255, 0.35) inset,
+		0 10px 32px -10px rgba(13, 148, 136, 0.55);
+}
+
+.np-key--enter:hover {
+	filter: brightness(1.06);
+	border-color: rgba(255, 255, 255, 0.35);
+}
+
+.np-key--enter:active {
+	filter: brightness(0.98);
+}
+
+.keypad-hint--premium {
+	flex-shrink: 0;
+	color: rgba(100, 116, 139, 0.85);
+	font-size: 0.68rem;
+	margin-top: auto;
+	padding-top: 1rem;
+	text-align: center;
+}
+
+@media (max-width: 960px) {
+	.login-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.login-keypad-col {
+		order: 2;
+		width: 100%;
+		max-width: min(560px, 100%);
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	.keypad-panel--premium {
+		position: static;
+	}
+}
+
+@media (min-width: 961px) and (max-width: 1099px) {
+	.login-layout {
+		grid-template-columns: minmax(0, 1fr) minmax(400px, 52%);
+	}
+}
+
+@media (max-width: 520px) {
+	.np-key {
+		min-height: 3.65rem;
+		font-size: 1.3rem;
+	}
+}
+
+/* ——— Varsayılan (açık) sayfa ——— */
+.page:not(.page--premium) {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem 1.25rem;
+	position: relative;
+	overflow: hidden;
+}
+
+.page:not(.page--premium)::before,
+.page:not(.page--premium)::after {
+	content: "";
+	position: absolute;
+	border-radius: 50%;
+	filter: blur(100px);
+	opacity: 0.55;
+	pointer-events: none;
+	z-index: 0;
+}
+
+.page:not(.page--premium)::before {
+	width: min(52vw, 520px);
+	height: min(52vw, 520px);
+	background: radial-gradient(circle, rgba(241, 245, 249, 0.9) 0%, transparent 65%);
+	top: -12%;
+	right: -8%;
+	animation: float 18s ease-in-out infinite;
+}
+
+.page:not(.page--premium)::after {
+	width: min(45vw, 440px);
+	height: min(45vw, 440px);
+	background: radial-gradient(circle, rgba(248, 250, 252, 0.95) 0%, transparent 65%);
+	bottom: -15%;
+	left: -10%;
+	animation: float 22s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+	0%,
+	100% {
+		transform: translate(0, 0) scale(1);
+	}
+	50% {
+		transform: translate(-12px, 18px) scale(1.05);
+	}
+}
+
+.grid-overlay {
+	position: absolute;
+	inset: 0;
+	background-image: linear-gradient(rgba(14, 116, 144, 0.06) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(14, 116, 144, 0.06) 1px, transparent 1px);
+	background-size: 48px 48px;
+	mask-image: radial-gradient(ellipse 80% 70% at 50% 45%, black 20%, transparent 100%);
+	pointer-events: none;
+	z-index: 1;
+}
+
+.brand {
+	text-align: center;
+	margin-bottom: 2rem;
+}
+
+.brand-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.35rem 0.85rem;
+	border-radius: 999px;
+	background: #f1f5f9;
+	border: 1px solid var(--glass-border);
+	color: var(--text-muted);
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	margin-bottom: 1rem;
+}
+
+.brand h1 {
+	margin: 0;
+	font-size: clamp(1.65rem, 4vw, 2rem);
+	font-weight: 700;
+	letter-spacing: -0.03em;
+	line-height: 1.15;
+	color: var(--text);
+}
+
+.brand p {
+	margin: 0.65rem 0 0;
+	font-size: 0.95rem;
+	color: var(--text-muted);
+	font-weight: 450;
+}
+
+.card {
+	background: var(--glass);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid var(--glass-border);
+	border-radius: var(--radius);
+	padding: 2rem 1.75rem 1.75rem;
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9) inset, 0 16px 48px -12px rgba(15, 23, 42, 0.08);
+}
+
+.card h2 {
+	margin: 0 0 1.5rem;
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: var(--text);
+	letter-spacing: -0.02em;
+}
+
+.field {
+	margin-bottom: 1.15rem;
+}
+
+.field label {
+	display: block;
+	font-size: 0.78rem;
+	font-weight: 600;
+	color: var(--text-muted);
+	margin-bottom: 0.45rem;
+	letter-spacing: 0.02em;
+}
+
+.input-wrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
+.input-wrap svg {
+	position: absolute;
+	left: 0.95rem;
+	width: 1.15rem;
+	height: 1.15rem;
+	color: var(--text-muted);
+	opacity: 0.85;
+	pointer-events: none;
+}
+
+.input-wrap input {
+	width: 100%;
+	padding: 0.85rem 1rem 0.85rem 2.75rem;
+	font-size: 0.95rem;
+	font-family: inherit;
+	color: var(--text);
+	background: rgba(255, 255, 255, 0.95);
+	border: 1px solid rgba(14, 116, 144, 0.16);
+	border-radius: 0.75rem;
+	outline: none;
+	transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.input-wrap input::placeholder {
+	color: rgba(100, 116, 139, 0.55);
+}
+
+.input-wrap input:hover {
+	border-color: rgba(13, 148, 136, 0.28);
+}
+
+.input-wrap input:focus {
+	border-color: rgba(13, 148, 136, 0.45);
+	box-shadow: 0 0 0 3px var(--accent-dim);
+	background: #ffffff;
+}
+
+.field.field-active label {
+	color: var(--accent);
+}
+
+.field.field-active .input-wrap input {
+	border-color: rgba(13, 148, 136, 0.45);
+	box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.btn {
+	width: 100%;
+	margin-top: 0.35rem;
+	padding: 0.95rem 1.25rem;
+	font-family: inherit;
+	font-size: 0.95rem;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	color: #042f2e;
+	border: none;
+	border-radius: 0.75rem;
+	cursor: pointer;
+	background: var(--btn-primary);
+	box-shadow: 0 6px 22px -4px rgba(13, 148, 136, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+	transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+}
+
+.btn:hover {
+	filter: brightness(1.04);
+	box-shadow: 0 10px 28px -6px rgba(13, 148, 136, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.45) inset;
+}
+
+.btn:active {
+	transform: scale(0.988);
+}
+
+.btn:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+	transform: none;
+	filter: none;
+}
+
+.alert {
+	margin-top: 1.1rem;
+	padding: 0.75rem 0.9rem;
+	border-radius: 0.65rem;
+	font-size: 0.85rem;
+	line-height: 1.4;
+	display: none;
+}
+
+.alert.visible {
+	display: block;
+}
+
+.alert.error {
+	background: rgba(254, 226, 226, 0.85);
+	border: 1px solid rgba(248, 113, 113, 0.4);
+	color: #991b1b;
+}
+
+.footer-note {
+	margin-top: 1.75rem;
+	text-align: center;
+	font-size: 0.75rem;
+	color: rgba(100, 116, 139, 0.75);
+}
+
+.footer-note span {
+	color: var(--accent);
+	opacity: 0.9;
+}
+
+@media (max-width: 420px) {
+	.card {
+		padding: 1.5rem 1.25rem 1.35rem;
+	}
+}
+
+/* posPerf=1: zayif POS / JavaFX WebView — harici font yok; blur ve agir katmanlar kapali */
+html.pos-perf * {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+html.pos-perf .page-premium-bg,
+html.pos-perf .premium-orb,
+html.pos-perf .grid-overlay,
+html.pos-perf .premium-watermark {
+	display: none !important;
+}
+html.pos-perf body.login-premium {
+	background-image: none !important;
+	background: #0f172a !important;
+}

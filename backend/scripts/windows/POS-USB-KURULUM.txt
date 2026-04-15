@@ -1,0 +1,66 @@
+================================================================================
+Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
+================================================================================
+
+1) MAC'TE (geliştirme bilgisayarı)
+   - Proje kökünde veya backend klasöründe:
+     mvn -f backend/pom.xml clean package -DskipTests
+   - Çıktı: backend/target/bodrum-aqua-park-api-0.0.1-SNAPSHOT.jar
+   - Not: pom.xml içinde javafx.platform=win olduğu sürece bu JAR Windows POS
+     için doğru JavaFX DLL'lerini içerir (Mac'te derlense bile).
+
+2) USB'YE KOPYALANACAKLAR (aynı klasörde olsun)
+   - bodrum-aqua-park-api-0.0.1-SNAPSHOT.jar   (target klasöründen)
+   - BodrumAquaPark.bat   ← POS'ta çift tıklanacak tek başlatıcı
+   - javafx-logging.properties  ← JavaFX konsol uyarilarini susturur (usb-paket-olustur.sh ile gelir)
+   - Bu dosya: POS-USB-KURULUM.txt (isteğe bağlı)
+
+   Mac'te tek seferde klasör oluşturmak için (BAT + JAR birlikte):
+   backend/scripts/usb-paket-olustur.sh çalıştırın → dist/usb-windows-pos/
+
+3) WINDOWS POS (POSBANK) — İLK KURULUM
+   - JDK 21 (64-bit) kurun: https://adoptium.net veya Oracle JDK 21
+   - Kurulumdan sonra "java" komutunun çalışması için:
+     * Denetim Masası > Sistem > Gelişmiş > Ortam değişkenleri
+     * JAVA_HOME = ör. C:\Program Files\Eclipse Adoptium\jdk-21...
+     * PATH'e ekleyin: %JAVA_HOME%\bin
+   - Komut İstemi'nde doğrulayın:  java -version   (21 görünmeli)
+
+4) ÇALIŞTIRMA
+   - USB'deki klasörü POS'a kopyalayın (veya USB'den doğrudan çalıştırın).
+   - BodrumAquaPark.bat dosyasına çift tıklayın.
+   - Varsayılan: Sunucu (minimize pencere) + Edge veya Chrome uygulama penceresi (hızlı).
+   - Yavaş tek pencere (JavaFX WebView) isterseniz: BodrumAquaPark.bat desktop
+   - Giriş (varsayılan test): kullanıcı 0000, şifre 0000
+   - Sunucu penceresini kapatmayın; kapatırsanız tarayıcı çalışmaz.
+
+   --- Arayüz (POS) neden eski görünüyor? ---
+   - Sadece BodrumAquaPark.bat dosyasını güncellemek YETERLİ DEĞİL.
+   - pos.html / pos.js / css dosyaları derleme sırasında JAR içine gömülür.
+   - Kodda değişiklik yaptıktan sonra Mac’te (veya geliştirme PC’de) MUTLAKA:
+       mvn -f backend/pom.xml clean package -DskipTests
+     veya:  bash backend/scripts/usb-paket-olustur.sh
+   - Oluşan YENİ bodrum-aqua-park-api-0.0.1-SNAPSHOT.jar dosyasını USB/POS
+     klasörüne kopyalayıp ESKİ JAR’ın üzerine yazın; ardından BAT’ı yeniden çalıştırın.
+   - Geliştirme: Tüm backend klasörü (mvnw dahil) Windows’ta aynı yolda ise:
+       BodrumAquaPark.bat dev
+     derlemeden çalıştırır (Maven gerekir). USB’de sadece JAR+Bat varsa “dev” çalışmaz.
+
+5) jpackage ile .exe (İSTEĞE BAĞLI, yalnızca Windows + tam repo)
+   - jpackage Mac'te Windows .exe üretmez.
+   - Geliştirme PC'de (backend\scripts\windows içindeki BAT ile) komut isteminde:
+     BodrumAquaPark.bat exe
+   - Çıktı: backend\dist-exe\BodrumAquaPark\BodrumAquaPark.exe (gömülü JRE).
+   - Bu klasörü USB ile taşıyabilirsiniz; hedefte ayrı JDK gerekmez.
+
+6) ÜRETİM (PostgreSQL)
+   - Şu an BAT: SPRING_PROFILES_ACTIVE=lowresource,dev (H2 bellek, test içindir).
+   - Canlı veritabanı için BAT içinde lowresource,prod yapın ve ortam değişkenlerini
+     ayarlayın (SPRING_DATASOURCE_URL, kullanıcı, şifre, APP_JWT_SECRET).
+
+7) Sorun giderme
+   - "java bulunamadı" → PATH veya JAVA_HOME
+   - Uygulama açılmıyor → BAT'ı sağ tık > düzenle, hata mesajı için pencereyi kapatmayın
+   - 8081 kullanımda → başka program kapatın veya server.port değiştirin
+
+================================================================================

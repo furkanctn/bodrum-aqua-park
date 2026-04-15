@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr" class="pos-terminal-scale">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Giriş — Bodrum Aqua Park</title>
+	<script src="/js/ui-scale-head.js"></script>
+	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
+	<link rel="stylesheet" href="/css/viewport-test.css" />
+	<link rel="stylesheet" href="/css/login.css" />
+</head>
+<body class="login-premium">
+	<div class="page page--premium">
+		<div class="page-premium-bg" aria-hidden="true">
+			<div class="premium-orb premium-orb--a"></div>
+			<div class="premium-orb premium-orb--b"></div>
+			<div class="premium-watermark premium-watermark--lock" aria-hidden="true"></div>
+			<div class="premium-watermark premium-watermark--shield" aria-hidden="true"></div>
+		</div>
+		<div class="grid-overlay grid-overlay--dark" aria-hidden="true"></div>
+		<div class="shell login-shell">
+			<header class="brand brand--premium login-brand-top">
+				<div class="brand-badge">Kasa terminali</div>
+				<h1>Bodrum Aqua Park</h1>
+				<p>Oturum açarak satış ekranına geçin</p>
+			</header>
+
+			<div class="login-layout">
+				<div class="login-form-col">
+					<main class="card card--premium" role="main">
+						<h2 class="card-title-premium">Personel girişi</h2>
+						<form id="login-form" autocomplete="on" novalidate>
+							<div class="field">
+								<label for="userId">Sicil no</label>
+								<div class="input-wrap input-wrap--premium">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+									</svg>
+									<input
+										type="text"
+										id="userId"
+										name="userId"
+										autocomplete="username"
+										placeholder="Sicil numaranız"
+										required
+										class="login-field-input"
+										tabindex="0"
+									/>
+								</div>
+							</div>
+							<div class="field">
+								<label for="password">Parola</label>
+								<div class="input-wrap input-wrap--premium">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+									</svg>
+									<input
+										type="password"
+										id="password"
+										name="password"
+										autocomplete="current-password"
+										placeholder="••••••••"
+										required
+										class="login-field-input"
+										tabindex="0"
+									/>
+								</div>
+							</div>
+							<button type="submit" class="btn btn--premium-secondary" id="login-btn">Giriş yap</button>
+						</form>
+						<div id="login-alert" class="alert alert--premium error" role="alert"></div>
+						<p class="footer-note footer-note--premium">
+							Güvenli oturum · İşlemler kayıt altında · <span>Bodrum Aqua Park</span>
+						</p>
+					</main>
+				</div>
+
+				<aside class="login-keypad-col" aria-label="Sayısal tuş takımı">
+					<div class="keypad-panel keypad-panel--premium">
+						<div id="login-keyboard" class="login-numpad" aria-label="Tuş takımı"></div>
+						<p class="keypad-hint keypad-hint--premium">Rakamlar sağdan; harf gerekirse klavye kullanılabilir.</p>
+					</div>
+				</aside>
+			</div>
+		</div>
+		<p class="login-version" aria-hidden="true">Bodrum Aqua Park · kasa</p>
+	</div>
+	<script src="/js/login.js" defer></script>
+	<script src="/js/viewport-test.js" defer></script>
+</body>
+</html>

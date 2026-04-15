@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="tr" class="pos-pos-split">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Satış — Bodrum Aqua Park</title>
+	<script src="/js/ui-scale-head.js"></script>
+	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
+	<link rel="stylesheet" href="/css/viewport-test.css" />
+	<link rel="stylesheet" href="/css/pos.css" />
+</head>
+<body class="module-kart">
+	<div class="pos-app">
+		<div class="pos-main-scale" id="pos-main-scale">
+		<header class="pos-topbar">
+			<div class="pos-context-bar" id="pos-context-bar" role="region" aria-label="Güncel işlem">
+				<div class="pos-context-text">
+					<span class="pos-context-badge" id="pos-context-badge">Kart satış</span>
+					<p class="pos-context-hint" id="pos-context-hint">Bilet seçin; özet ve ödeme sağda.</p>
+				</div>
+				<div class="pos-context-metrics" id="pos-context-metrics-kart" hidden>
+					<div class="pos-metric">
+						<span class="pos-metric-label">Sepet</span>
+						<span class="pos-metric-value" id="pos-metric-items">0</span>
+					</div>
+					<div class="pos-metric pos-metric--accent">
+						<span class="pos-metric-label">Ödenecek</span>
+						<span class="pos-metric-value" id="pos-metric-due">₺0,00</span>
+					</div>
+				</div>
+				<div class="pos-context-metrics pos-context-metrics--bakiye" id="pos-context-metrics-bakiye" hidden>
+					<div class="pos-metric pos-metric--accent pos-metric--solo">
+						<span class="pos-metric-label">Yüklenecek tutar</span>
+						<span class="pos-metric-value" id="pos-metric-bakiye">₺0,00</span>
+					</div>
+				</div>
+			</div>
+			<nav class="pos-nav" aria-label="Ana modüller">
+				<button type="button" class="nav-item active" id="nav-kart" data-module="kart" title="Kart satış">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
+					</svg>
+					<span id="nav-kart-label">Kart satış</span>
+				</button>
+				<button type="button" class="nav-item" id="nav-bakiye-slot" data-module="bakiye" title="Bakiye yükleme">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182a2.51 2.51 0 0 1 4.004 0 2.25 2.25 0 0 0 3.227 1.318" />
+					</svg>
+					<span id="nav-bakiye-label">Bakiye yükleme</span>
+				</button>
+				<button type="button" class="nav-item" id="nav-urun" data-module="urun" title="Ürün satış">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5Z" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="M14.25 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 14.25 9.375v-4.5Z" />
+						<path stroke-linecap="round" stroke-linejoin="round" d="M14.25 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />
+					</svg>
+					Ürün satış
+				</button>
+				<button type="button" class="nav-item" data-module="sorgu" title="Kart sorgulama">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+					</svg>
+					Kart sorgulama
+				</button>
+				<a href="/admin.html" class="nav-item nav-admin" id="nav-admin" hidden title="Kullanıcı ve yetki yönetimi">Yönetim</a>
+				<button type="button" class="nav-item nav-exit" id="nav-exit" title="Çıkış">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+					</svg>
+					Çıkış
+				</button>
+			</nav>
+		</header>
+
+		<div id="view-kart" class="pos-view">
+		<main class="pos-main">
+			<div class="kart-main-left">
+			<div id="kart-area-tabs" class="kart-area-tabs" hidden role="tablist" aria-label="Satış alanı"></div>
+			<section class="pos-grid-section" aria-labelledby="grid-heading">
+				<h2 id="grid-heading">Bilet ve yaş grupları</h2>
+				<div class="grid-scroll-wrap">
+					<div class="pos-grid-viewport">
+						<div class="pos-grid" id="pos-grid"></div>
+						<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-left" aria-label="Önceki sayfa" title="Önceki sayfa">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+						</button>
+						<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-right" aria-label="Sonraki sayfa" title="Sonraki sayfa">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+						</button>
+					</div>
+				</div>
+			</section>
+			</div>
+
+			<section class="pos-payment" aria-label="Ödeme ve özet">
+				<div class="pay-methods">
+					<h3>Ödeme yöntemi</h3>
+					<div class="pay-list">
+						<button type="button" class="pay-option active" data-pay="cash">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75V6h15.75A2.25 2.25 0 0 1 21 8.25v.75m-12.75 0h12.75" /></svg>
+							Nakit ödeme
+						</button>
+						<button type="button" class="pay-option" data-pay="card">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 15h19.5m-16.5-5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
+							Kart ile ödeme
+						</button>
+						<button type="button" class="pay-option" data-pay="credit">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" /></svg>
+							Kredili ödeme
+						</button>
+					</div>
+				</div>
+				<div class="pay-summary">
+					<h3>Hesap özeti</h3>
+					<div class="summary-rows">
+						<div class="summary-row"><span>Uygulanan indirim</span><span class="amt" id="sum-discount">₺0,00</span></div>
+						<div class="summary-divider" role="presentation"></div>
+						<div class="summary-row highlight"><span>Ödenmesi gereken tutar</span><span class="amt" id="sum-due">₺0,00</span></div>
+						<div class="summary-row"><span>Nakit ödenen tutar</span><span class="amt" id="sum-cash">₺0,00</span></div>
+						<div class="summary-row"><span>Kart ile ödenen tutar</span><span class="amt" id="sum-card">₺0,00</span></div>
+						<div class="summary-row"><span>Kredili ödenen tutar</span><span class="amt" id="sum-credit">₺0,00</span></div>
+						<div class="summary-row"><span>Para üstü</span><span class="amt" id="sum-change">₺0,00</span></div>
+					</div>
+				</div>
+			</section>
+		</main>
+		</div>
+
+		<div id="view-bakiye" class="pos-view" hidden>
+			<div class="bakiye-shell">
+				<div class="bakiye-layout">
+					<aside class="bakiye-pay-col" aria-label="Ödeme yöntemi">
+						<h3>Ödeme yöntemi</h3>
+						<div class="pay-list">
+							<button type="button" class="bakiye-pay-opt active" data-bakiye-pay="cash">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75V6h15.75A2.25 2.25 0 0 1 21 8.25v.75m-12.75 0h12.75" /></svg>
+								Nakit ödeme
+							</button>
+							<button type="button" class="bakiye-pay-opt" data-bakiye-pay="card">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 15h19.5m-16.5-5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
+								Kart ile ödeme
+							</button>
+							<button type="button" class="bakiye-pay-opt" data-bakiye-pay="rate">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182a2.51 2.51 0 0 1 4.004 0 2.25 2.25 0 0 0 3.227 1.318" /></svg>
+								Nakit ödeme kuru
+							</button>
+						</div>
+					</aside>
+
+					<div class="bakiye-center-col">
+						<div class="bakiye-panel-head">Tutar girişi</div>
+						<div class="bakiye-display-row">
+							<div class="bakiye-display" id="bakiye-display" aria-live="polite">0,00&nbsp;₺</div>
+							<button type="button" class="bakiye-key-del" id="bakiye-backspace" title="Son haneyi sil" aria-label="Geri sil">⌫</button>
+						</div>
+						<div class="bakiye-quick-grid" id="bakiye-quick">
+							<button type="button" class="bakiye-quick-btn" data-add-kurus="1000">10</button>
+							<button type="button" class="bakiye-quick-btn" data-add-kurus="2000">20</button>
+							<button type="button" class="bakiye-quick-btn" data-add-kurus="5000">50</button>
+							<button type="button" class="bakiye-quick-btn" data-add-kurus="10000">100</button>
+							<button type="button" class="bakiye-quick-btn" data-add-kurus="20000">200</button>
+							<button type="button" class="bakiye-quick-btn" data-add-kurus="50000">500</button>
+						</div>
+						<div class="bakiye-keypad" id="bakiye-keypad" aria-label="Sayısal tuş takımı"></div>
+					</div>
+
+					<aside class="bakiye-summary-col">
+						<h3>Hesap özeti</h3>
+						<div class="summary-rows">
+							<div class="summary-row highlight"><span>Toplam</span><span class="amt" id="bak-sum-total">₺0,00</span></div>
+							<div class="summary-row"><span>Nakit ödenen tutar</span><span class="amt" id="bak-sum-cash">₺0,00</span></div>
+							<div class="summary-row"><span>Kart ile ödenen tutar</span><span class="amt" id="bak-sum-card">₺0,00</span></div>
+							<div class="summary-row"><span>Para üstü</span><span class="amt" id="bak-sum-change">₺0,00</span></div>
+						</div>
+					</aside>
+				</div>
+			</div>
+		</div>
+
+		<div id="view-urun" class="pos-view" hidden>
+			<div class="bakiye-shell">
+				<div class="urun-detail-shell">
+					<div class="urun-card-panel urun-card-panel--top">
+						<div class="bakiye-panel-head">Kart yükle</div>
+						<div class="urun-card-row">
+							<label class="urun-label" for="urun-card-input">Kart UID</label>
+							<input
+								type="text"
+								id="urun-card-input"
+								class="urun-input"
+								placeholder="Okutun veya girin (ör. 1234)"
+								autocomplete="off"
+								maxlength="16"
+							/>
+							<button type="button" class="urun-btn-load" id="btn-urun-load-card">Kartı yükle</button>
+							<button type="button" class="urun-btn-clear-uid" id="btn-urun-clear-uid" title="UID ve kart özetini sıfırlar">Temizle</button>
+						</div>
+						<div class="urun-toolbar-shortcuts" role="group" aria-label="Diğer modüller">
+							<button type="button" class="urun-btn-secondary" id="btn-urun-go-bakiye" title="Bakiye yükleme ekranına geç">Bakiye yükle</button>
+						</div>
+					</div>
+
+					<div class="urun-inquiry-panel" id="urun-inquiry-panel">
+						<div class="urun-inquiry-col">
+							<h4 class="urun-inquiry-head">Kart bilgileri</h4>
+							<dl class="urun-inquiry-dl">
+								<dt>Kart sıra no</dt><dd id="urun-meta-serial">—</dd>
+								<dt>Kart çip no</dt><dd id="urun-meta-chip">—</dd>
+								<dt>Tanım tarihi</dt><dd id="urun-meta-created">—</dd>
+								<dt>Geçerlilik başlangıç</dt><dd id="urun-meta-valid-from">—</dd>
+								<dt>Geçerlilik bitiş</dt><dd id="urun-meta-valid-to">—</dd>
+								<dt>Tanımlayan</dt><dd id="urun-meta-defined-by">—</dd>
+								<dt>Gişe</dt><dd id="urun-meta-booth">—</dd>
+								<dt>Tarife</dt><dd id="urun-meta-tariff">—</dd>
+							</dl>
+						</div>
+						<div class="urun-inquiry-col">
+							<h4 class="urun-inquiry-head">Ödeme ve bakiye</h4>
+							<dl class="urun-inquiry-dl">
+								<dt>Nakit tutar</dt><dd id="urun-fin-cash">—</dd>
+								<dt>K. kartı tutar</dt><dd id="urun-fin-cc">—</dd>
+								<dt>Depozito tutar</dt><dd id="urun-fin-deposit">—</dd>
+								<dt>Toplam tutar</dt><dd id="urun-fin-grand">—</dd>
+								<dt>Toplam yüklenen bakiye</dt><dd id="urun-fin-loaded">—</dd>
+								<dt>Toplam harcanan bakiye</dt><dd id="urun-fin-spent">—</dd>
+								<dt>İade edilen bakiye</dt><dd id="urun-fin-refund">—</dd>
+								<dt>Kartta olması gereken bakiye</dt><dd id="urun-fin-expected">—</dd>
+								<dt>Kartta olan bakiye</dt><dd id="urun-fin-balance" class="urun-dd-accent">—</dd>
+							</dl>
+						</div>
+					</div>
+
+					<section class="urun-ledger-block" aria-labelledby="urun-ledger-title">
+						<h3 class="urun-ledger-heading" id="urun-ledger-title">Kart geçmişi</h3>
+						<div class="urun-table-wrap urun-ledger-wide">
+							<table class="urun-table urun-table--history">
+								<thead>
+									<tr>
+										<th>Tarih</th>
+										<th>Lokasyon</th>
+										<th>Yön</th>
+										<th>Durum</th>
+									</tr>
+								</thead>
+								<tbody id="urun-ledger-body"></tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</div>
+		</div>
+
+		<div id="view-sorgu" class="pos-view" hidden>
+			<div class="sorgu-shell">
+				<p class="sorgu-hint">İsterseniz numarayı tuşlayın; <strong>SORGULA</strong> ile kartı okutup geçmişi görün.</p>
+				<div class="sorgu-display-row">
+					<div class="sorgu-icon-wrap" aria-hidden="true">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="sorgu-mag">
+							<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+						</svg>
+					</div>
+					<div class="sorgu-display-wrap">
+						<div class="sorgu-display" id="sorgu-display" aria-live="polite">000 000 000 000</div>
+					</div>
+					<button type="button" class="sorgu-key-del" id="sorgu-backspace" title="Son haneyi sil" aria-label="Geri sil">⌫</button>
+				</div>
+				<div class="sorgu-keypad" id="sorgu-keypad" aria-label="Sayısal tuş takımı"></div>
+				<button type="button" class="sorgu-action" id="btn-sorgula">SORGULA</button>
+			</div>
+		</div>
+
+		</div>
+
+		<footer class="pos-footer">
+			<div class="footer-user">
+				<span id="footer-user-line">Kullanıcı: <strong id="footer-user-name">—</strong></span>
+				<a href="/rfid-test.html" class="footer-rfid-test" id="link-rfid-test" title="Kart okuyucu bağlantı testi">Okuyucu testi</a>
+			</div>
+			<div class="footer-actions">
+				<button type="button" class="footer-btn primary" id="btn-complete" title="Tamamla">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
+					<span id="footer-primary-label">Satışı tamamla</span>
+				</button>
+				<button type="button" class="footer-btn footer-only-kart" id="btn-code" title="Kod girişi">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14.25 6 18m0-3.75 3.75 3.75M9 14.25 15 18m0-3.75-3.75 3.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+					Kod giriş
+				</button>
+				<button type="button" class="footer-btn danger" id="btn-clear" title="Temizle">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+					Temizle
+				</button>
+			</div>
+			<div class="footer-aside">
+				<div class="pos-zoom" id="pos-zoom-wrap" role="group" aria-label="Ekran ölçeği">
+					<span class="pos-zoom-label" title="Üst alan (biletler ve ödeme); alt çubuk sabit">Ölçek</span>
+					<button type="button" class="pos-zoom-btn" id="pos-zoom-out" title="Küçült" aria-label="Ölçeği küçült">−</button>
+					<input type="range" class="pos-zoom-range" id="pos-zoom-range" min="40" max="150" step="1" value="124" aria-valuemin="40" aria-valuemax="150" aria-valuenow="124" />
+					<span class="pos-zoom-value" id="pos-zoom-pct">124%</span>
+					<button type="button" class="pos-zoom-btn" id="pos-zoom-in" title="Büyüt" aria-label="Ölçeği büyüt">+</button>
+				</div>
+				<span class="footer-date" id="footer-date" aria-hidden="true">—</span>
+				<div class="footer-clock" id="footer-clock" aria-live="polite">00:00:00</div>
+			</div>
+		</footer>
+	</div>
+
+	<div id="rfid-read-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel" role="dialog" aria-modal="true" aria-labelledby="rfid-read-title">
+			<h2 id="rfid-read-title" class="pos-rfid-overlay__title">Kart okuyucu</h2>
+			<p id="rfid-read-msg" class="pos-rfid-overlay__msg">Hazırlanıyor…</p>
+			<input
+				type="text"
+				id="rfid-read-input"
+				class="pos-rfid-overlay__input"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				aria-label="Kart UID — okuyucu klavye modunda"
+				tabindex="-1"
+				hidden
+			/>
+			<div class="pos-rfid-overlay__actions">
+				<button type="button" class="footer-btn" id="rfid-use-hid" title="Okuyucu USB seri değil, klavye gibi yazıyorsa">
+					Klavye modu
+				</button>
+				<button type="button" class="footer-btn danger" id="rfid-read-cancel">İptal</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bilet satışı (kart satış yetkisi): sipariş tamamla → fiziksel karta turnike hakkı (rfid üstünde) -->
+	<div id="ticket-card-bind-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="ticket-card-bind-title">
+			<h2 id="ticket-card-bind-title" class="pos-rfid-overlay__title">Kart tanımlama</h2>
+			<p id="ticket-card-bind-msg" class="pos-rfid-overlay__msg">
+				Satışı tamamlamak için kartı okutun veya UID yazın. Bu işlem karta <strong>turnike giriş hakkı</strong> tanımlar; turnike bu kart okutulunca açılır.
+			</p>
+			<input
+				type="text"
+				id="ticket-card-bind-input"
+				class="pos-rfid-overlay__input"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				aria-label="Kart UID — okuyucu klavye (HID) modunda"
+			/>
+			<div class="pos-rfid-overlay__actions">
+				<button type="button" class="footer-btn primary" id="ticket-card-bind-confirm">Satışı kaydet</button>
+				<button type="button" class="footer-btn danger" id="ticket-card-bind-cancel">İptal</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Ürün satış: Kartı yükle → kart okut (HID) -->
+	<div id="urun-card-load-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="urun-card-load-title">
+			<h2 id="urun-card-load-title" class="pos-rfid-overlay__title">Kartı okutunuz</h2>
+			<p class="pos-rfid-overlay__msg">
+				Kart bilgilerini yüklemek için kartı okuyucuya tutun veya UID yazıp Enter’a basın.
+			</p>
+			<input
+				type="text"
+				id="urun-card-load-input"
+				class="pos-rfid-overlay__input"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				aria-label="Ürün satış — kart UID (HID)"
+			/>
+			<div class="pos-rfid-overlay__actions">
+				<button type="button" class="footer-btn primary" id="urun-card-load-confirm">Kartı yükle</button>
+				<button type="button" class="footer-btn danger" id="urun-card-load-cancel">İptal</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Kart sorgulama: SORGULA → kart okut → API’den bakiye + hareketler -->
+	<div id="sorgu-card-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div
+			class="pos-rfid-overlay__panel pos-rfid-panel--hid pos-rfid-panel--sorgu"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="sorgu-card-title"
+		>
+			<h2 id="sorgu-card-title" class="pos-rfid-overlay__title">Kart sorgulama</h2>
+
+			<div id="sorgu-card-scan-wrap">
+				<p class="pos-rfid-overlay__msg">Kartı okuyucuya tutun veya UID yazıp Enter’a basın. Yüklemeler ve harcamalar sunucudaki kayıtlardan listelenir.</p>
+				<input
+					type="text"
+					id="sorgu-card-input"
+					class="pos-rfid-overlay__input"
+					autocomplete="off"
+					autocapitalize="off"
+					spellcheck="false"
+					aria-label="Kart UID — sorgulama"
+				/>
+				<p id="sorgu-card-loading-msg" class="sorgu-modal-loading" hidden>Yükleniyor…</p>
+				<div class="pos-rfid-overlay__actions">
+					<button type="button" class="footer-btn primary" id="sorgu-card-confirm">Sorgula</button>
+					<button type="button" class="footer-btn danger" id="sorgu-card-cancel-scan">İptal</button>
+				</div>
+			</div>
+
+			<div id="sorgu-card-detail-wrap" hidden>
+				<div class="sorgu-modal-summary">
+					<div class="sorgu-result-grid sorgu-modal-result-grid">
+						<span class="lbl">Kart UID</span><span class="val" id="sorgu-modal-uid">—</span>
+						<span class="lbl">Bakiye</span><span class="val amt" id="sorgu-modal-balance">—</span>
+						<span class="lbl">Durum</span><span class="val" id="sorgu-modal-status">—</span>
+						<span class="lbl">Toplam yükleme</span><span class="val amt" id="sorgu-modal-loaded">—</span>
+						<span class="lbl">Toplam harcama</span><span class="val amt" id="sorgu-modal-spent">—</span>
+					</div>
+				</div>
+				<h3 class="sorgu-modal-ledger-title">Hareketler</h3>
+				<div class="sorgu-modal-ledger-scroll">
+					<div class="urun-table-wrap">
+						<table class="urun-table urun-table--history">
+							<thead>
+								<tr>
+									<th>Tarih</th>
+									<th>Lokasyon</th>
+									<th>Yön</th>
+									<th>Açıklama</th>
+								</tr>
+							</thead>
+							<tbody id="sorgu-modal-ledger-body"></tbody>
+						</table>
+					</div>
+				</div>
+				<div class="pos-rfid-overlay__actions">
+					<button type="button" class="footer-btn" id="sorgu-card-another">Başka kart</button>
+					<button type="button" class="footer-btn primary" id="sorgu-card-close-detail">Kapat</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Ürün satışı (satış alanı yetkisi): Satışı tamamla → kart okut → bakiye kontrolü -->
+	<div id="product-sale-card-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="product-sale-card-title">
+			<h2 id="product-sale-card-title" class="pos-rfid-overlay__title">Kartı okutunuz</h2>
+			<p id="product-sale-card-summary" class="pos-rfid-overlay__msg">—</p>
+			<p id="product-sale-card-balance-line" class="pos-rfid-overlay__msg product-sale-balance-line" hidden>—</p>
+			<p id="product-sale-card-error" class="pos-rfid-overlay__msg pos-rfid-overlay__error" hidden role="alert"></p>
+			<input
+				type="text"
+				id="product-sale-card-input"
+				class="pos-rfid-overlay__input"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				aria-label="Ürün satışı — kart UID (HID okuyucu)"
+			/>
+			<div class="pos-rfid-overlay__actions">
+				<button type="button" class="footer-btn primary" id="product-sale-card-confirm">Satışı tamamla</button>
+				<button type="button" class="footer-btn danger" id="product-sale-card-cancel">İptal</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bakiye yükleme: tutar girildi → Yüklemeyi tamamla → kart okutma (HID) -->
+	<div id="bakiye-card-bind-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="bakiye-card-bind-title">
+			<h2 id="bakiye-card-bind-title" class="pos-rfid-overlay__title">Kartı okutunuz</h2>
+			<p id="bakiye-card-bind-msg" class="pos-rfid-overlay__msg">
+				Bakiye yüklemek için kartı okuyucuya tutun veya UID yazıp Enter’a basın.
+			</p>
+			<input
+				type="text"
+				id="bakiye-card-bind-input"
+				class="pos-rfid-overlay__input"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				aria-label="Bakiye — kart UID (HID okuyucu)"
+			/>
+			<div class="pos-rfid-overlay__actions">
+				<button type="button" class="footer-btn primary" id="bakiye-card-bind-confirm">Yükle</button>
+				<button type="button" class="footer-btn danger" id="bakiye-card-bind-cancel">İptal</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
+	<script src="/js/pos.js" defer></script>
+	<script src="/js/viewport-test.js" defer></script>
+</body>
+</html>
