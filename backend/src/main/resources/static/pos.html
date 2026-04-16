@@ -7,48 +7,26 @@
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
 	<link rel="stylesheet" href="/css/viewport-test.css" />
-	<link rel="stylesheet" href="/css/pos.css" />
+	<link rel="stylesheet" href="/css/pos.css?v=14" />
 </head>
 <body class="module-kart">
 	<div class="pos-app">
 		<div class="pos-main-scale" id="pos-main-scale">
 		<header class="pos-topbar">
-			<div class="pos-context-bar" id="pos-context-bar" role="region" aria-label="Güncel işlem">
-				<div class="pos-context-text">
-					<span class="pos-context-badge" id="pos-context-badge">Kart satış</span>
-					<p class="pos-context-hint" id="pos-context-hint">Bilet seçin; özet ve ödeme sağda.</p>
-				</div>
-				<div class="pos-context-metrics" id="pos-context-metrics-kart" hidden>
-					<div class="pos-metric">
-						<span class="pos-metric-label">Sepet</span>
-						<span class="pos-metric-value" id="pos-metric-items">0</span>
-					</div>
-					<div class="pos-metric pos-metric--accent">
-						<span class="pos-metric-label">Ödenecek</span>
-						<span class="pos-metric-value" id="pos-metric-due">₺0,00</span>
-					</div>
-				</div>
-				<div class="pos-context-metrics pos-context-metrics--bakiye" id="pos-context-metrics-bakiye" hidden>
-					<div class="pos-metric pos-metric--accent pos-metric--solo">
-						<span class="pos-metric-label">Yüklenecek tutar</span>
-						<span class="pos-metric-value" id="pos-metric-bakiye">₺0,00</span>
-					</div>
-				</div>
-			</div>
 			<nav class="pos-nav" aria-label="Ana modüller">
-				<button type="button" class="nav-item active" id="nav-kart" data-module="kart" title="Kart satış">
+				<a href="/pos/kart" class="nav-item active" id="nav-kart" data-module="kart" title="Kart satış">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />
 					</svg>
 					<span id="nav-kart-label">Kart satış</span>
-				</button>
-				<button type="button" class="nav-item" id="nav-bakiye-slot" data-module="bakiye" title="Bakiye yükleme">
+				</a>
+				<a href="/pos/bakiye" class="nav-item" id="nav-bakiye-slot" data-module="bakiye" title="Bakiye yükleme">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182a2.51 2.51 0 0 1 4.004 0 2.25 2.25 0 0 0 3.227 1.318" />
 					</svg>
 					<span id="nav-bakiye-label">Bakiye yükleme</span>
-				</button>
-				<button type="button" class="nav-item" id="nav-urun" data-module="urun" title="Ürün satış">
+				</a>
+				<a href="/pos/urun" class="nav-item" id="nav-urun" data-module="urun" title="Ürün satış">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5Z" />
 						<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />
@@ -56,14 +34,14 @@
 						<path stroke-linecap="round" stroke-linejoin="round" d="M14.25 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />
 					</svg>
 					Ürün satış
-				</button>
-				<button type="button" class="nav-item" data-module="sorgu" title="Kart sorgulama">
+				</a>
+				<a href="/pos/sorgu" class="nav-item" id="nav-sorgu" data-module="sorgu" title="Kart sorgulama">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
 					</svg>
 					Kart sorgulama
-				</button>
-				<a href="/admin.html" class="nav-item nav-admin" id="nav-admin" hidden title="Kullanıcı ve yetki yönetimi">Yönetim</a>
+				</a>
+				<a href="/admin" class="nav-item nav-admin" id="nav-admin" hidden title="Kullanıcı ve yetki yönetimi">Yönetim</a>
 				<button type="button" class="nav-item nav-exit" id="nav-exit" title="Çıkış">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
@@ -73,108 +51,204 @@
 			</nav>
 		</header>
 
-		<div id="view-kart" class="pos-view">
-		<main class="pos-main">
-			<div class="kart-main-left">
-			<div id="kart-area-tabs" class="kart-area-tabs" hidden role="tablist" aria-label="Satış alanı"></div>
-			<section class="pos-grid-section" aria-labelledby="grid-heading">
-				<h2 id="grid-heading">Bilet ve yaş grupları</h2>
-				<div class="grid-scroll-wrap">
-					<div class="pos-grid-viewport">
-						<div class="pos-grid" id="pos-grid"></div>
-						<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-left" aria-label="Önceki sayfa" title="Önceki sayfa">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+		<div id="view-kart" class="pos-view pos-view--lux">
+			<header class="pos-lux-view-header" aria-label="Satış başlığı">
+				<div class="pos-lux-view-brand">
+					<span class="pos-lux-view-logo">Bodrum Aqua Park</span>
+					<span class="pos-lux-view-pos">POS</span>
+				</div>
+				<button type="button" class="pos-lux-notify" id="pos-lux-notify" title="Bildirimler" aria-label="Bildirimler">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" width="22" height="22" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.082A9.043 9.043 0 0 1 18 9.75v-.102M12 21a2.25 2.25 0 0 0 2.25-2.25h-4.5A2.25 2.25 0 0 0 12 21Zm0 0a2.25 2.25 0 0 1-2.25-2.25h9a2.25 2.25 0 0 1-2.25 2.25Zm-4.5-9.75V9.75A6.75 6.75 0 0 1 18 3v.75" /></svg>
+				</button>
+				<div class="pos-lux-connect" aria-hidden="false">
+					<span class="pos-lux-connect-item"><span class="pos-lux-dot" aria-hidden="true"></span>İnternet bağlı</span>
+					<span class="pos-lux-connect-item"><span class="pos-lux-dot" aria-hidden="true"></span>Sunucu bağlı</span>
+				</div>
+				<span class="pos-lux-user-chip" id="pos-lux-user-chip" title="Oturum">—</span>
+			</header>
+			<main class="pos-main pos-main--lux">
+				<aside class="pos-lux-rail" aria-label="Hızlı işlemler">
+					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-new" title="Yeni sepet">
+						<span class="pos-lux-rail-ico" aria-hidden="true">+</span><span class="pos-lux-rail-txt">Yeni</span>
+					</button>
+					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-treat" title="İkram">
+						<span class="pos-lux-rail-ico" aria-hidden="true">★</span><span class="pos-lux-rail-txt">İkram</span>
+					</button>
+					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-refund" title="İade">
+						<span class="pos-lux-rail-ico" aria-hidden="true">↩</span><span class="pos-lux-rail-txt">İade</span>
+					</button>
+					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-split" title="Böl">
+						<span class="pos-lux-rail-ico" aria-hidden="true">⎘</span><span class="pos-lux-rail-txt">Böl</span>
+					</button>
+					<div class="pos-lux-rail-discount-stack" role="group" aria-label="Sepet iskontosu">
+						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-10" title="Sepete %10 iskonto (tekrar: kaldır)">
+							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">10</span>
 						</button>
-						<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-right" aria-label="Sonraki sayfa" title="Sonraki sayfa">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-15" title="Sepete %15 iskonto (tekrar: kaldır)">
+							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">15</span>
+						</button>
+						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-20" title="Sepete %20 iskonto (tekrar: kaldır)">
+							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">20</span>
+						</button>
+						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-25" title="Sepete %25 iskonto (tekrar: kaldır)">
+							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">25</span>
 						</button>
 					</div>
-				</div>
-			</section>
-			</div>
-
-			<section class="pos-payment" aria-label="Ödeme ve özet">
-				<div class="pay-methods">
-					<h3>Ödeme yöntemi</h3>
-					<div class="pay-list">
-						<button type="button" class="pay-option active" data-pay="cash">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75V6h15.75A2.25 2.25 0 0 1 21 8.25v.75m-12.75 0h12.75" /></svg>
-							Nakit ödeme
-						</button>
-						<button type="button" class="pay-option" data-pay="card">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 15h19.5m-16.5-5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
-							Kart ile ödeme
-						</button>
-						<button type="button" class="pay-option" data-pay="credit">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" /></svg>
-							Kredili ödeme
-						</button>
+					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-print" title="Yazdır">
+						<span class="pos-lux-rail-ico" aria-hidden="true">⎙</span><span class="pos-lux-rail-txt">Yazdır</span>
+					</button>
+					<button type="button" class="pos-lux-rail-btn pos-lux-rail-btn--danger" id="pos-lux-rail-cancel" title="Seçili satırı iptal et; seçim yoksa sepeti temizle">
+						<span class="pos-lux-rail-ico" aria-hidden="true">✕</span><span class="pos-lux-rail-txt">İptal</span>
+					</button>
+					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-move" title="Taşı">
+						<span class="pos-lux-rail-ico" aria-hidden="true">⇄</span><span class="pos-lux-rail-txt">Taşı</span>
+					</button>
+				</aside>
+				<section class="pos-lux-order" aria-label="Sepet ve ödeme">
+					<header class="pos-lux-order-head">
+						<div class="pos-lux-order-meta">
+							<span class="pos-lux-badge" id="pos-lux-cart-count">0</span>
+							<span class="pos-lux-table" id="pos-lux-context-label">Satış</span>
+						</div>
+						<span class="pos-lux-staff" id="pos-lux-staff">—</span>
+					</header>
+					<div class="pos-lux-cart-scroll">
+						<div id="pos-lux-cart-lines" class="pos-lux-cart-lines" aria-live="polite"></div>
 					</div>
-				</div>
-				<div class="pay-summary">
-					<h3>Hesap özeti</h3>
-					<div class="summary-rows">
-						<div class="summary-row"><span>Uygulanan indirim</span><span class="amt" id="sum-discount">₺0,00</span></div>
-						<div class="summary-divider" role="presentation"></div>
-						<div class="summary-row highlight"><span>Ödenmesi gereken tutar</span><span class="amt" id="sum-due">₺0,00</span></div>
-						<div class="summary-row"><span>Nakit ödenen tutar</span><span class="amt" id="sum-cash">₺0,00</span></div>
-						<div class="summary-row"><span>Kart ile ödenen tutar</span><span class="amt" id="sum-card">₺0,00</span></div>
-						<div class="summary-row"><span>Kredili ödenen tutar</span><span class="amt" id="sum-credit">₺0,00</span></div>
-						<div class="summary-row"><span>Para üstü</span><span class="amt" id="sum-change">₺0,00</span></div>
+					<section class="pos-payment pos-payment--lux" aria-label="Ödeme ve özet">
+						<div class="pay-methods">
+							<h3>Ödeme yöntemi</h3>
+							<div class="pay-list">
+								<button type="button" class="pay-option" data-pay="cash">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75V6h15.75A2.25 2.25 0 0 1 21 8.25v.75m-12.75 0h12.75" /></svg>
+									Nakit ödeme
+								</button>
+								<button type="button" class="pay-option" data-pay="card">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 15h19.5m-16.5-5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
+									Kart ile ödeme
+								</button>
+								<button type="button" class="pay-option" data-pay="credit">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" /></svg>
+									Kredili ödeme
+								</button>
+							</div>
+						</div>
+						<div class="pay-summary">
+							<h3>Hesap özeti</h3>
+							<div class="summary-rows">
+								<div class="summary-row"><span>Uygulanan indirim</span><span class="amt" id="sum-discount">₺0,00</span></div>
+								<div class="summary-divider" role="presentation"></div>
+								<div class="summary-row highlight"><span>Ödenmesi gereken tutar</span><span class="amt" id="sum-due">₺0,00</span></div>
+								<div class="summary-row"><span>Nakit ödenen tutar</span><span class="amt" id="sum-cash">₺0,00</span></div>
+								<div class="summary-row"><span>Kart ile ödenen tutar</span><span class="amt" id="sum-card">₺0,00</span></div>
+								<div class="summary-row"><span>Kredili ödenen tutar</span><span class="amt" id="sum-credit">₺0,00</span></div>
+								<div class="summary-row"><span>Para üstü</span><span class="amt" id="sum-change">₺0,00</span></div>
+							</div>
+						</div>
+					</section>
+					<div class="pos-lux-order-bar">
+						<button type="button" class="pos-lux-pay-main" id="btn-order-pay">ÖDEME AL</button>
+						<div class="pos-lux-total-big" id="pos-lux-total-inline" aria-live="polite">₺0,00</div>
 					</div>
+				</section>
+				<div class="pos-lux-catalog">
+					<div class="pos-lux-catalog-bar">
+						<nav class="pos-lux-breadcrumb" id="pos-lux-breadcrumb" aria-label="Menü konumu"></nav>
+						<label class="pos-lux-search-wrap">
+							<span class="pos-lux-search-ico" aria-hidden="true">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+							</span>
+							<input type="search" id="pos-lux-search" class="pos-lux-search" placeholder="Ara" autocomplete="off" />
+						</label>
+					</div>
+					<section class="pos-grid-section" aria-labelledby="grid-heading">
+						<h2 id="grid-heading" class="pos-lux-grid-heading-a11y">Bilet ve yaş grupları</h2>
+						<div class="grid-scroll-wrap">
+							<div class="pos-grid-viewport">
+								<div class="pos-grid" id="pos-grid"></div>
+								<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-left" aria-label="Önceki sayfa" title="Önceki sayfa">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+								</button>
+								<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-right" aria-label="Sonraki sayfa" title="Sonraki sayfa">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+								</button>
+							</div>
+						</div>
+					</section>
 				</div>
-			</section>
-		</main>
+				<aside class="pos-lux-categories" aria-label="Menüler ve satış alanı">
+					<div class="pos-lux-menus-head">Menüler</div>
+					<div class="pos-lux-cat-stack">
+						<div id="kart-area-tabs" class="kart-area-tabs pos-lux-area-tabs" hidden role="tablist" aria-label="Satış alanı"></div>
+						<div id="pos-lux-menu-page-tabs-wrap" class="pos-lux-menu-page-tabs-wrap" hidden>
+							<div
+								id="kart-menu-page-tabs"
+								class="kart-area-tabs pos-lux-area-tabs pos-lux-menu-page-tabs"
+								hidden
+								role="tablist"
+								aria-label="Menü sayfası"
+							></div>
+						</div>
+						<div id="pos-lux-cat-fallback" class="pos-lux-cat-fallback" hidden>
+							<button type="button" class="pos-lux-cat-pill" id="pos-lux-cat-pill-tickets" disabled>Biletler</button>
+						</div>
+					</div>
+				</aside>
+			</main>
 		</div>
 
 		<div id="view-bakiye" class="pos-view" hidden>
-			<div class="bakiye-shell">
-				<div class="bakiye-layout">
-					<aside class="bakiye-pay-col" aria-label="Ödeme yöntemi">
+			<div class="bakiye-shell bakiye-shell--touch">
+				<div class="bakiye-entry-panel">
+					<div class="bakiye-entry-head">Tutar girişi</div>
+					<div class="bakiye-display-row bakiye-display-row--touch">
+						<div class="bakiye-display bakiye-display--touch" id="bakiye-display" aria-live="polite">0,00&nbsp;₺</div>
+						<button type="button" class="bakiye-key-del bakiye-key-del--touch" id="bakiye-backspace" title="Son haneyi sil" aria-label="Geri sil">⌫</button>
+					</div>
+					<div class="bakiye-quick-label">Hızlı tutar (₺ ekle)</div>
+					<div class="bakiye-quick-grid bakiye-quick-grid--touch" id="bakiye-quick">
+						<button type="button" class="bakiye-quick-btn" data-add-kurus="5000"><span class="bakiye-quick-amt">50</span><span class="bakiye-quick-unit">₺</span></button>
+						<button type="button" class="bakiye-quick-btn" data-add-kurus="10000"><span class="bakiye-quick-amt">100</span><span class="bakiye-quick-unit">₺</span></button>
+						<button type="button" class="bakiye-quick-btn" data-add-kurus="20000"><span class="bakiye-quick-amt">200</span><span class="bakiye-quick-unit">₺</span></button>
+						<button type="button" class="bakiye-quick-btn" data-add-kurus="50000"><span class="bakiye-quick-amt">500</span><span class="bakiye-quick-unit">₺</span></button>
+						<button type="button" class="bakiye-quick-btn" data-add-kurus="75000"><span class="bakiye-quick-amt">750</span><span class="bakiye-quick-unit">₺</span></button>
+						<button type="button" class="bakiye-quick-btn" data-add-kurus="100000"><span class="bakiye-quick-amt">1.000</span><span class="bakiye-quick-unit">₺</span></button>
+					</div>
+					<div class="bakiye-keypad-label">Tuş takımı</div>
+					<div class="bakiye-keypad bakiye-keypad--touch" id="bakiye-keypad" aria-label="Sayısal tuş takımı"></div>
+				</div>
+
+				<section class="pos-payment pos-payment--lux pos-payment--bakiye" aria-label="Ödeme ve özet">
+					<div class="pay-methods">
 						<h3>Ödeme yöntemi</h3>
 						<div class="pay-list">
-							<button type="button" class="bakiye-pay-opt active" data-bakiye-pay="cash">
+							<button type="button" class="pay-option" data-bakiye-pay="cash">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75V6h15.75A2.25 2.25 0 0 1 21 8.25v.75m-12.75 0h12.75" /></svg>
 								Nakit ödeme
 							</button>
-							<button type="button" class="bakiye-pay-opt" data-bakiye-pay="card">
+							<button type="button" class="pay-option" data-bakiye-pay="card">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 15h19.5m-16.5-5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
 								Kart ile ödeme
 							</button>
-							<button type="button" class="bakiye-pay-opt" data-bakiye-pay="rate">
+							<button type="button" class="pay-option" data-bakiye-pay="rate">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182a2.51 2.51 0 0 1 4.004 0 2.25 2.25 0 0 0 3.227 1.318" /></svg>
 								Nakit ödeme kuru
 							</button>
 						</div>
-					</aside>
-
-					<div class="bakiye-center-col">
-						<div class="bakiye-panel-head">Tutar girişi</div>
-						<div class="bakiye-display-row">
-							<div class="bakiye-display" id="bakiye-display" aria-live="polite">0,00&nbsp;₺</div>
-							<button type="button" class="bakiye-key-del" id="bakiye-backspace" title="Son haneyi sil" aria-label="Geri sil">⌫</button>
-						</div>
-						<div class="bakiye-quick-grid" id="bakiye-quick">
-							<button type="button" class="bakiye-quick-btn" data-add-kurus="1000">10</button>
-							<button type="button" class="bakiye-quick-btn" data-add-kurus="2000">20</button>
-							<button type="button" class="bakiye-quick-btn" data-add-kurus="5000">50</button>
-							<button type="button" class="bakiye-quick-btn" data-add-kurus="10000">100</button>
-							<button type="button" class="bakiye-quick-btn" data-add-kurus="20000">200</button>
-							<button type="button" class="bakiye-quick-btn" data-add-kurus="50000">500</button>
-						</div>
-						<div class="bakiye-keypad" id="bakiye-keypad" aria-label="Sayısal tuş takımı"></div>
 					</div>
-
-					<aside class="bakiye-summary-col">
+					<div class="pay-summary">
 						<h3>Hesap özeti</h3>
 						<div class="summary-rows">
-							<div class="summary-row highlight"><span>Toplam</span><span class="amt" id="bak-sum-total">₺0,00</span></div>
+							<div class="summary-row"><span>Uygulanan indirim</span><span class="amt" id="bak-sum-discount">₺0,00</span></div>
+							<div class="summary-divider" role="presentation"></div>
+							<div class="summary-row highlight"><span>Yüklenecek tutar</span><span class="amt" id="bak-sum-due">₺0,00</span></div>
 							<div class="summary-row"><span>Nakit ödenen tutar</span><span class="amt" id="bak-sum-cash">₺0,00</span></div>
 							<div class="summary-row"><span>Kart ile ödenen tutar</span><span class="amt" id="bak-sum-card">₺0,00</span></div>
+							<div class="summary-row"><span>Kredili ödenen tutar</span><span class="amt" id="bak-sum-credit">₺0,00</span></div>
 							<div class="summary-row"><span>Para üstü</span><span class="amt" id="bak-sum-change">₺0,00</span></div>
 						</div>
-					</aside>
-				</div>
+					</div>
+				</section>
 			</div>
 		</div>
 
@@ -282,9 +356,9 @@
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" /></svg>
 					<span id="footer-primary-label">Satışı tamamla</span>
 				</button>
-				<button type="button" class="footer-btn footer-only-kart" id="btn-code" title="Kod girişi">
+				<button type="button" class="footer-btn footer-only-kart" id="btn-code" title="İskonto ipucu — sol menüde %10–%25">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14.25 6 18m0-3.75 3.75 3.75M9 14.25 15 18m0-3.75-3.75 3.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-					Kod giriş
+					İskonto
 				</button>
 				<button type="button" class="footer-btn danger" id="btn-clear" title="Temizle">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
@@ -484,7 +558,7 @@
 	</div>
 
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js" defer></script>
+	<script src="/js/pos.js?v=10" defer></script>
 	<script src="/js/viewport-test.js" defer></script>
 </body>
 </html>

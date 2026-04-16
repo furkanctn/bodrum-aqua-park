@@ -60,6 +60,10 @@ public class StaffUser {
 	@Column(nullable = false)
 	private boolean balanceLoadAllowed = true;
 
+	/** Yönetim paneli (/admin.html) ve /api/admin/* — ADMIN rolünde her zaman anlamlıdır */
+	@Column(name = "admin_panel_access", nullable = false)
+	private boolean adminPanelAccess = false;
+
 	@Version
 	private Long version;
 
@@ -157,6 +161,14 @@ public class StaffUser {
 
 	public void setBalanceLoadAllowed(boolean balanceLoadAllowed) {
 		this.balanceLoadAllowed = balanceLoadAllowed;
+	}
+
+	public boolean isAdminPanelAccess() {
+		return adminPanelAccess;
+	}
+
+	public void setAdminPanelAccess(boolean adminPanelAccess) {
+		this.adminPanelAccess = adminPanelAccess;
 	}
 
 	public Instant getCreatedAt() {

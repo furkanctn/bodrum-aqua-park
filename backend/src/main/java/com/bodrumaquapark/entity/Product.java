@@ -24,6 +24,10 @@ public class Product {
 	@JoinColumn(name = "sale_area_id", nullable = false)
 	private SaleArea saleArea;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "menu_page_id")
+	private MenuPage menuPage;
+
 	@Column(nullable = false, length = 255)
 	private String name;
 
@@ -40,8 +44,9 @@ public class Product {
 	protected Product() {
 	}
 
-	public Product(SaleArea saleArea, String name, BigDecimal price, Integer stockQuantity) {
+	public Product(SaleArea saleArea, MenuPage menuPage, String name, BigDecimal price, Integer stockQuantity) {
 		this.saleArea = saleArea;
+		this.menuPage = menuPage;
 		this.name = name;
 		this.price = price;
 		this.stockQuantity = stockQuantity;
@@ -57,6 +62,14 @@ public class Product {
 
 	public void setSaleArea(SaleArea saleArea) {
 		this.saleArea = saleArea;
+	}
+
+	public MenuPage getMenuPage() {
+		return menuPage;
+	}
+
+	public void setMenuPage(MenuPage menuPage) {
+		this.menuPage = menuPage;
 	}
 
 	public String getName() {

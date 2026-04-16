@@ -38,7 +38,7 @@ class TurnstileSaleIntegrationTest {
 
 	private String bearerAuth() {
 		String token = jwtService.createToken("integration-test", RoleCode.ADMIN,
-				List.of("BEVERAGE", "BAKERY", "ALCOHOL", "ICE_CREAM"), true, true);
+				List.of("BEVERAGE", "BAKERY", "ALCOHOL", "ICE_CREAM"), true, true, true);
 		return "Bearer " + token;
 	}
 
@@ -67,7 +67,8 @@ class TurnstileSaleIntegrationTest {
 	@Test
 	void ticketEntryGrant_thenTurnstile_usesGateWithoutBalance() throws Exception {
 		String uid = "RFID-TICKET-001";
-		mockMvc.perform(post("/api/cards/" + uid + "/ticket-entry-grant").header(HttpHeaders.AUTHORIZATION, bearerAuth()))
+		mockMvc.perform(post("/api/cards/" + uid + "/ticket-entry-grant").header(HttpHeaders.AUTHORIZATION, bearerAuth())
+				.contentType(APPLICATION_JSON).content("{\"amount\":1.00,\"paymentMethod\":\"cash\"}"))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.entryGate").value(1));
 
 		mockMvc.perform(post("/api/turnstile/scan").header(HttpHeaders.AUTHORIZATION, bearerAuth())

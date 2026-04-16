@@ -49,6 +49,7 @@ public class AuthController {
 		body.put("displayName", r.displayName() != null ? r.displayName() : r.userId());
 		body.put("saleAreaCodes", r.saleAreaCodes());
 		putPosPermissions(body, new PosPermissions(r.ticketSalesAllowed(), r.balanceLoadAllowed()));
+		body.put("adminPanelAccess", r.adminPanelAccess());
 		return ResponseEntity.ok(body);
 	}
 
@@ -66,6 +67,7 @@ public class AuthController {
 		body.put("active", u.active());
 		body.put("saleAreaCodes", u.saleAreaCodes());
 		putPosPermissions(body, authService.effectivePosPermissions(userId));
+		body.put("adminPanelAccess", u.adminPanelAccess());
 		return ResponseEntity.ok(body);
 	}
 }

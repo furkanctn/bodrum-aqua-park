@@ -135,7 +135,12 @@
 			const data = await res.json().catch(() => ({}));
 
 			if (!res.ok) {
-				showError(data.error || "Giriş başarısız. Bilgilerinizi kontrol edin.");
+				showError(
+					data.error ||
+						data.detail ||
+						data.title ||
+						"Giriş başarısız. Bilgilerinizi kontrol edin."
+				);
 				return;
 			}
 
@@ -154,8 +159,13 @@
 					"aqua_balance_load",
 					String(data.balanceLoadAllowed !== false && data.balanceLoadAllowed !== "false")
 				);
+				var panelOn =
+					data.adminPanelAccess === true ||
+					data.adminPanelAccess === "true" ||
+					data.adminPanelAccess === 1;
+				sessionStorage.setItem("aqua_admin_panel", panelOn ? "true" : "false");
 			}
-			window.location.href = "/pos.html";
+			window.location.href = "/pos";
 		} catch (err) {
 			showError("Sunucuya bağlanılamadı. Ağınızı kontrol edin.");
 		} finally {

@@ -42,12 +42,21 @@ public class AuthService {
 		List<String> areaCodes = resolveSaleAreaCodesForToken(u);
 		boolean ticket = effectiveTicketSales(u);
 		boolean balance = effectiveBalanceLoad(u);
-		String token = jwtService.createToken(u.getUserId(), u.getRole(), areaCodes, ticket, balance);
-		return new LoginResult(token, u.getUserId(), u.getRole(), u.getDisplayName(), areaCodes, ticket, balance);
+		boolean adminPanel = effectiveAdminPanelAccess(u);
+		String token = jwtService.createToken(u.getUserId(), u.getRole(), areaCodes, ticket, balance, adminPanel);
+		return new LoginResult(token, u.getUserId(), u.getRole(), u.getDisplayName(), areaCodes, ticket, balance,
+				adminPanel);
+	}
+
+	private boolean effectiveAdminPanelAccess(StaffUser u) {
+		if (u.getRole() == RoleCode.ADMIN) {
+			return true;
+		}
+		return u.isAdminPanelAccess();
 	}
 
 	private boolean effectiveTicketSales(StaffUser u) {
-		if (u.getRole() == RoleCode.ADMIN) {
+		if (u.getRole() == RoleCode.ADMIN || u.getRole() == RoleCode.TICKET) {
 			return true;
 		}
 		return u.isTicketSalesAllowed();
@@ -81,6 +90,7 @@ public class AuthService {
 	}
 
 	public record LoginResult(String accessToken, String userId, RoleCode role, String displayName,
-			List<String> saleAreaCodes, boolean ticketSalesAllowed, boolean balanceLoadAllowed) {
+			List<String> saleAreaCodes, boolean ticketSalesAllowed, boolean balanceLoadAllowed,
+			boolean adminPanelAccess) {
 	}
 }

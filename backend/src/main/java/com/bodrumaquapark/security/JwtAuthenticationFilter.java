@@ -29,6 +29,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	/** JWT claim "balance" (bakiye yükleme); yoksa true kabul (eski token uyumu) */
 	public static final String ATTR_BALANCE_LOAD_ALLOWED = "authBalanceLoadAllowed";
 
+	/** JWT claim "ticket" — POS bilet / yaş grubu satışı */
+	public static final String ATTR_TICKET_SALES_ALLOWED = "authTicketSalesAllowed";
+
+	/** JWT claim "adminPanel" — kasiyer/süpervizör için yönetim paneli (/api/admin/menu-pages vb.) */
+	public static final String ATTR_ADMIN_PANEL_ACCESS = "authAdminPanelAccess";
+
 	private final JwtService jwtService;
 
 	public JwtAuthenticationFilter(JwtService jwtService) {
@@ -80,6 +86,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			Boolean balanceClaim = claims.get("balance", Boolean.class);
 			boolean balanceLoadAllowed = balanceClaim == null || Boolean.TRUE.equals(balanceClaim);
 			request.setAttribute(ATTR_BALANCE_LOAD_ALLOWED, balanceLoadAllowed);
+			Boolean ticketClaim = claims.get("ticket", Boolean.class);
+			boolean ticketSalesAllowed = ticketClaim == null || Boolean.TRUE.equals(ticketClaim);
+			request.setAttribute(ATTR_TICKET_SALES_ALLOWED, ticketSalesAllowed);
+			request.setAttribute(ATTR_ADMIN_PANEL_ACCESS, jwtService.readAdminPanelAccess(claims));
 		} catch (InvalidTokenException e) {
 			unauthorized(response, e.getMessage());
 			return;

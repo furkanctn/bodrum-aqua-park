@@ -14,11 +14,16 @@ public record UserResponse(
 		RoleCode role,
 		List<String> saleAreaCodes,
 		boolean ticketSalesAllowed,
-		boolean balanceLoadAllowed
+		boolean balanceLoadAllowed,
+		/** Etkin: yönetici veya bayraklı kullanıcı — /api/auth/me ile uyumlu */
+		boolean adminPanelAccess,
+		/** Veritabanı bayrağı (düzenleme formu; yöneticide DB’de false olsa bile erişim tamdır) */
+		boolean adminPanelGranted
 ) {
 	public static UserResponse from(StaffUser u) {
 		List<String> codes = u.getSaleAreas().stream().map(SaleArea::getCode).sorted().toList();
+		boolean effective = u.getRole() == RoleCode.ADMIN || u.isAdminPanelAccess();
 		return new UserResponse(u.getId(), u.getUserId(), u.getDisplayName(), u.isActive(), u.getRole(), codes,
-				u.isTicketSalesAllowed(), u.isBalanceLoadAllowed());
+				u.isTicketSalesAllowed(), u.isBalanceLoadAllowed(), effective, u.isAdminPanelAccess());
 	}
 }

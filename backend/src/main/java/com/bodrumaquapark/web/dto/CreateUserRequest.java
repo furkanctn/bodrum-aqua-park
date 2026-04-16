@@ -15,6 +15,8 @@ public record CreateUserRequest(
 		@NotNull RoleCode role,
 		List<String> saleAreaCodes,
 		Boolean ticketSalesAllowed,
-		Boolean balanceLoadAllowed
+		Boolean balanceLoadAllowed,
+		/** Kasiyer / süpervizör için yönetim paneli; yönetici rolünde yok sayılır (her zaman açık) */
+		Boolean adminPanelAccess
 ) {
 }

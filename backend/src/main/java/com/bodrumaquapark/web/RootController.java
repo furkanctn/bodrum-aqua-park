@@ -19,17 +19,20 @@ public class RootController {
 		body.put("name", applicationName);
 		body.put("status", "UP");
 		body.put("message", "API çalışıyor. Aşağıdaki uç noktaları deneyin.");
-		body.put("endpoints", Map.of(
-				"health", "/api/health",
-				"authLogin", "/api/auth/login",
-				"adminUsers", "/api/admin/users (JWT + ADMIN)",
-				"adminProducts", "/api/admin/products (JWT + ADMIN)",
-				"saleAreas", "/api/sale-areas",
-				"products", "/api/products",
-				"h2Console", "/h2-console (sadece dev profili)",
-				"printerStatus", "GET /api/printer/status (JWT gerekmez)",
-				"printerPorts", "GET /api/printer/ports (JWT)",
-				"printerTest", "POST /api/printer/test (JWT, body: port, baudRate, mode: full|nocut|minimal)"));
+		Map<String, String> endpoints = new LinkedHashMap<>();
+		endpoints.put("health", "/api/health");
+		endpoints.put("authLogin", "/api/auth/login");
+		endpoints.put("adminUsers", "/api/admin/users (JWT + ADMIN)");
+		endpoints.put("adminProducts", "/api/admin/products (JWT + ADMIN)");
+		endpoints.put("adminSaleAreas", "/api/admin/sale-areas (JWT + ADMIN)");
+		endpoints.put("adminReports", "/api/admin/reports/* (JWT + ADMIN)");
+		endpoints.put("saleAreas", "/api/sale-areas");
+		endpoints.put("products", "/api/products");
+		endpoints.put("h2Console", "/h2-console (sadece dev profili)");
+		endpoints.put("printerStatus", "GET /api/printer/status (JWT gerekmez)");
+		endpoints.put("printerPorts", "GET /api/printer/ports (JWT)");
+		endpoints.put("printerTest", "POST /api/printer/test (JWT, body: port, baudRate, mode: full|nocut|minimal)");
+		body.put("endpoints", endpoints);
 		return body;
 	}
 

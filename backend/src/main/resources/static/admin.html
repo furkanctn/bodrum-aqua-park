@@ -7,7 +7,7 @@
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
 	<link rel="stylesheet" href="/css/viewport-test.css" />
-	<link rel="stylesheet" href="/css/admin.css" />
+	<link rel="stylesheet" href="/css/admin.css?v=4" />
 </head>
 <body>
 	<div class="pos-main-scale pos-main-scale--admin" id="pos-main-scale">
@@ -15,23 +15,69 @@
 		<header class="admin-header">
 			<div>
 				<h1>Yönetim paneli</h1>
-				<p class="admin-sub">Kullanıcılar, ürünler ve kart tanımları (yalnızca yönetici)</p>
+				<p class="admin-sub" id="admin-header-sub">
+					Kullanıcılar, menü / ürünler, kart, raporlama ve yazıcı (yalnızca tam yönetici)
+				</p>
 			</div>
 			<div class="admin-header-actions">
-				<a class="btn btn-ghost" href="/pos.html">← POS’a dön</a>
+				<a class="btn btn-ghost" href="/pos">← POS’a dön</a>
 			</div>
 		</header>
 
-		<nav class="admin-tabs" role="tablist" aria-label="Yönetim bölümleri">
-			<button type="button" class="admin-tab active" role="tab" aria-selected="true" data-panel="users" id="tab-users">Kullanıcılar</button>
-			<button type="button" class="admin-tab" role="tab" aria-selected="false" data-panel="products" id="tab-products">Ürün tanımları</button>
+		<nav class="admin-tabs" aria-label="Yönetim bölümleri">
+			<div class="admin-aquapark-wrap" id="admin-aquapark-wrap">
+				<button
+					type="button"
+					class="admin-tab admin-tab--aquapark active"
+					id="btn-admin-aquapark"
+					aria-haspopup="true"
+					aria-expanded="false"
+					aria-controls="admin-aquapark-menu"
+				>
+					AquaPark
+				</button>
+				<div class="admin-aquapark-menu" id="admin-aquapark-menu" role="menu">
+					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="users" id="aquapark-item-users">Kullanıcılar</button>
+					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="menu-pages" id="aquapark-item-menu-pages">Menü sayfaları</button>
+					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="products" id="aquapark-item-products">Ürün tanımları</button>
+					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="ticket-age-groups" id="aquapark-item-ticket-age-groups">
+						Bilet yaş grupları
+					</button>
+				</div>
+			</div>
+			<div class="admin-report-wrap" id="admin-report-wrap">
+				<button
+					type="button"
+					class="admin-tab admin-tab--report"
+					id="btn-admin-report"
+					aria-haspopup="true"
+					aria-expanded="false"
+					aria-controls="admin-report-menu"
+				>
+					Raporlama
+				</button>
+				<div class="admin-report-menu" id="admin-report-menu" role="menu">
+					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-sale-areas" id="report-item-sale-areas">
+						Satış alanları
+					</button>
+					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-products" id="report-item-products">
+						Ürün bazlı
+					</button>
+					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-day-close" id="report-item-day-close">
+						Gün sonu
+					</button>
+					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-general" id="report-item-general">
+						Genel rapor
+					</button>
+				</div>
+			</div>
 			<button type="button" class="admin-tab" role="tab" aria-selected="false" data-panel="cards" id="tab-cards">Kartlar</button>
 			<button type="button" class="admin-tab" role="tab" aria-selected="false" data-panel="printer" id="tab-printer">Fiş yazıcı</button>
 		</nav>
 
 		<div id="admin-alert" class="admin-alert" hidden role="alert"></div>
 
-		<div id="admin-panel-users">
+		<div id="admin-panel-users" class="admin-panel--visible">
 		<section class="admin-card">
 			<h2>Yeni kullanıcı</h2>
 			<form id="form-create" class="admin-form-grid">
@@ -52,20 +98,19 @@
 					<select id="c-role" name="role" required>
 						<option value="CASHIER">Kasiyer</option>
 						<option value="SUPERVISOR">Süpervizör</option>
+						<option value="TICKET">Bilet satış</option>
 						<option value="ADMIN">Yönetici</option>
 					</select>
 				</div>
 				<div class="admin-perm-panel">
 					<div class="field field-sale-areas">
 						<span class="label-block">Satış alanları</span>
-						<p class="field-hint">Yönetici için boş bırakılırsa tüm alanlar atanır. Kasiyer için en az bir alan seçin.</p>
+						<p class="field-hint">
+							Yönetici için boş bırakılırsa tüm alanlar atanır. Kasiyer ve süpervizör için en az bir alan seçin.
+							<strong>Bilet satış</strong> rolünde satış alanı zorunlu değildir (yalnızca kart / bilet ekranı).
+						</p>
 						<div class="admin-perm-main-row">
-							<div class="sale-area-checks">
-								<label><input type="checkbox" name="sale-area" value="BEVERAGE" /> <span>İçecek</span></label>
-								<label><input type="checkbox" name="sale-area" value="BAKERY" /> <span>Fırın</span></label>
-								<label><input type="checkbox" name="sale-area" value="ALCOHOL" /> <span>Alkollü içecekler</span></label>
-								<label><input type="checkbox" name="sale-area" value="ICE_CREAM" /> <span>Dondurmalar</span></label>
-							</div>
+							<div class="sale-area-checks" id="c-sale-area-checks"></div>
 							<div class="admin-pos-options">
 								<div class="field field-check">
 									<label><input type="checkbox" id="c-ticket" checked /> <span>Kart satış (bilet) ekranı</span></label>
@@ -73,6 +118,15 @@
 								<div class="field field-check field-check--with-hint">
 									<label><input type="checkbox" id="c-balance" checked /> <span>Bakiye yükleme ekranı</span></label>
 									<p class="field-hint field-hint--nested">Bakiye kapalı ve yalnızca fırın alanı varsa POS’ta bu yerde fırın ürünleri açılır.</p>
+								</div>
+								<div class="field field-check">
+									<label
+										><input type="checkbox" id="c-admin-panel" />
+										<span>Yönetim paneli (menü sayfaları / satış alanı tanımları)</span></label
+									>
+									<p class="field-hint field-hint--nested">
+										Açıksa kullanıcı POS’tan yönetim linkine erişir; tam yönetici değilse sadece menü ve satış alanı sekmeleri açılır.
+									</p>
 								</div>
 							</div>
 						</div>
@@ -95,6 +149,7 @@
 							<th>Rol</th>
 							<th>Kart</th>
 							<th>Bakiye</th>
+							<th>Yönetim</th>
 							<th>Satış alanları</th>
 							<th>Durum</th>
 							<th></th>
@@ -126,6 +181,7 @@
 					<select id="e-role">
 						<option value="CASHIER">Kasiyer</option>
 						<option value="SUPERVISOR">Süpervizör</option>
+						<option value="TICKET">Bilet satış</option>
 						<option value="ADMIN">Yönetici</option>
 					</select>
 				</div>
@@ -134,18 +190,19 @@
 						<span class="label-block">Satış alanları</span>
 						<p class="field-hint">Yönetici için boş bırakılırsa tüm alanlar atanır.</p>
 						<div class="admin-perm-main-row">
-							<div class="sale-area-checks" id="e-sale-area-checks">
-								<label><input type="checkbox" name="sale-area" value="BEVERAGE" /> <span>İçecek</span></label>
-								<label><input type="checkbox" name="sale-area" value="BAKERY" /> <span>Fırın</span></label>
-								<label><input type="checkbox" name="sale-area" value="ALCOHOL" /> <span>Alkollü içecekler</span></label>
-								<label><input type="checkbox" name="sale-area" value="ICE_CREAM" /> <span>Dondurmalar</span></label>
-							</div>
+							<div class="sale-area-checks" id="e-sale-area-checks"></div>
 							<div class="admin-pos-options admin-pos-options--three">
 								<div class="field field-check">
 									<label><input type="checkbox" id="e-ticket" /> <span>Kart satış (bilet) ekranı</span></label>
 								</div>
 								<div class="field field-check">
 									<label><input type="checkbox" id="e-balance" /> <span>Bakiye yükleme ekranı</span></label>
+								</div>
+								<div class="field field-check">
+									<label
+										><input type="checkbox" id="e-admin-panel" />
+										<span>Yönetim paneli (menü / satış alanı)</span></label
+									>
 								</div>
 								<div class="field field-check">
 									<label><input type="checkbox" id="e-active" /> <span>Aktif</span></label>
@@ -162,12 +219,153 @@
 		</section>
 		</div>
 
+		<div id="admin-panel-menu-pages" hidden>
+			<section class="admin-card">
+				<div class="admin-mp-card-head">
+					<h2>Yeni menü sayfası</h2>
+					<button type="button" class="btn btn-primary" id="btn-toggle-menu-page-form">+ Menü sayfası ekle</button>
+				</div>
+				<p class="admin-sub admin-sub--inline">
+					Her satış alanı için POS’ta sağ şeritte görünecek sayfalar (ör. <strong>Genel</strong>,
+					<strong>Sıcak içecekler</strong>). Ürün eklerken <strong>Menü sayfası</strong> listesinde burada
+					tanımladıklarınız çıkar; sayfa kodu sistem tarafından addan üretilir.
+				</p>
+				<div id="mp-menu-page-form-wrap" class="admin-mp-collapsible" hidden>
+					<form id="form-new-menu-page" class="admin-form-grid admin-form-grid--menu-pages">
+						<div class="field">
+							<label for="mp-new-sale-area">Satış alanı</label>
+							<select id="mp-new-sale-area" required></select>
+						</div>
+						<div class="field">
+							<label for="mp-new-name">Görünen ad</label>
+							<input id="mp-new-name" maxlength="255" required autocomplete="off" placeholder="Örn. Sıcak içecekler" />
+						</div>
+						<div class="field">
+							<label for="mp-new-sort">Liste sırası</label>
+							<input id="mp-new-sort" type="number" step="1" placeholder="0 (küçük önce)" />
+						</div>
+						<div class="field field-actions">
+							<button type="submit" class="btn btn-primary" id="btn-mp-add">Kaydet</button>
+						</div>
+					</form>
+				</div>
+			</section>
+			<section class="admin-card">
+				<h2>Tanımlı menü sayfaları</h2>
+				<p class="admin-sub admin-sub--inline">
+					<strong>GENEL</strong> sayfası silinemez; ürünleri taşımadan diğer sayfalar da silinemez.
+				</p>
+				<div class="table-wrap">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Satış alanı</th>
+								<th>Ad</th>
+								<th>Sıra</th>
+								<th>Ürün</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody id="admin-menu-pages-tbody"></tbody>
+					</table>
+				</div>
+				<p id="admin-menu-pages-empty" class="admin-catalog-empty-hint" hidden>Henüz menü sayfası yok.</p>
+			</section>
+			<section class="admin-card">
+				<div class="admin-mp-card-head">
+					<h2>Satış alanları (kategoriler)</h2>
+					<button type="button" class="btn btn-primary" id="btn-toggle-sale-area-form">+ Satış alanı ekle</button>
+				</div>
+				<p class="admin-sub admin-sub--inline">
+					Satış alanı adı girilir; sistem iç kullanım için otomatik kısa kod üretir. Kasiyerlere bu alanı
+					<strong>Kullanıcılar</strong> sekmesinden atamayı unutmayın. Ürün eklemek için
+					<strong>Ürün tanımları</strong> sekmesini kullanın; ad değişikliği veya (ürün yoksa) silme aşağıdaki tablodan yapılır.
+				</p>
+				<div id="mp-sale-area-form-wrap" class="admin-mp-collapsible" hidden>
+					<form id="form-new-category" class="admin-form-grid admin-form-grid--category">
+						<div class="field">
+							<label for="cat-name">Görünen ad</label>
+							<input id="cat-name" maxlength="255" required autocomplete="off" placeholder="Örn. Atıştırmalık" />
+						</div>
+						<div class="field field-actions">
+							<button type="submit" class="btn btn-primary" id="btn-cat-add">Kaydet</button>
+						</div>
+					</form>
+				</div>
+				<div class="table-wrap">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Ad</th>
+								<th>Aktif ürün</th>
+								<th>Toplam</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody id="admin-categories-tbody"></tbody>
+					</table>
+				</div>
+				<p id="admin-categories-empty" class="admin-catalog-empty-hint" hidden>Henüz satış alanı yok.</p>
+			</section>
+		</div>
+
+		<div id="admin-panel-ticket-age-groups" hidden>
+			<section class="admin-card">
+				<h2>Bilet yaş grupları</h2>
+				<p class="admin-sub admin-sub--inline">
+					POS <strong>Kart satış</strong> ekranında bilet modunda gösterilen tarifeler. Sıra küçük olan üstte listelenir.
+					<strong>Yönetici</strong> veya yönetim paneli yetkisi olan kullanıcı ekleyebilir / silebilir.
+				</p>
+				<form id="form-ticket-age" class="admin-form-grid admin-form-grid--compact">
+					<input type="hidden" id="tag-edit-id" value="" />
+					<div class="field">
+						<label for="tag-name">Yaş grubu / tarife adı</label>
+						<input id="tag-name" type="text" required maxlength="160" placeholder="Örn. 7–12 Yaş" autocomplete="off" />
+					</div>
+					<div class="field">
+						<label for="tag-price">Fiyat (₺)</label>
+						<input id="tag-price" type="number" step="0.01" min="0" required />
+					</div>
+					<div class="field">
+						<label for="tag-sort">Liste sırası</label>
+						<input id="tag-sort" type="number" step="1" placeholder="Otomatik" />
+						<p class="field-hint">Boş bırakılırsa sona eklenir (otomatik sıra).</p>
+					</div>
+					<div class="field field-check">
+						<label><input type="checkbox" id="tag-active" checked /> <span>POS’ta göster (aktif)</span></label>
+					</div>
+					<div class="field field-actions">
+						<button type="submit" class="btn btn-primary" id="btn-tag-save">Kaydet</button>
+						<button type="button" class="btn btn-ghost" id="btn-tag-reset">Formu temizle</button>
+					</div>
+				</form>
+			</section>
+			<section class="admin-card">
+				<h2>Kayıtlı tarifeler</h2>
+				<div class="table-wrap">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Sıra</th>
+								<th>Ad</th>
+								<th>Fiyat (₺)</th>
+								<th>Aktif</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody id="ticket-age-tbody"></tbody>
+					</table>
+				</div>
+				<p id="ticket-age-empty" class="admin-catalog-empty-hint" hidden>Henüz tarife yok.</p>
+			</section>
+		</div>
+
 		<div id="admin-panel-products" hidden>
 			<section class="admin-card admin-card--products">
 				<h2>Ürün tanımları</h2>
 				<p class="admin-sub admin-sub--inline">Satış alanlarına göre ürün ve fiyatlar. Satış işlemi POS’taki <strong>Ürün satış</strong> ekranından yapılır.</p>
 				<div class="admin-catalog-toolbar">
-					<button type="button" class="btn btn-primary" id="btn-admin-catalog-add">+ Yeni ürün</button>
+					<button type="button" class="btn btn-primary" id="btn-admin-catalog-add">+ Yeni Satış Alanı Ekle</button>
 				</div>
 				<div id="admin-catalog-root" class="admin-catalog-root"></div>
 				<p id="admin-catalog-empty" class="admin-catalog-empty-hint" hidden>Satış alanı bulunamadı.</p>
@@ -259,6 +457,146 @@
 				</div>
 			</section>
 		</div>
+
+		<div id="admin-panel-report-sale-areas" hidden>
+			<section class="admin-card">
+				<h2>Satış alanlarına göre gelir</h2>
+				<p class="admin-sub admin-sub--inline">
+					POS’tan yapılan <strong>ürün satışları</strong> (karttan harcama), ürünün bağlı olduğu satış alanına yazılır. Tarihler
+					<strong>İstanbul</strong> saatine göredir.
+				</p>
+				<div class="admin-report-toolbar">
+					<div class="field">
+						<label for="report-area-from">Başlangıç</label>
+						<input type="date" id="report-area-from" />
+					</div>
+					<div class="field">
+						<label for="report-area-to">Bitiş</label>
+						<input type="date" id="report-area-to" />
+					</div>
+					<div class="field field-actions">
+						<button type="button" class="btn btn-primary" id="btn-report-area-refresh">Yenile</button>
+					</div>
+				</div>
+				<div class="table-wrap">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Kod</th>
+								<th>Satış alanı</th>
+								<th>Satır adedi</th>
+								<th>Gelir (₺)</th>
+							</tr>
+						</thead>
+						<tbody id="report-area-tbody"></tbody>
+					</table>
+				</div>
+				<p id="report-area-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta satış yok.</p>
+			</section>
+		</div>
+
+		<div id="admin-panel-report-products" hidden>
+			<section class="admin-card">
+				<h2>Ürün bazlı satış</h2>
+				<p class="admin-sub admin-sub--inline">Aynı dönemde ürün başına satış adedi ve karttan tahsil edilen tutar.</p>
+				<div class="admin-report-toolbar">
+					<div class="field">
+						<label for="report-prod-from">Başlangıç</label>
+						<input type="date" id="report-prod-from" />
+					</div>
+					<div class="field">
+						<label for="report-prod-to">Bitiş</label>
+						<input type="date" id="report-prod-to" />
+					</div>
+					<div class="field field-actions">
+						<button type="button" class="btn btn-primary" id="btn-report-prod-refresh">Yenile</button>
+					</div>
+				</div>
+				<div class="table-wrap">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Ürün</th>
+								<th>Satır adedi</th>
+								<th>Gelir (₺)</th>
+							</tr>
+						</thead>
+						<tbody id="report-prod-tbody"></tbody>
+					</table>
+				</div>
+				<p id="report-prod-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta satış yok.</p>
+			</section>
+		</div>
+
+		<div id="admin-panel-report-day-close" hidden>
+			<section class="admin-card">
+				<h2>Gün sonu</h2>
+				<p class="admin-sub admin-sub--inline">Seçilen günün özet hareketleri ve defter satırları (en yeni üstte, en fazla 500 kayıt).</p>
+				<div class="admin-report-toolbar">
+					<div class="field">
+						<label for="report-day-date">Tarih</label>
+						<input type="date" id="report-day-date" />
+					</div>
+					<div class="field field-actions">
+						<button type="button" class="btn btn-primary" id="btn-report-day-refresh">Yenile</button>
+					</div>
+				</div>
+				<div id="report-day-summary" class="admin-report-summary" hidden></div>
+				<h3 class="admin-h3">Hareket listesi</h3>
+				<div class="table-wrap">
+					<table class="admin-table admin-table--compact">
+						<thead>
+							<tr>
+								<th>Zaman</th>
+								<th>Tip</th>
+								<th>Tutar</th>
+								<th>Bakiye sonra</th>
+								<th>Ürün / alan</th>
+								<th>Kart</th>
+								<th>Açıklama</th>
+							</tr>
+						</thead>
+						<tbody id="report-day-tbody"></tbody>
+					</table>
+				</div>
+				<p id="report-day-empty" class="admin-catalog-empty-hint" hidden>Bu günde hareket yok.</p>
+			</section>
+		</div>
+
+		<div id="admin-panel-report-general" hidden>
+			<section class="admin-card">
+				<h2>Genel rapor</h2>
+				<p class="admin-sub admin-sub--inline">
+					Dönem içi tüm <strong>kart defteri</strong> hareket tiplerine göre özet (satış, yükleme, turnike vb.).
+				</p>
+				<div class="admin-report-toolbar">
+					<div class="field">
+						<label for="report-gen-from">Başlangıç</label>
+						<input type="date" id="report-gen-from" />
+					</div>
+					<div class="field">
+						<label for="report-gen-to">Bitiş</label>
+						<input type="date" id="report-gen-to" />
+					</div>
+					<div class="field field-actions">
+						<button type="button" class="btn btn-primary" id="btn-report-gen-refresh">Yenile</button>
+					</div>
+				</div>
+				<div id="report-gen-summary-cards" class="admin-report-summary" hidden></div>
+				<div class="table-wrap">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>İşlem tipi</th>
+								<th>Satır adedi</th>
+								<th>Tutar toplamı (₺)</th>
+							</tr>
+						</thead>
+						<tbody id="report-gen-tbody"></tbody>
+					</table>
+				</div>
+			</section>
+		</div>
 	</div>
 
 	<div id="admin-modal-product" class="admin-modal" hidden role="dialog" aria-modal="true" aria-labelledby="admin-modal-product-title">
@@ -270,6 +608,11 @@
 				<div class="field">
 					<label for="admin-prod-sale-area">Satış alanı</label>
 					<select id="admin-prod-sale-area" required></select>
+				</div>
+				<div class="field">
+					<label for="admin-prod-menu-page">Menü sayfası</label>
+					<select id="admin-prod-menu-page" required></select>
+					<p class="field-hint" id="admin-prod-menu-page-hint" hidden></p>
 				</div>
 				<div class="field">
 					<label for="admin-prod-name">Ürün adı</label>
@@ -294,9 +637,52 @@
 			</form>
 		</div>
 	</div>
+
+	<div id="admin-modal-sale-area" class="admin-modal admin-modal--stack" hidden role="dialog" aria-modal="true" aria-labelledby="admin-modal-sale-area-title">
+		<div class="admin-modal-backdrop" id="admin-modal-sale-area-backdrop"></div>
+		<div class="admin-modal-panel">
+			<h2 id="admin-modal-sale-area-title">Satış alanı</h2>
+			<form id="admin-form-sale-area" class="admin-modal-form">
+				<input type="hidden" id="modal-sa-id" value="" />
+				<div class="field">
+					<label for="modal-sa-name">Ad</label>
+					<input id="modal-sa-name" type="text" required maxlength="255" autocomplete="off" spellcheck="false" />
+				</div>
+				<div class="admin-modal-actions">
+					<button type="submit" class="btn btn-primary">Kaydet</button>
+					<button type="button" class="btn btn-danger" id="modal-sa-delete">Sil</button>
+					<button type="button" class="btn btn-ghost" id="modal-sa-cancel">İptal</button>
+				</div>
+			</form>
+		</div>
 	</div>
 
-	<script src="/js/admin.js" defer></script>
+	<div id="admin-modal-menu-page" class="admin-modal admin-modal--stack" hidden role="dialog" aria-modal="true" aria-labelledby="admin-modal-menu-page-title">
+		<div class="admin-modal-backdrop" id="admin-modal-menu-page-backdrop"></div>
+		<div class="admin-modal-panel">
+			<h2 id="admin-modal-menu-page-title">Menü sayfası</h2>
+			<form id="admin-form-menu-page" class="admin-modal-form">
+				<input type="hidden" id="modal-mp-id" value="" />
+				<p class="field-hint" id="modal-mp-genel-hint" hidden>Genel sayfa silinemez.</p>
+				<div class="field">
+					<label for="modal-mp-name">Ad</label>
+					<input id="modal-mp-name" type="text" required maxlength="255" autocomplete="off" spellcheck="false" />
+				</div>
+				<div class="field">
+					<label for="modal-mp-sort">Liste sırası</label>
+					<input id="modal-mp-sort" type="number" step="1" required />
+				</div>
+				<div class="admin-modal-actions">
+					<button type="submit" class="btn btn-primary">Kaydet</button>
+					<button type="button" class="btn btn-danger" id="modal-mp-delete">Sil</button>
+					<button type="button" class="btn btn-ghost" id="modal-mp-cancel">İptal</button>
+				</div>
+			</form>
+		</div>
+	</div>
+	</div>
+
+	<script src="/js/admin.js?v=7" defer></script>
 	<script src="/js/viewport-test.js" defer></script>
 </body>
 </html>

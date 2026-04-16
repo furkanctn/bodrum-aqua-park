@@ -60,9 +60,19 @@ public class StaffUserService {
 		if (req.role() == RoleCode.ADMIN) {
 			ticket = true;
 			balance = true;
+		} else if (req.role() == RoleCode.TICKET) {
+			ticket = true;
+			if (req.balanceLoadAllowed() == null) {
+				balance = false;
+			}
 		}
 		u.setTicketSalesAllowed(ticket);
 		u.setBalanceLoadAllowed(balance);
+		if (req.role() == RoleCode.ADMIN) {
+			u.setAdminPanelAccess(true);
+		} else {
+			u.setAdminPanelAccess(Boolean.TRUE.equals(req.adminPanelAccess()));
+		}
 		u = repository.save(u);
 		applySaleAreas(u, req.saleAreaCodes(), req.role());
 		repository.save(u);
@@ -91,6 +101,9 @@ public class StaffUserService {
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kendi yönetici rolünüzü kaldıramazsınız");
 			}
 			u.setRole(req.role());
+			if (req.role() == RoleCode.TICKET) {
+				u.setTicketSalesAllowed(true);
+			}
 		}
 		if (req.saleAreaCodes() != null) {
 			applySaleAreas(u, req.saleAreaCodes(), u.getRole());
@@ -101,9 +114,15 @@ public class StaffUserService {
 		if (req.balanceLoadAllowed() != null) {
 			u.setBalanceLoadAllowed(req.balanceLoadAllowed());
 		}
+		if (req.adminPanelAccess() != null) {
+			u.setAdminPanelAccess(Boolean.TRUE.equals(req.adminPanelAccess()));
+		}
 		if (u.getRole() == RoleCode.ADMIN) {
 			u.setTicketSalesAllowed(true);
 			u.setBalanceLoadAllowed(true);
+			u.setAdminPanelAccess(true);
+		} else if (u.getRole() == RoleCode.TICKET) {
+			u.setTicketSalesAllowed(true);
 		}
 		u = repository.save(u);
 		u = repository.loadWithSaleAreasById(u.getId()).orElseThrow();
@@ -128,6 +147,10 @@ public class StaffUserService {
 		if (codes == null || codes.isEmpty()) {
 			if (role == RoleCode.ADMIN) {
 				saleAreaRepository.findAll().forEach(a -> u.getSaleAreas().add(a));
+				return;
+			}
+			if (role == RoleCode.TICKET) {
+				u.getSaleAreas().clear();
 				return;
 			}
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "En az bir satış alanı seçin");

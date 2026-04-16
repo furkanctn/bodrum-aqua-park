@@ -16,7 +16,7 @@ import jakarta.persistence.LockModeType;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-	@EntityGraph(attributePaths = "saleArea")
+	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
 	@Override
 	Optional<Product> findById(Long id);
 
@@ -24,18 +24,30 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	@Query("SELECT p FROM Product p WHERE p.id = :id")
 	Optional<Product> findByIdForUpdate(@Param("id") Long id);
 
-	@EntityGraph(attributePaths = "saleArea")
+	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
 	List<Product> findByActiveTrueAndSaleArea_CodeOrderByNameAsc(String saleAreaCode);
 
-	@EntityGraph(attributePaths = "saleArea")
+	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
+	List<Product> findByActiveTrueAndMenuPage_IdOrderByNameAsc(Long menuPageId);
+
+	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
 	List<Product> findByActiveTrueOrderBySaleArea_CodeAscNameAsc();
 
-	@EntityGraph(attributePaths = "saleArea")
+	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
 	List<Product> findByActiveTrueAndSaleArea_CodeInOrderBySaleArea_CodeAscNameAsc(Collection<String> saleAreaCodes);
 
-	@EntityGraph(attributePaths = "saleArea")
+	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
 	@Query("SELECT p FROM Product p ORDER BY p.saleArea.code ASC, p.name ASC")
 	List<Product> findAllWithSaleAreaForAdmin();
 
+	@EntityGraph(attributePaths = "saleArea")
+	List<Product> findByMenuPageIsNull();
+
 	boolean existsBySaleArea_CodeAndName(String saleAreaCode, String name);
+
+	long countBySaleArea_Id(Long saleAreaId);
+
+	long countBySaleArea_IdAndActiveTrue(Long saleAreaId);
+
+	long countByMenuPage_Id(Long menuPageId);
 }

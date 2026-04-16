@@ -17,6 +17,7 @@ import com.bodrumaquapark.web.dto.BalanceLoadRequest;
 import com.bodrumaquapark.web.dto.CardDetailResponse;
 import com.bodrumaquapark.web.dto.CardResponse;
 import com.bodrumaquapark.web.dto.IssueCardRequest;
+import com.bodrumaquapark.web.dto.TicketGrantRequest;
 
 import jakarta.validation.Valid;
 
@@ -46,12 +47,14 @@ public class CardController {
 		return cardService.getCardDetail(uid);
 	}
 
-	/** Bilet satışı sonrası kartta giriş hakkı (1) — RFID UID ile çağrılır */
+	/** Bilet satışı sonrası kartta giriş hakkı (1) + deftere tahsilat (ödeme yöntemi) */
 	@PostMapping("/{uid}/ticket-entry-grant")
 	public ResponseEntity<CardResponse> grantTicketEntry(
 			@PathVariable("uid") String uid,
+			@Valid @RequestBody TicketGrantRequest request,
 			@RequestAttribute(JwtAuthenticationFilter.ATTR_USER_ID) String operatorUserId) {
-		return ResponseEntity.ok(CardResponse.from(cardService.grantTicketEntry(uid, operatorUserId)));
+		return ResponseEntity.ok(CardResponse.from(
+				cardService.grantTicketEntry(uid, operatorUserId, request.paymentMethod(), request.amount())));
 	}
 
 	/** POS bakiye yükleme — yetki: balanceLoadAllowed */

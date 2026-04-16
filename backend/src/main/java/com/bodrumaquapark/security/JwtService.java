@@ -31,7 +31,7 @@ public class JwtService {
 	}
 
 	public String createToken(String userId, RoleCode role, Collection<String> saleAreaCodes,
-			boolean ticketSalesAllowed, boolean balanceLoadAllowed) {
+			boolean ticketSalesAllowed, boolean balanceLoadAllowed, boolean adminPanelAccess) {
 		Instant now = Instant.now();
 		Instant exp = now.plusSeconds(jwtProperties.getExpirationHours() * 3600);
 		String areasCsv = "";
@@ -45,6 +45,7 @@ public class JwtService {
 				.claim("areas", areasCsv)
 				.claim("ticket", ticketSalesAllowed)
 				.claim("balance", balanceLoadAllowed)
+				.claim("adminPanel", adminPanelAccess)
 				.issuedAt(Date.from(now))
 				.expiration(Date.from(exp))
 				.signWith(signingKey())
@@ -74,6 +75,11 @@ public class JwtService {
 	}
 
 	/** JWT’deki satış alanı kodları (virgülle ayrılmış) */
+	public boolean readAdminPanelAccess(Claims claims) {
+		Boolean b = claims.get("adminPanel", Boolean.class);
+		return Boolean.TRUE.equals(b);
+	}
+
 	public Set<String> readSaleAreaCodes(Claims claims) {
 		String csv = claims.get("areas", String.class);
 		if (csv == null || csv.isBlank()) {

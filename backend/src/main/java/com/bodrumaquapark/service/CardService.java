@@ -204,12 +204,29 @@ public class CardService {
 		return CardDetailResponse.build(card, entries, ledger);
 	}
 
+	/**
+	 * POS bilet satışı: turnike giriş hakkı + tahsilat satırı (nakit / kart / kredi ayrımı raporlarda).
+	 */
 	@Transactional
-	public Card grantTicketEntry(String uid, String operatorUserId) {
+	public Card grantTicketEntry(String uid, String operatorUserId, String paymentMethod, BigDecimal saleAmount) {
 		String key = uid != null ? uid.trim() : "";
 		if (key.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kart UID gerekli");
 		}
+		BigDecimal amt = Money.normalize(saleAmount);
+		if (amt.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tutar pozitif olmalıdır");
+		}
+		if (amt.compareTo(new BigDecimal("999999.99")) > 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tutar üst sınırı aşıldı");
+		}
+		String pm = paymentMethod != null ? paymentMethod.trim().toLowerCase() : "";
+		TransactionType txType = switch (pm) {
+			case "card" -> TransactionType.TICKET_CARD;
+			case "credit" -> TransactionType.TICKET_CREDIT;
+			case "cash" -> TransactionType.TICKET_CASH;
+			default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ödeme: cash, card veya credit");
+		};
 		boolean newCard = false;
 		Card card = findCardByUidFlexible(key)
 				.map(c -> cardRepository.findByUidForUpdate(c.getUid()).orElseThrow())
@@ -222,16 +239,32 @@ public class CardService {
 			card = cardRepository.save(new Card(canonicalUidForNewCard(key), BigDecimal.ZERO));
 			newCard = true;
 		}
+		if (card.getStatus() != CardStatus.ACTIVE) {
+			throw new CardBlockedException(key);
+		}
 		card.setEntryGate(1);
 		Card saved = cardRepository.save(card);
+		BigDecimal bal = Money.normalize(saved.getBalance());
+		String payKind = switch (pm) {
+			case "card" -> "kredi karti";
+			case "credit" -> "kredili";
+			default -> "nakit";
+		};
+		String desc = String.format(
+				"POS bilet — %s odeme · Tahsilat: %s · Turnike giris hakki (entryGate=1)",
+				payKind,
+				Money.formatTryLabel(amt));
+		ledgerEntryRepository.save(new CardLedgerEntry(saved, txType, amt, bal, null, desc));
 		String kasiyer = operatorUserId != null && !operatorUserId.isBlank() ? operatorUserId.trim() : "—";
 		log.info(
-				"Kart tanımlama (bilet satışı / turnike giriş hakkı): uid={}, kasiyer={}, yeniKart={}, entryGate={}, bakiye={}",
+				"Kart tanımlama (bilet satışı / turnike giriş hakkı): uid={}, kasiyer={}, yeniKart={}, entryGate={}, bakiye={}, odeme={}, tutar={}",
 				key,
 				kasiyer,
 				newCard,
 				saved.getEntryGate(),
-				saved.getBalance());
+				saved.getBalance(),
+				pm,
+				amt);
 		return saved;
 	}
 
@@ -251,11 +284,12 @@ public class CardService {
 		if (amt.compareTo(new BigDecimal("999999.99")) > 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tutar üst sınırı aşıldı");
 		}
-		String pm = paymentMethod != null ? paymentMethod.trim().toLowerCase() : "cash";
+		String pm = paymentMethod != null ? paymentMethod.trim().toLowerCase() : "";
 		TransactionType txType = switch (pm) {
 			case "card" -> TransactionType.LOAD_CARD;
 			case "rate" -> TransactionType.LOAD_AGENCY;
-			default -> TransactionType.LOAD_CASH;
+			case "cash" -> TransactionType.LOAD_CASH;
+			default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ödeme: cash, card veya rate");
 		};
 		Card card = findCardByUidFlexible(key)
 				.map(c -> cardRepository.findByUidForUpdate(c.getUid()).orElseThrow())

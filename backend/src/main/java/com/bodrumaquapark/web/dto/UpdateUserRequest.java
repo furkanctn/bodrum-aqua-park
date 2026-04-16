@@ -13,6 +13,7 @@ public record UpdateUserRequest(
 		RoleCode role,
 		List<String> saleAreaCodes,
 		Boolean ticketSalesAllowed,
-		Boolean balanceLoadAllowed
+		Boolean balanceLoadAllowed,
+		Boolean adminPanelAccess
 ) {
 }

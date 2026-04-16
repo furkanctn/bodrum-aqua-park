@@ -10,6 +10,7 @@ public record UpdateProductRequest(
 		@DecimalMin(value = "0.0", inclusive = true) BigDecimal price,
 		Integer stockQuantity,
 		Boolean active,
-		@Size(max = 64) String saleAreaCode
+		@Size(max = 64) String saleAreaCode,
+		Long menuPageId
 ) {
 }
