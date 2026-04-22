@@ -692,7 +692,7 @@ a.nav-item {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-	gap: 0;
+	gap: 0.1rem;
 }
 
 .footer-rfid-test {
@@ -706,6 +706,25 @@ a.nav-item {
 .footer-rfid-test:hover {
 	text-decoration: underline;
 	opacity: 1;
+}
+
+button.footer-rfid-test--btn {
+	font: inherit;
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	text-align: left;
+}
+
+.pos-receipt-radio {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.35rem;
+	font-size: 0.52rem;
+	font-weight: 600;
+	color: var(--pos-text, #0f172a);
+	line-height: 1.35;
 }
 
 .footer-actions {
@@ -3323,6 +3342,42 @@ body.module-sorgu .pos-nav .nav-item.active svg {
 	border: 1px solid var(--pos-border);
 	box-shadow: var(--pos-shadow);
 	font-family: var(--pos-font);
+}
+
+/* Fiş USB paneli — sağ üst X (dokunmatik hedef ~44px) */
+.pos-receipt-panel #receipt-printer-title {
+	padding-right: 2.75rem;
+}
+
+.pos-receipt-dismiss {
+	position: absolute;
+	top: 0.45rem;
+	right: 0.4rem;
+	z-index: 4;
+	min-width: 2.5rem;
+	min-height: 2.5rem;
+	padding: 0;
+	border: 1px solid rgba(15, 23, 42, 0.12);
+	border-radius: var(--pos-radius-sm);
+	background: rgba(255, 255, 255, 0.92);
+	color: var(--pos-text, #0f172a);
+	font-size: 1.45rem;
+	line-height: 1;
+	font-weight: 700;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.pos-receipt-dismiss:hover {
+	background: rgba(254, 215, 170, 0.55);
+	border-color: rgba(234, 88, 12, 0.35);
+}
+
+.pos-receipt-dismiss:active {
+	transform: scale(0.96);
 }
 
 .pos-rfid-overlay__title {

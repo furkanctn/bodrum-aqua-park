@@ -6,7 +6,7 @@
 	<title>Satış — Bodrum Aqua Park</title>
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
-	<link rel="stylesheet" href="/css/pos.css?v=14" />
+	<link rel="stylesheet" href="/css/pos.css?v=15" />
 </head>
 <body class="module-kart">
 	<div class="pos-app">
@@ -349,6 +349,12 @@
 			<div class="footer-user">
 				<span id="footer-user-line">Kullanıcı: <strong id="footer-user-name">—</strong></span>
 				<a href="/rfid-test.html" class="footer-rfid-test" id="link-rfid-test" title="Kart okuyucu bağlantı testi">Okuyucu testi</a>
+				<button type="button" class="footer-rfid-test footer-rfid-test--btn" id="link-receipt-printer-setup" title="Çoklu kasa: fiş bu bilgisayarın USB yazıcısına">
+					Fiş USB
+				</button>
+				<button type="button" class="footer-rfid-test footer-rfid-test--btn" id="pos-app-window-close" title="Tam ekran / uygulama penceresini kapat (Edge uygulama modu)">
+					Pencere
+				</button>
 			</div>
 			<div class="footer-actions">
 				<button type="button" class="footer-btn primary" id="btn-complete" title="Tamamla">
@@ -556,7 +562,35 @@
 		</div>
 	</div>
 
+	<div id="receipt-printer-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel pos-receipt-panel" role="dialog" aria-modal="true" aria-labelledby="receipt-printer-title">
+			<button type="button" class="pos-receipt-dismiss" id="receipt-printer-dismiss" title="Kapat" aria-label="Fiş yazıcı penceresini kapat">×</button>
+			<h2 id="receipt-printer-title" class="pos-rfid-overlay__title">Fiş yazıcı (bu bilgisayar)</h2>
+			<p id="receipt-printer-msg" class="pos-rfid-overlay__msg">
+				Birden fazla kasada her PC kendi USB termal yazıcısını kullanır; fiş verisi sunucuda üretilir, yazdırma bu
+				tarayıcıdan çıkar (Chrome / Edge, güvenli köken veya localhost).
+				
+			</p>
+			<div class="pos-rfid-overlay__actions pos-rfid-overlay__actions--stack" style="flex-direction: column; align-items: stretch; gap: 0.75rem">
+				<label class="pos-receipt-radio"><input type="radio" name="receipt-printer-target" id="receipt-printer-target-local" value="local" /> Fiş: bu PCnin USB yazıcısı (önerilen, çoklu kasa)</label>
+				<label class="pos-receipt-radio"><input type="radio" name="receipt-printer-target" id="receipt-printer-target-server" value="server" /> Fiş: sunucu COM / yönetim kaydı (yazıcı sunucuya takılıysa)</label>
+				<label for="receipt-printer-baud">USB yazıcı hızı (baud)</label>
+				<select id="receipt-printer-baud" class="pos-rfid-overlay__input">
+					<option value="9600">9600</option>
+					<option value="115200">115200</option>
+					<option value="19200">19200</option>
+					<option value="38400">38400</option>
+				</select>
+				<div class="pos-rfid-overlay__actions" style="margin-top: 0.25rem">
+					<button type="button" class="footer-btn" id="receipt-printer-pick-usb">USB yazıcıyı seç</button>
+					<button type="button" class="footer-btn" id="receipt-printer-test-local">Test fişi (USB)</button>
+					<button type="button" class="footer-btn primary" id="receipt-printer-close">Kapat</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js?v=10" defer></script>
+	<script src="/js/pos.js?v=13" defer></script>
 </body>
 </html>

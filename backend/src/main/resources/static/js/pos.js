@@ -77,6 +77,7 @@
 	}
 	var ticketSales = readBool("aqua_ticket_sales", true);
 	var balanceLoad = readBool("aqua_balance_load", true);
+	var receiptPrinterUiWired = false;
 	var saleAreas = [];
 	try {
 		var rawAreas = JSON.parse(sessionStorage.getItem("aqua_sale_areas") || "[]");
@@ -950,22 +951,123 @@
 		);
 	}
 
-	/** Bilgi fişini ESC/POS yazıcıya gönderir (port: sessionStorage veya sunucu app.printer.port). */
-	function sendSaleReceiptToPrinter(receiptText) {
+	var LS_RECEIPT_TARGET = "aqua_receipt_print_target";
+	var LS_RECEIPT_USB_FP = "aqua_receipt_printer_usb";
+	var LS_RECEIPT_BAUD = "aqua_receipt_printer_baud";
+
+	function getReceiptPrintTarget() {
+		try {
+			var v = localStorage.getItem(LS_RECEIPT_TARGET);
+			if (v === "local" || v === "server") {
+				return v;
+			}
+		} catch (e) {}
+		if (typeof navigator !== "undefined" && navigator.serial) {
+			return "local";
+		}
+		return "server";
+	}
+
+	function receiptPrinterUsbFingerprint(port) {
+		if (!port || typeof port.getInfo !== "function") {
+			return "";
+		}
+		try {
+			var info = port.getInfo();
+			if (!info || info.usbVendorId == null || info.usbProductId == null) {
+				return "";
+			}
+			return (
+				Number(info.usbVendorId).toString(16) + ":" + Number(info.usbProductId).toString(16)
+			).toLowerCase();
+		} catch (e) {
+			return "";
+		}
+	}
+
+	function base64ToUint8Array(b64) {
+		var bin = atob(b64);
+		var out = new Uint8Array(bin.length);
+		for (var i = 0; i < bin.length; i++) {
+			out[i] = bin.charCodeAt(i) & 0xff;
+		}
+		return out;
+	}
+
+	function resolveReceiptPrinterPort(allowPicker) {
+		if (!navigator.serial) {
+			return Promise.resolve(null);
+		}
+		return navigator.serial.getPorts().then(function (ports) {
+			var saved = "";
+			try {
+				saved = (localStorage.getItem(LS_RECEIPT_USB_FP) || "").trim().toLowerCase();
+			} catch (e) {}
+			if (saved && saved.indexOf(":") >= 0) {
+				for (var i = 0; i < ports.length; i++) {
+					var fp = receiptPrinterUsbFingerprint(ports[i]).toLowerCase();
+					if (fp && fp === saved) {
+						return ports[i];
+					}
+				}
+			}
+			if (ports.length === 1) {
+				return ports[0];
+			}
+			if (allowPicker) {
+				return navigator.serial.requestPort().catch(function (e) {
+					if (e && e.name === "NotFoundError") {
+						return null;
+					}
+					throw e;
+				});
+			}
+			return null;
+		});
+	}
+
+	function writeEscPosToWebSerialPort(port, bytes, baud) {
+		return port
+			.open({
+				baudRate: baud,
+				dataBits: 8,
+				stopBits: 1,
+				parity: "none",
+				flowControl: "none",
+			})
+			.then(function () {
+				var p = Promise.resolve();
+				if (port.setSignals) {
+					p = port.setSignals({ dataTerminalReady: true, requestToSend: true }).catch(function () {});
+				}
+				return p.then(function () {
+					var w = port.writable.getWriter();
+					return w.write(bytes).then(function () {
+						return w.close();
+					});
+				});
+			})
+			.finally(function () {
+				return port.close().catch(function () {});
+			});
+	}
+
+	function writeEscPosBytesToLocalUsbPrinter(bytes, baud) {
+		return resolveReceiptPrinterPort(false).then(function (port) {
+			if (!port) {
+				throw new Error("NO_PRINTER_PORT");
+			}
+			return writeEscPosToWebSerialPort(port, bytes, baud);
+		});
+	}
+
+	function sendSaleReceiptToServer(receiptText) {
 		var lines = receiptText.split("\n");
 		if (lines.length > 48) {
 			lines = lines.slice(0, 48);
 		}
 		var body = { lines: lines, mode: "nocut" };
-		var pp = sessionStorage.getItem("aqua_printer_port");
-		var bb = sessionStorage.getItem("aqua_printer_baud");
-		if (pp) {
-			body.port = pp;
-		}
-		if (bb) {
-			body.baudRate = parseInt(bb, 10);
-		}
-		fetch("/api/printer/sale-receipt", {
+		return fetch("/api/printer/sale-receipt", {
 			method: "POST",
 			headers: authHeadersJson(),
 			body: JSON.stringify(body),
@@ -991,6 +1093,250 @@
 			.catch(function () {
 				showToast("Fiş yazıcıya ulaşılamadı (ağ / sunucu)", { duration: 3500 });
 			});
+	}
+
+	function sendSaleReceiptToLocalUsb(receiptText) {
+		var lines = receiptText.split("\n");
+		if (lines.length > 48) {
+			lines = lines.slice(0, 48);
+		}
+		var baudStored = 9600;
+		try {
+			baudStored = parseInt(localStorage.getItem(LS_RECEIPT_BAUD) || "9600", 10);
+		} catch (e) {}
+		if (isNaN(baudStored) || baudStored < 300) {
+			baudStored = 9600;
+		}
+		return fetch("/api/printer/sale-receipt-payload", {
+			method: "POST",
+			headers: authHeadersJson(),
+			body: JSON.stringify({ lines: lines, mode: "nocut" }),
+		})
+			.then(function (r) {
+				return r.json().then(function (data) {
+					return { httpOk: r.ok, data: data };
+				});
+			})
+			.then(function (res) {
+				var d = res.data || {};
+				if (!res.httpOk || d.ok === false) {
+					throw new Error(d.error || "Fiş verisi alınamadı");
+				}
+				var useBaud = baudStored;
+				if (d.suggestedBaud != null && !isNaN(parseInt(String(d.suggestedBaud), 10))) {
+					var sb = parseInt(String(d.suggestedBaud), 10);
+					if (!localStorage.getItem(LS_RECEIPT_BAUD) && sb >= 300) {
+						useBaud = sb;
+					}
+				}
+				var bytes = base64ToUint8Array(d.base64);
+				return writeEscPosBytesToLocalUsbPrinter(bytes, useBaud);
+			})
+			.then(function () {
+				showToast("Fiş yazıcıya gönderildi (bu bilgisayar / USB)", { duration: 3500 });
+			})
+			.catch(function (e) {
+				if (e && e.message === "NO_PRINTER_PORT") {
+					showToast("USB fiş yazıcısı seçilmedi. Alttan «Fiş USB» ile bir kez seçin.", { duration: 5000 });
+				} else {
+					showToast("Yerel yazıcı: " + (e && e.message ? e.message : "hata") + " — sunucu deneniyor…", {
+						duration: 3200,
+					});
+				}
+				return sendSaleReceiptToServer(receiptText);
+			});
+	}
+
+	/**
+	 * Bilgi fişi: varsayılan olarak Web Serial (her kasa kendi USB yazıcısı). Sunucu COM için hedef «sunucu» yapın.
+	 */
+	function sendSaleReceiptToPrinter(receiptText) {
+		if (getReceiptPrintTarget() === "local" && typeof navigator !== "undefined" && navigator.serial) {
+			sendSaleReceiptToLocalUsb(receiptText);
+			return;
+		}
+		sendSaleReceiptToServer(receiptText);
+	}
+
+	function wireReceiptPrinterSetup() {
+		var overlay = document.getElementById("receipt-printer-overlay");
+		var openBtn = document.getElementById("link-receipt-printer-setup");
+		var closeBtn = document.getElementById("receipt-printer-close");
+		var dismissBtn = document.getElementById("receipt-printer-dismiss");
+		var pickBtn = document.getElementById("receipt-printer-pick-usb");
+		var testBtn = document.getElementById("receipt-printer-test-local");
+		var baudSel = document.getElementById("receipt-printer-baud");
+		var rLocal = document.getElementById("receipt-printer-target-local");
+		var rServer = document.getElementById("receipt-printer-target-server");
+		if (!overlay || !openBtn) {
+			return;
+		}
+
+		function syncModalFromStorage() {
+			var t = getReceiptPrintTarget();
+			if (rLocal) {
+				rLocal.checked = t === "local";
+			}
+			if (rServer) {
+				rServer.checked = t === "server";
+			}
+			if (baudSel) {
+				var b = 9600;
+				try {
+					b = parseInt(localStorage.getItem(LS_RECEIPT_BAUD) || "9600", 10);
+				} catch (e) {}
+				if (isNaN(b) || b < 300) {
+					b = 9600;
+				}
+				var sv = String(b);
+				var okOpt = Array.prototype.some.call(baudSel.options, function (o) {
+					return o.value === sv;
+				});
+				baudSel.value = okOpt ? sv : "9600";
+			}
+		}
+
+		function openOverlay() {
+			syncModalFromStorage();
+			overlay.hidden = false;
+			overlay.setAttribute("aria-hidden", "false");
+		}
+
+		function closeOverlay() {
+			blurFocusInsideOverlay(overlay);
+			overlay.hidden = true;
+			overlay.setAttribute("aria-hidden", "true");
+		}
+
+		openBtn.addEventListener("click", function () {
+			if (!navigator.serial) {
+				showToast("USB fiş için Chrome veya Edge gerekir (Web Serial).", { duration: 4500 });
+				return;
+			}
+			openOverlay();
+		});
+		if (closeBtn) {
+			closeBtn.addEventListener("click", closeOverlay);
+		}
+		if (dismissBtn) {
+			dismissBtn.addEventListener("click", closeOverlay);
+		}
+
+		[rLocal, rServer].forEach(function (el) {
+			if (!el) {
+				return;
+			}
+			el.addEventListener("change", function () {
+				if (!el.checked) {
+					return;
+				}
+				try {
+					localStorage.setItem(LS_RECEIPT_TARGET, el.value);
+				} catch (e) {}
+				showToast(el.value === "local" ? "Fiş: bu bilgisayar (USB)" : "Fiş: sunucu COM", { duration: 2200 });
+			});
+		});
+
+		if (baudSel) {
+			baudSel.addEventListener("change", function () {
+				var n = parseInt(baudSel.value, 10);
+				if (!isNaN(n) && n >= 300) {
+					try {
+						localStorage.setItem(LS_RECEIPT_BAUD, String(n));
+					} catch (e) {}
+				}
+			});
+		}
+
+		if (pickBtn) {
+			pickBtn.addEventListener("click", function () {
+				if (!navigator.serial) {
+					return;
+				}
+				navigator.serial
+					.requestPort()
+					.then(function (port) {
+						var fp = receiptPrinterUsbFingerprint(port);
+						try {
+							if (fp) {
+								localStorage.setItem(LS_RECEIPT_USB_FP, fp);
+							}
+						} catch (e) {}
+						showToast(
+							fp ? "USB yazıcı kaydedildi (" + fp + ")" : "USB yazıcı izni kaydedildi.",
+							{ duration: 4000 }
+						);
+					})
+					.catch(function (e) {
+						if (e && e.name === "NotFoundError") {
+							return;
+						}
+						showToast(e && e.message ? e.message : "Seçim başarısız", { duration: 3500 });
+					});
+			});
+		}
+
+		if (testBtn) {
+			testBtn.addEventListener("click", function () {
+				if (!navigator.serial) {
+					return;
+				}
+				var baud = baudSel ? parseInt(baudSel.value, 10) : 9600;
+				if (isNaN(baud)) {
+					baud = 9600;
+				}
+				fetch("/api/printer/test-payload", {
+					method: "POST",
+					headers: authHeadersJson(),
+					body: JSON.stringify({ mode: "minimal" }),
+				})
+					.then(function (r) {
+						return r.json().then(function (data) {
+							return { ok: r.ok, data: data };
+						});
+					})
+					.then(function (res) {
+						if (!res.ok || !res.data || res.data.ok === false) {
+							throw new Error((res.data && res.data.error) || "Payload alınamadı");
+						}
+						var bytes = base64ToUint8Array(res.data.base64);
+						var sb = res.data.suggestedBaud;
+						try {
+							if (!localStorage.getItem(LS_RECEIPT_BAUD) && sb != null && !isNaN(parseInt(String(sb), 10))) {
+								baud = parseInt(String(sb), 10);
+							}
+						} catch (e) {}
+						return resolveReceiptPrinterPort(false).then(function (port) {
+							if (port) {
+								return port;
+							}
+							return resolveReceiptPrinterPort(true);
+						}).then(function (port) {
+							if (!port) {
+								throw new Error("NO_PORT");
+							}
+							var fp = receiptPrinterUsbFingerprint(port);
+							try {
+								if (fp) {
+									localStorage.setItem(LS_RECEIPT_USB_FP, fp);
+								}
+							} catch (e) {}
+							return writeEscPosToWebSerialPort(port, bytes, baud);
+						});
+					})
+					.then(function () {
+						showToast("Test fişi USB yazıcıya gönderildi.", { duration: 4000 });
+					})
+					.catch(function (e) {
+						showToast(
+							e && e.message === "NO_PORT"
+								? "Önce «USB yazıcıyı seç» veya Test sırasında port seçin."
+								: "Test: " + (e && e.message ? e.message : "hata"),
+							{ duration: 4500 }
+						);
+					});
+			});
+		}
 	}
 
 	var rfidReadAbort = null;
@@ -3791,7 +4137,44 @@
 	tick();
 	setInterval(tick, 1000);
 
+	function wirePosAppWindowClose() {
+		var btn = document.getElementById("pos-app-window-close");
+		if (!btn) {
+			return;
+		}
+		btn.addEventListener("click", function () {
+			if (
+				!window.confirm(
+					"Bu POS penceresi kapatılsın mı?\n\nSunucu (minimize siyah pencere) açıksa onu da kapatmanız gerekir."
+				)
+			) {
+				return;
+			}
+			try {
+				if (document.fullscreenElement && document.exitFullscreen) {
+					document.exitFullscreen().catch(function () {});
+				}
+			} catch (e) {}
+			try {
+				window.close();
+			} catch (e2) {}
+			setTimeout(function () {
+				if (!document.hidden) {
+					showToast(
+						"Pencere kapanmadı: Windows’ta üstten aşağı kaydırın veya görev çubuğundan Edge’i küçültün.",
+						{ duration: 5500 }
+					);
+				}
+			}, 600);
+		});
+	}
+
 	function bootstrapPos() {
+		if (!receiptPrinterUiWired) {
+			receiptPrinterUiWired = true;
+			wireReceiptPrinterSetup();
+			wirePosAppWindowClose();
+		}
 		buildBakiyeKeypad();
 		buildSorguKeypad();
 		updateSummary();

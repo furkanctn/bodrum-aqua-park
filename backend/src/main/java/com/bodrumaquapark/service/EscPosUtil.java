@@ -31,6 +31,8 @@ public final class EscPosUtil {
 		writeAsciiLine(out, "----------------");
 		String when = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss"));
 		writeAsciiLine(out, when);
+		// Ek besleme + ESC d (bazı modellerde kesimden önce görünür çıktı için)
+		out.write(new byte[] { 0x1B, 0x64, 0x08 });
 		for (int i = 0; i < 5; i++) {
 			out.write(new byte[] { 0x0D, 0x0A });
 		}

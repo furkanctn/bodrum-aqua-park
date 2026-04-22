@@ -12,6 +12,6 @@ set "SPRING_DATASOURCE_PASSWORD=CHANGEME"
 set "APP_JWT_SECRET=bodrum-pos-uzun-gizli-anahtar-en-az-32-karakter-olmalidir"
 
 cd /d "%~dp0"
-java -jar bodrum-aqua-park-api-0.0.1-SNAPSHOT.jar --spring.profiles.active=pos
+java -jar bodrum-aqua-park-api-1.2.0.0.jar --spring.profiles.active=pos
 endlocal
 pause

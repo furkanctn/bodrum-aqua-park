@@ -5,6 +5,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -19,6 +21,18 @@ import com.bodrumaquapark.exception.ProductNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+	@ExceptionHandler(ClassCastException.class)
+	public ProblemDetail handleClassCast(ClassCastException ex) {
+		log.warn("ClassCastException", ex);
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+				"Veri dönüşüm hatası. Oturumu kapatıp yeniden giriş yapın; devam ederse sunucu günlüğüne bakın.");
+		pd.setTitle("Class Cast");
+		pd.setType(URI.create("about:blank"));
+		return pd;
+	}
 
 	@ExceptionHandler(CardNotFoundException.class)
 	public ProblemDetail handleNotFound(CardNotFoundException ex) {

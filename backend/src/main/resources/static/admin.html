@@ -409,7 +409,16 @@
 		<div id="admin-panel-printer" hidden>
 			<section class="admin-card">
 				<h2>Fiş yazıcı testi (Sewoo / ESC-POS)</h2>
+				<p class="admin-sub">
+					Test fişi başarılı olduktan sonra port ve hız <strong>sunucuda kaydedilir</strong> (yazıcı USB’si
+					<strong>API’nin çalıştığı bilgisayara</strong> takılıysa). Birden fazla kasa PC’si varsa her kasada POS
+					alt çubuktan <strong>Fiş USB</strong> ile yerel yazıcı kullanın; bu ekrandaki COM yalnızca sunucu modu içindir.
+					İsterseniz <code>APP_PRINTER_PORT</code> ile de tanımlayabilirsiniz (veritabanı kaydı önceliklidir).
+				</p>
+				<p id="printer-windows-notice" class="admin-sub" hidden></p>
 				<p class="admin-sub admin-sub--inline">
+					<strong>Windows (USB yazıcı):</strong> İsterseniz COM yerine yazıcıyı normal kurup
+					<code>APP_PRINTER_WINDOWS_QUEUE</code> ile kuyruk adını verin (API bu PC’de çalışmalı). Aksi halde
 					<strong>Windows:</strong> Aygıt Yöneticisi → <em>Bağlantı noktaları (COM ve LPT)</em> → COM numarası.
 					<strong>Mac:</strong> Terminal’de <code>ls /dev/cu.*</code> — yazıcı takılıyken çıkan ad (örn.
 					<code>/dev/cu.usbserial-…</code>) genelde doğru porttur; listede yoksa aşağıya elle yazın.
@@ -419,8 +428,23 @@
 				</p>
 				<div class="admin-form-grid">
 					<div class="field">
-						<label for="printer-port">Seri port (liste)</label>
+						<label for="printer-port">Yazıcı hedefi (Windows’ta Java kuyrukları; yoksa COM)</label>
 						<select id="printer-port"></select>
+						<p class="admin-sub" style="margin-top: 0.35rem; font-size: 0.88rem">
+							Windows kasada liste genelde <strong>Aygıtlar ve Yazıcılar</strong> kuyruk adlarıdır. Java kuyruk
+							göstermiyorsa yalnızca COM listelenir. Elle COM veya Mac <code>/dev/cu.…</code> için alttaki
+							«Port (elle)».
+						</p>
+					</div>
+					<div class="field" style="grid-column: 1 / -1">
+						<label for="printer-windows-queues-ref">Windows kuyruk adları (Java — bilgi)</label>
+						<div
+							id="printer-windows-queues-ref"
+							class="admin-sub"
+							style="font-size: 0.88rem; white-space: pre-wrap; margin-top: 0.25rem"
+						>
+							—
+						</div>
 					</div>
 					<div class="field">
 						<label for="printer-port-manual">Port (elle — liste boşsa zorunlu)</label>
@@ -451,8 +475,17 @@
 					</div>
 					<div class="field field-actions">
 						<button type="button" class="btn btn-primary" id="btn-printer-test">Test fişi yazdır</button>
-						<button type="button" class="btn btn-ghost" id="btn-printer-refresh">Portları yenile</button>
+						<button type="button" class="btn btn-ghost" id="btn-printer-refresh">Listeyi yenile</button>
+						<button type="button" class="btn btn-ghost" id="btn-printer-windows-diag" title="Windows kasa PC'de çalıştırın">
+							Windows kuyruk kontrolü
+						</button>
 					</div>
+					<pre
+						id="printer-windows-diag-out"
+						class="admin-sub"
+						hidden
+						style="max-height: 14rem; overflow: auto; white-space: pre-wrap; font-size: 0.85rem; margin-top: 0.75rem; padding: 0.5rem 0.65rem; background: rgba(0, 0, 0, 0.06); border-radius: 6px"
+					></pre>
 				</div>
 			</section>
 		</div>
@@ -681,6 +714,6 @@
 	</div>
 	</div>
 
-	<script src="/js/admin.js?v=7" defer></script>
+	<script src="/js/admin.js?v=11" defer></script>
 </body>
 </html>

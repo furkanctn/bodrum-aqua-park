@@ -1,0 +1,36 @@
+================================================================================
+Bodrum Aqua Park — Windows masaüstü uygulaması (.exe) ve simge
+================================================================================
+
+NE OLUYOR?
+  BodrumAquaPark.exe = Gömülü Java + Spring Boot API + JavaFX pencerede POS.
+  Kullanıcı simgeye çift tıklar → yerel sunucu (ör. 8081) ayağa kalkar → giriş ekranı açılır.
+  (Tarayıcı gerekmez; yazıcı USB / Web Serial için genelde Chrome/Edge önerilir — bkz. POS dokümantasyonu.)
+
+GEREKSİNİM
+  • Windows 10/11 (64 bit)
+  • JDK 21 (geliştirme makinesinde): JAVA_HOME, PATH
+  • JAR derlemesi: BodrumAquaPark.bat exe önce backend klasöründeki mvnw.cmd kullanır (repoda vardir).
+    mvnw yoksa veya elle mvn kullanmak isterseniz: Apache Maven kurup PATH’e ekleyin (mvn komutu).
+
+SİMGE (.ico)
+  1) Çok boyutlu (16, 32, 48, 256) bir app.ico hazırlayın (PNG’yi convertio vb. ile ICO’ya çevirebilirsiniz).
+  2) Dosyayı şuraya koyun (tam yol):
+       backend\packaging\windows\app.ico
+  3) Komut isteminde:
+       cd backend\scripts\windows
+       BodrumAquaPark.bat exe
+  app.ico yoksa kurulum yine oluşur; Windows varsayılan simge kullanılır.
+
+ÇIKTI
+  backend\dist-exe\BodrumAquaPark\BodrumAquaPark.exe
+  Bu klasörü USB ile POS’a kopyalayabilirsiniz (hedefte ayrı JDK gerekmez).
+
+ÜRETİM PROFİLİ
+  BAT içinde jpackage --java-options ile spring.profiles.active=lowresource,dev verilir.
+  Canlı PostgreSQL için BAT’taki bu kısmı prod + ortam değişkenleriyle değiştirin.
+
+İLERİ: PENCERE İÇİ PNG SİMGE
+  JAR içinde src/main/resources/desktop/icon.png vardır; masaüstü penceresinin başlık çubuğu simgesi için kullanılır.
+
+================================================================================

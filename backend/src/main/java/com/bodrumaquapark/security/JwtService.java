@@ -67,30 +67,91 @@ public class JwtService {
 	}
 
 	public RoleCode readRole(Claims claims) {
-		String r = claims.get("role", String.class);
-		if (r == null) {
+		Object v = claims.get("role");
+		if (v == null) {
 			return RoleCode.CASHIER;
 		}
-		return RoleCode.valueOf(r);
+		String r = v instanceof String s ? s : String.valueOf(v);
+		r = r != null ? r.trim() : "";
+		if (r.isEmpty()) {
+			return RoleCode.CASHIER;
+		}
+		try {
+			return RoleCode.valueOf(r);
+		} catch (IllegalArgumentException e) {
+			return RoleCode.CASHIER;
+		}
+	}
+
+	/**
+	 * JWT claim boolean — eski/uyumsuz tokenlarda string veya sayı olabilir; {@code Boolean.class} ile okumak
+	 * ClassCastException verebilir.
+	 */
+	public boolean readBooleanClaim(Claims claims, String key, boolean defaultIfNullOrUnknown) {
+		Object v = claims.get(key);
+		if (v == null) {
+			return defaultIfNullOrUnknown;
+		}
+		if (v instanceof Boolean b) {
+			return b;
+		}
+		if (v instanceof String s) {
+			return "true".equalsIgnoreCase(s) || "1".equals(s);
+		}
+		if (v instanceof Number n) {
+			return n.intValue() != 0;
+		}
+		return defaultIfNullOrUnknown;
 	}
 
 	/** JWT’deki satış alanı kodları (virgülle ayrılmış) */
 	public boolean readAdminPanelAccess(Claims claims) {
-		Boolean b = claims.get("adminPanel", Boolean.class);
-		return Boolean.TRUE.equals(b);
+		return readBooleanClaim(claims, "adminPanel", false);
 	}
 
 	public Set<String> readSaleAreaCodes(Claims claims) {
-		String csv = claims.get("areas", String.class);
-		if (csv == null || csv.isBlank()) {
+		Object v = claims.get("areas");
+		if (v == null) {
 			return Set.of();
 		}
 		Set<String> out = new LinkedHashSet<>();
-		for (String p : csv.split(",")) {
-			String s = p.trim();
-			if (!s.isEmpty()) {
-				out.add(s);
+		if (v instanceof String csv) {
+			if (csv.isBlank()) {
+				return Set.of();
 			}
+			for (String p : csv.split(",")) {
+				String s = p.trim();
+				if (!s.isEmpty()) {
+					out.add(s);
+				}
+			}
+			return out;
+		}
+		if (v instanceof Collection<?> c) {
+			for (Object o : c) {
+				if (o != null) {
+					String s = String.valueOf(o).trim();
+					if (!s.isEmpty()) {
+						out.add(s);
+					}
+				}
+			}
+			return out;
+		}
+		if (v instanceof Object[] arr) {
+			for (Object o : arr) {
+				if (o != null) {
+					String s = String.valueOf(o).trim();
+					if (!s.isEmpty()) {
+						out.add(s);
+					}
+				}
+			}
+			return out;
+		}
+		String single = String.valueOf(v).trim();
+		if (!single.isEmpty()) {
+			out.add(single);
 		}
 		return out;
 	}

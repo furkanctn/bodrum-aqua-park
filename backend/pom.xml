@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.bodrumaquapark</groupId>
 	<artifactId>bodrum-aqua-park-api</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.2.0.0</version>
 	<name>bodrum-aqua-park-api</name>
 	<description>Bodrum Aqua Park Backend API</description>
 	<url/>

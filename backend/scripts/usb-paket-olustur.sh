@@ -7,15 +7,21 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 echo "==> Maven package (Windows hedefli JAR, javafx.platform=win)"
-mvn -f backend/pom.xml clean package -DskipTests
+if command -v mvn >/dev/null 2>&1; then
+	mvn -f backend/pom.xml clean package -DskipTests
+else
+	chmod +x backend/mvnw 2>/dev/null || true
+	./backend/mvnw -f backend/pom.xml clean package -DskipTests
+fi
 
-JAR_NAME="bodrum-aqua-park-api-0.0.1-SNAPSHOT.jar"
+JAR_NAME="bodrum-aqua-park-api-1.2.0.0.jar"
 OUT="$ROOT/dist/usb-windows-pos"
 mkdir -p "$OUT"
 
 cp "backend/target/$JAR_NAME" "$OUT/"
 cp backend/scripts/windows/BodrumAquaPark.bat "$OUT/"
 cp backend/scripts/windows/javafx-logging.properties "$OUT/"
+cp backend/scripts/windows/Olustur-Masaustu-Kisayolu.ps1 "$OUT/"
 cp backend/scripts/windows/POS-USB-KURULUM.txt "$OUT/" 2>/dev/null || true
 
 echo ""

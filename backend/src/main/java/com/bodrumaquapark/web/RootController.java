@@ -13,10 +13,16 @@ public class RootController {
 	@Value("${spring.application.name:bodrum-aqua-park-api}")
 	private String applicationName;
 
+	@Value("${app.version:}")
+	private String appVersion;
+
 	@GetMapping("/api/info")
 	public Map<String, Object> apiInfo() {
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("name", applicationName);
+		if (appVersion != null && !appVersion.isBlank()) {
+			body.put("version", appVersion);
+		}
 		body.put("status", "UP");
 		body.put("message", "API çalışıyor. Aşağıdaki uç noktaları deneyin.");
 		Map<String, String> endpoints = new LinkedHashMap<>();
@@ -31,7 +37,13 @@ public class RootController {
 		endpoints.put("h2Console", "/h2-console (sadece dev profili)");
 		endpoints.put("printerStatus", "GET /api/printer/status (JWT gerekmez)");
 		endpoints.put("printerPorts", "GET /api/printer/ports (JWT)");
+		endpoints.put("printerPrintTargets", "GET /api/printer/print-targets (JWT, Windows kuyruk veya COM)");
+		endpoints.put("printerSettingsGet", "GET /api/printer/settings (JWT)");
+		endpoints.put("printerSettingsPut", "PUT /api/printer/settings (JWT, ADMIN, body: port, baudRate)");
 		endpoints.put("printerTest", "POST /api/printer/test (JWT, body: port, baudRate, mode: full|nocut|minimal)");
+		endpoints.put("printerSaleReceiptPayload", "POST /api/printer/sale-receipt-payload (JWT, body: lines, mode)");
+		endpoints.put("printerTestPayload", "POST /api/printer/test-payload (JWT, body: mode)");
+		endpoints.put("printerWindowsDiagnostics", "GET /api/printer/windows-diagnostics (JWT, Windows kuyruk kontrolü)");
 		body.put("endpoints", endpoints);
 		return body;
 	}

@@ -3,6 +3,8 @@ package com.bodrumaquapark.security;
 import java.io.IOException;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
@@ -22,6 +24,8 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+	private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
 	public static final String ATTR_USER_ID = "authUserId";
 	public static final String ATTR_ROLE = "authRole";
@@ -83,15 +87,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			request.setAttribute(ATTR_USER_ID, userId);
 			request.setAttribute(ATTR_ROLE, role);
 			request.setAttribute(ATTR_SALE_AREA_CODES, saleAreas);
-			Boolean balanceClaim = claims.get("balance", Boolean.class);
-			boolean balanceLoadAllowed = balanceClaim == null || Boolean.TRUE.equals(balanceClaim);
-			request.setAttribute(ATTR_BALANCE_LOAD_ALLOWED, balanceLoadAllowed);
-			Boolean ticketClaim = claims.get("ticket", Boolean.class);
-			boolean ticketSalesAllowed = ticketClaim == null || Boolean.TRUE.equals(ticketClaim);
-			request.setAttribute(ATTR_TICKET_SALES_ALLOWED, ticketSalesAllowed);
-			request.setAttribute(ATTR_ADMIN_PANEL_ACCESS, jwtService.readAdminPanelAccess(claims));
+			boolean balanceLoadAllowed = jwtService.readBooleanClaim(claims, "balance", true);
+			request.setAttribute(ATTR_BALANCE_LOAD_ALLOWED, Boolean.valueOf(balanceLoadAllowed));
+			boolean ticketSalesAllowed = jwtService.readBooleanClaim(claims, "ticket", true);
+			request.setAttribute(ATTR_TICKET_SALES_ALLOWED, Boolean.valueOf(ticketSalesAllowed));
+			request.setAttribute(ATTR_ADMIN_PANEL_ACCESS,
+					Boolean.valueOf(jwtService.readAdminPanelAccess(claims)));
 		} catch (InvalidTokenException e) {
 			unauthorized(response, e.getMessage());
+			return;
+		} catch (ClassCastException e) {
+			log.warn("JWT doğrulama sırasında tip hatası (eski token veya uyumsuz claim)", e);
+			unauthorized(response, "Oturum hatası. Çıkış yapıp yeniden giriş yapın.");
 			return;
 		}
 

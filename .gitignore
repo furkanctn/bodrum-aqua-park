@@ -21,6 +21,9 @@ backend/.settings/
 backend/.springBeans
 backend/.sts4-cache
 
+# USB Windows paketi — derlenmiş JAR çok büyük (GitHub 100MB); release / paylaşım kanalıyla verin
+dist/usb-windows-pos/*.jar
+
 # Günlük / geçici
 *.log
 *.swp

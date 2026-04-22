@@ -1590,13 +1590,26 @@
 		activateAdminPanel(parseAdminPanelFromLocation(), { noWriteHash: true });
 	});
 
+	function parsePrinterTargetOption(raw) {
+		if (raw == null || raw === "") {
+			return null;
+		}
+		try {
+			var o = JSON.parse(raw);
+			if (o && (o.kind === "windows" || o.kind === "serial") && o.name) {
+				return o;
+			}
+		} catch (e) {}
+		return null;
+	}
+
 	function loadPrinterPorts() {
 		var sel = document.getElementById("printer-port");
 		if (!sel) {
 			return;
 		}
 		hideAlert();
-		fetch("/api/printer/ports", { headers: authHeaders() })
+		fetch("/api/printer/print-targets", { headers: authHeaders() })
 			.then(function (r) {
 				if (r.status === 401) {
 					sessionStorage.removeItem(TOKEN_KEY);
@@ -1617,35 +1630,197 @@
 				}
 				return r.json();
 			})
-			.then(function (ports) {
-				if (!ports || !Array.isArray(ports)) {
+			.then(function (targets) {
+				if (!targets || !Array.isArray(targets)) {
 					return;
 				}
 				var cur = sel.value;
 				sel.innerHTML = "";
 				var opt0 = document.createElement("option");
 				opt0.value = "";
-				opt0.textContent = "— Port seçin —";
+				var firstIsWin = targets.length > 0 && targets[0].kind === "windows";
+				opt0.textContent = firstIsWin ? "— Yazıcı kuyruğu seçin —" : "— Port seçin —";
 				sel.appendChild(opt0);
-				ports.forEach(function (p) {
+				targets.forEach(function (p) {
 					var o = document.createElement("option");
-					o.value = p.name;
+					o.value = JSON.stringify({ kind: p.kind, name: p.name });
 					o.textContent = p.name + (p.description ? " — " + p.description : "");
 					sel.appendChild(o);
 				});
 				if (cur) {
 					sel.value = cur;
 				}
+				return loadPrinterSettingsFromServer();
+			})
+			.then(function () {
+				loadPrinterWindowsQueuesRef();
 			})
 			.catch(function (e) {
 				if (e && e.message === "401") {
 					return;
 				}
 				showAlert(
-					(e && e.message) || "Port listesi alınamadı. Oturum açık mı? Sunucu güncel JAR ile mi çalışıyor?",
+					(e && e.message) ||
+						"Yazıcı hedef listesi alınamadı. Oturum açık mı? Sunucu güncel JAR ile mi çalışıyor?",
 					"err"
 				);
+				loadPrinterWindowsQueuesRef();
 			});
+	}
+
+	/** Windows: javax.print kuyruk adları (COM listesinden bağımsız). */
+	function loadPrinterWindowsQueuesRef() {
+		var el = document.getElementById("printer-windows-queues-ref");
+		if (!el) {
+			return;
+		}
+		el.textContent = "Yükleniyor…";
+		fetch("/api/printer/windows-diagnostics", { headers: authHeaders() })
+			.then(function (r) {
+				if (r.status === 401) {
+					return Promise.reject(new Error("401"));
+				}
+				return r.json();
+			})
+			.then(function (d) {
+				if (!d || typeof d.isWindows === "undefined") {
+					el.textContent = "Yanıt okunamadı.";
+					return;
+				}
+				if (!d.isWindows) {
+					el.textContent =
+						"Bu API Windows üzerinde değil; kuyruk listesi burada doldurulmaz.\n\nÜstteki seri port listesi yalnızca COM aygıtlarıdır; Windows yazıcı kuyrukları ayrı bir mekanizmadır (APP_PRINTER_WINDOWS_QUEUE).";
+					return;
+				}
+				var parts = [];
+				parts.push(
+					"Özet: Java’nın gördüğü Windows kuyrukları. Üstteki açılır liste Windows’ta genelde bu kuyrukları gösterir; kuyruk yoksa yalnızca COM listelenir."
+				);
+				if (d.configuredQueueName) {
+					parts.push(
+						"\nOrtamda ayarlı kuyruk: «" +
+							d.configuredQueueName +
+							"» — eşleşme: " +
+							(d.configuredMatchesQueue ? "evet" : "hayır") +
+							"."
+					);
+				}
+				if (d.queues && d.queues.length) {
+					parts.push("\nKuyruklar (" + d.queues.length + "): " + d.queues.join(", "));
+				} else {
+					parts.push(
+						"\nJava şu an ham bayt (BYTE_ARRAY) ile eşleşen kuyruk döndürmedi; sürücü veya oturum kısıtı olabilir."
+					);
+				}
+				el.textContent = parts.join("");
+			})
+			.catch(function (e) {
+				if (e && e.message === "401") {
+					return;
+				}
+				el.textContent = "Kuyruk özeti alınamadı (ağ veya sunucu).";
+			});
+	}
+
+	/** Sunucuda kayıtlı varsayılan port/baud (liste dolduktan sonra). */
+	function loadPrinterSettingsFromServer() {
+		return fetch("/api/printer/settings", { headers: authHeaders() })
+			.then(function (r) {
+				if (r.status === 401) {
+					sessionStorage.removeItem(TOKEN_KEY);
+					window.location.replace("/index.html");
+					return Promise.reject(new Error("401"));
+				}
+				if (!r.ok) {
+					return Promise.resolve();
+				}
+				return r.json();
+			})
+			.then(function (s) {
+				var notice = document.getElementById("printer-windows-notice");
+				if (s && s.source === "windows-queue" && s.windowsQueueName) {
+					if (notice) {
+						notice.hidden = false;
+						notice.textContent =
+							"Bu sunucu PC’sinde Windows kuyruk modu aktif: «" +
+							s.windowsQueueName +
+							"». Test fişi COM seçmeden bu yazıcıya gider (ortam: APP_PRINTER_WINDOWS_QUEUE).";
+					}
+					var selW = document.getElementById("printer-port");
+					if (selW && s.windowsQueueName) {
+						var wn = String(s.windowsQueueName);
+						Array.prototype.forEach.call(selW.options, function (o) {
+							var tp = parsePrinterTargetOption(o.value);
+							if (
+								tp &&
+								tp.kind === "windows" &&
+								String(tp.name).toLowerCase() === wn.toLowerCase()
+							) {
+								selW.value = o.value;
+							}
+						});
+					}
+					return;
+				}
+				if (notice) {
+					notice.hidden = true;
+				}
+				if (!s || !s.port) {
+					return;
+				}
+				var baudEl = document.getElementById("printer-baud");
+				if (baudEl && s.baudRate != null && !isNaN(s.baudRate)) {
+					var bv = String(s.baudRate);
+					var baudOk = Array.prototype.some.call(baudEl.options, function (o) {
+						return o.value === bv;
+					});
+					if (baudOk) {
+						baudEl.value = bv;
+					}
+				}
+				var sel = document.getElementById("printer-port");
+				var manualEl = document.getElementById("printer-port-manual");
+				if (!sel) {
+					return;
+				}
+				var wantPort = String(s.port);
+				var matchedVal = null;
+				Array.prototype.forEach.call(sel.options, function (o) {
+					var tp = parsePrinterTargetOption(o.value);
+					if (tp && tp.kind === "serial" && tp.name === wantPort) {
+						matchedVal = o.value;
+					}
+				});
+				if (matchedVal) {
+					sel.value = matchedVal;
+					if (manualEl) {
+						manualEl.value = "";
+					}
+				} else if (manualEl) {
+					manualEl.value = s.port;
+				}
+			})
+			.catch(function () {});
+	}
+
+	function persistPrinterSettingsAfterTest(port, baud) {
+		if (!isFullAdmin || !port) {
+			return Promise.resolve({ skipped: true });
+		}
+		return fetch("/api/printer/settings", {
+			method: "PUT",
+			headers: authHeadersJson(),
+			body: JSON.stringify({ port: port, baudRate: baud }),
+		}).then(function (r) {
+			return r
+				.json()
+				.then(function (data) {
+					return { ok: r.ok, status: r.status, data: data };
+				})
+				.catch(function () {
+					return { ok: r.ok, status: r.status, data: { error: "Yanıt okunamadı" } };
+				});
+		});
 	}
 
 	function formatTagPrice(v) {
@@ -1924,41 +2099,111 @@
 		btnPrinterTest.addEventListener("click", function () {
 			var manualEl = document.getElementById("printer-port-manual");
 			var manual = manualEl ? manualEl.value.trim() : "";
-			var fromList = document.getElementById("printer-port").value.trim();
-			var port = manual || fromList;
+			var sel = document.getElementById("printer-port");
+			var parsed = parsePrinterTargetOption(sel ? sel.value.trim() : "");
 			var baud = parseInt(document.getElementById("printer-baud").value, 10);
-			if (!port) {
-				showAlert("Listeden port seçin veya (Mac) /dev/cu.… adresini elle yazın.", "err");
-				return;
-			}
-			hideAlert();
 			var modeEl = document.getElementById("printer-mode");
 			var mode = modeEl ? modeEl.value : "full";
-			fetch("/api/printer/test", {
-				method: "POST",
-				headers: authHeadersJson(),
-				body: JSON.stringify({ port: port, baudRate: baud, mode: mode }),
-			})
-				.then(function (r) {
-					return r.json().then(function (data) {
-						return { ok: r.ok, data: data };
-					});
+
+			function buildTestPayload() {
+				var p = { baudRate: baud, mode: mode };
+				if (manual) {
+					p.port = manual;
+				} else if (parsed && parsed.kind === "windows") {
+					p.windowsQueueName = parsed.name;
+				} else if (parsed && parsed.kind === "serial") {
+					p.port = parsed.name;
+				}
+				return p;
+			}
+			function hasPrintTargetPayload(p) {
+				return !!(p && (p.port || p.windowsQueueName));
+			}
+			function runPrinterTest(payload) {
+				if (!hasPrintTargetPayload(payload)) {
+					showAlert(
+						"Listeden yazıcı kuyruğu veya COM seçin. Elle adres için «Port (elle)» alanını kullanın (örn. COM3).",
+						"err"
+					);
+					return;
+				}
+				hideAlert();
+				var skipComSave = !!payload.windowsQueueName;
+				fetch("/api/printer/test", {
+					method: "POST",
+					headers: authHeadersJson(),
+					body: JSON.stringify(payload),
 				})
-				.then(function (res) {
-					if (!res.ok) {
-						showAlert((res.data && res.data.error) || "Yazdırılamadı.", "err");
-						return;
+					.then(function (r) {
+						return r.json().then(function (data) {
+							return { ok: r.ok, data: data };
+						});
+					})
+					.then(function (res) {
+						if (!res.ok) {
+							showAlert((res.data && res.data.error) || "Yazdırılamadı.", "err");
+							return;
+						}
+						function testOkMessage() {
+							var base = (res.data && res.data.message) || "Test fişi gönderildi.";
+							var h = res.data && res.data.hint;
+							return h ? base + " " + h : base;
+						}
+						return persistPrinterSettingsAfterTest(
+							skipComSave ? "" : (payload.port || ""),
+							baud
+						)
+							.then(function (saveRes) {
+								if (saveRes && saveRes.skipped) {
+									showAlert(testOkMessage(), "ok");
+									return;
+								}
+								if (!saveRes.ok) {
+									showAlert(
+										(res.data && res.data.message ? res.data.message : "Test fişi gönderildi.") +
+											" Ancak sunucuya kaydedilemedi: " +
+											((saveRes.data && saveRes.data.error) || "HTTP " + saveRes.status),
+										"err"
+									);
+									return;
+								}
+								var extra =
+									saveRes.data && saveRes.data.message ? saveRes.data.message + " " : "";
+								showAlert(extra + testOkMessage(), "ok");
+							})
+							.catch(function () {
+								showAlert(
+									(res.data && res.data.message ? res.data.message : "Test fişi gönderildi.") +
+										" Sunucuya kayıt sırasında ağ hatası.",
+									"err"
+								);
+							});
+					})
+					.catch(function () {
+						showAlert("İstek başarısız.", "err");
+					});
+			}
+
+			var payload = buildTestPayload();
+			if (hasPrintTargetPayload(payload)) {
+				runPrinterTest(payload);
+				return;
+			}
+			fetch("/api/printer/settings", { headers: authHeaders() })
+				.then(function (r) {
+					if (!r.ok) {
+						return null;
 					}
-					try {
-						sessionStorage.setItem("aqua_printer_port", port);
-						sessionStorage.setItem("aqua_printer_baud", String(baud));
-					} catch (e) {
-						/* ignore */
+					return r.json();
+				})
+				.then(function (s) {
+					if (s && s.source === "windows-queue" && s.windowsQueueName && !payload.port) {
+						payload.windowsQueueName = s.windowsQueueName;
 					}
-					showAlert(res.data.message || "Test fişi gönderildi.", "ok");
+					runPrinterTest(payload);
 				})
 				.catch(function () {
-					showAlert("İstek başarısız.", "err");
+					runPrinterTest(payload);
 				});
 		});
 	}
@@ -1966,6 +2211,66 @@
 	if (btnPrinterRefresh) {
 		btnPrinterRefresh.addEventListener("click", function () {
 			loadPrinterPorts();
+		});
+	}
+	var btnPrinterWinDiag = document.getElementById("btn-printer-windows-diag");
+	if (btnPrinterWinDiag) {
+		btnPrinterWinDiag.addEventListener("click", function () {
+			var out = document.getElementById("printer-windows-diag-out");
+			hideAlert();
+			if (out) {
+				out.hidden = false;
+				out.textContent = "Kontrol ediliyor…";
+			}
+			fetch("/api/printer/windows-diagnostics", { headers: authHeaders() })
+				.then(function (r) {
+					if (r.status === 401) {
+						sessionStorage.removeItem(TOKEN_KEY);
+						window.location.replace("/index.html");
+						return Promise.reject(new Error("401"));
+					}
+					return r.json().then(function (data) {
+						return { ok: r.ok, data: data };
+					});
+				})
+				.then(function (res) {
+					var d = res.data || {};
+					var lines = [];
+					lines.push(d.message || "(yanıt yok)");
+					lines.push("");
+					lines.push("OS: " + (d.osName != null ? d.osName : "?"));
+					lines.push("Windows: " + (d.isWindows ? "evet" : "hayır"));
+					lines.push("Yapılandırılan kuyruk: " + (d.configuredQueueName != null ? d.configuredQueueName : "(yok)"));
+					lines.push("Eşleşme: " + (d.configuredMatchesQueue ? "evet" : "hayır"));
+					lines.push("Kuyruk sayısı: " + (d.queueCount != null ? d.queueCount : 0));
+					if (d.queues && d.queues.length) {
+						lines.push("");
+						lines.push("Java’nın gördüğü kuyruklar:");
+						for (var i = 0; i < d.queues.length; i++) {
+							lines.push("  · " + d.queues[i]);
+						}
+					}
+					if (out) {
+						out.textContent = lines.join("\n");
+						out.hidden = false;
+					}
+					loadPrinterWindowsQueuesRef();
+					showAlert(
+						d.success ? "Kontrol tamam — detay aşağıda." : "Kontrol tamam — uyarı veya hata; detay aşağıda.",
+						d.success ? "ok" : "err"
+					);
+				})
+				.catch(function (e) {
+					if (e && e.message === "401") {
+						return;
+					}
+					if (out) {
+						out.textContent = "İstek başarısız veya yanıt okunamadı.";
+						out.hidden = false;
+					}
+					loadPrinterWindowsQueuesRef();
+					showAlert("Windows kuyruk kontrolü başarısız.", "err");
+				});
 		});
 	}
 
