@@ -92,7 +92,11 @@ public final class EscPosUtil {
 		String when = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
 		writeAsciiLine(out, "");
 		writeAsciiLine(out, toAsciiReceiptLine(when));
-		for (int i = 0; i < 4; i++) {
+		// Satış fişinde besleme satırı düşük kalırsa bazı modeller çıktı verse bile kağıdı
+		// yeterince ilerletmeyip "basmadı" gibi görünebilir. Test fişine yakın davranış için
+		// kesimsiz modda daha fazla besleme bırakıyoruz.
+		int feedLines = cut ? 6 : 10;
+		for (int i = 0; i < feedLines; i++) {
 			out.write(new byte[] { 0x0D, 0x0A });
 		}
 		if (cut) {
