@@ -1,0 +1,29 @@
+WINDOWS POS KURULUM (DB AYRI SUNUCUDA)
+
+1) Bu klasordeki iki dosyayi hedef bilgisayara kopyalayin:
+   - bodrum-aqua-park-api-1.2.0.0.jar
+   - Start-Pos-Local-Postgres.bat
+
+2) Hedef bilgisayarda Java 21 kurulu oldugunu kontrol edin:
+   java -version
+
+3) Start-Pos-Local-Postgres.bat dosyasinda asagidaki degerleri kontrol edin:
+   - DB_HOST=192.168.1.144
+   - SPRING_DATASOURCE_USERNAME=postgres
+   - SPRING_DATASOURCE_PASSWORD=<postgres sifresi>
+   - Fis yazici icin (onerilen):
+     - APP_PRINTER_WINDOWS_QUEUE=<Aygitlar ve Yazicilar'daki tam ad, ornek: Sewo>
+     - APP_PRINTER_PORT=   (bos birakin)
+   - COM yalnizca acil/yedek senaryodur:
+     - APP_PRINTER_WINDOWS_QUEUE bos, APP_PRINTER_PORT=COM3
+
+4) Hedef bilgisayardan DB erisimi test edin:
+   Test-NetConnection 192.168.1.144 -Port 5432
+   (TcpTestSucceeded: True olmali)
+
+5) Start-Pos-Local-Postgres.bat dosyasini cift tiklayip calistirin.
+
+6) Admin > Fis yazici ekraninda:
+   - Listeden dogrudan yaziciyi secin (ornek: Sewo)
+   - Test fisi yazdirin
+   - COM secimi yapmayin (sadece zorunlu kalirsaniz kullanin)
