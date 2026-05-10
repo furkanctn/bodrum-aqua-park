@@ -3619,12 +3619,30 @@ body.module-kart .footer-btn.primary {
 	gap: 0.28rem;
 }
 
+.pos-lux-connect-item.is-offline {
+	color: #ef4444;
+}
+
+.pos-lux-connect-item.is-warn {
+	color: #d97706;
+}
+
 .pos-lux-dot {
 	width: 0.42rem;
 	height: 0.42rem;
 	border-radius: 50%;
 	background: #4ade80;
 	box-shadow: 0 0 8px #4ade80;
+}
+
+.pos-lux-connect-item.is-offline .pos-lux-dot {
+	background: #ef4444;
+	box-shadow: 0 0 8px #ef4444;
+}
+
+.pos-lux-connect-item.is-warn .pos-lux-dot {
+	background: #f59e0b;
+	box-shadow: 0 0 8px #f59e0b;
 }
 
 .pos-lux-user-chip {
