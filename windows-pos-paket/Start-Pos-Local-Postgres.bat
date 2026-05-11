@@ -18,6 +18,8 @@ set "APP_PRINTER_WINDOWS_QUEUE=Sewo"
 set "APP_PRINTER_PORT="
 set "APP_PRINTER_BAUD=9600"
 set "SPRING_MAIN_HEADLESS=false"
+set "BACKUP_DIR=\\DESKTOP-PGPSDFP\SistemLoglari"
+set "LOG_FILE=%BACKUP_DIR%\bodrum-sunucu.log"
 
 set "JAR=bodrum-aqua-park-api-1.2.0.0.jar"
 cd /d "%~dp0"
@@ -29,6 +31,6 @@ if not exist "%JAR%" (
   exit /b 1
 )
 
-java -Djava.awt.headless=false -jar "%JAR%"
+java -Djava.awt.headless=false -Dlogging.file.name="%LOG_FILE%" -jar "%JAR%"
 endlocal
 pause
