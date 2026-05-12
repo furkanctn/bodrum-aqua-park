@@ -1603,6 +1603,23 @@
 		return null;
 	}
 
+	function setPrinterSelectionMode(hasWindowsQueues) {
+		var label = document.getElementById("printer-port-label");
+		if (label) {
+			label.textContent = hasWindowsQueues ? "Yazıcı seçimi (Windows kuyruk)" : "Yazıcı hedefi (port)";
+		}
+		var hint = document.getElementById("printer-target-hint");
+		if (hint) {
+			hint.textContent = hasWindowsQueues
+				? "Listeden yazıcıyı seçin. COM/port seçmeniz gerekmez."
+				: "Listeden port seçin. Gerekirse alttaki «Port (elle)» alanını kullanın.";
+		}
+		var manualWrap = document.getElementById("printer-manual-field");
+		if (manualWrap) {
+			manualWrap.hidden = !!hasWindowsQueues;
+		}
+	}
+
 	function loadPrinterPorts() {
 		var sel = document.getElementById("printer-port");
 		if (!sel) {
@@ -1634,14 +1651,22 @@
 				if (!targets || !Array.isArray(targets)) {
 					return;
 				}
+				var hasWindowsQueues = targets.some(function (t) {
+					return t && t.kind === "windows";
+				});
+				setPrinterSelectionMode(hasWindowsQueues);
+				var visibleTargets = hasWindowsQueues
+					? targets.filter(function (t) {
+							return t && t.kind === "windows";
+					  })
+					: targets;
 				var cur = sel.value;
 				sel.innerHTML = "";
 				var opt0 = document.createElement("option");
 				opt0.value = "";
-				var firstIsWin = targets.length > 0 && targets[0].kind === "windows";
-				opt0.textContent = firstIsWin ? "— Yazıcı kuyruğu seçin —" : "— Port seçin —";
+				opt0.textContent = hasWindowsQueues ? "— Yazıcı seçin —" : "— Port seçin —";
 				sel.appendChild(opt0);
-				targets.forEach(function (p) {
+				visibleTargets.forEach(function (p) {
 					var o = document.createElement("option");
 					o.value = JSON.stringify({ kind: p.kind, name: p.name });
 					o.textContent = p.name + (p.description ? " — " + p.description : "");
@@ -1659,6 +1684,7 @@
 				if (e && e.message === "401") {
 					return;
 				}
+				setPrinterSelectionMode(false);
 				showAlert(
 					(e && e.message) ||
 						"Yazıcı hedef listesi alınamadı. Oturum açık mı? Sunucu güncel JAR ile mi çalışıyor?",
@@ -2098,7 +2124,9 @@
 	if (btnPrinterTest) {
 		btnPrinterTest.addEventListener("click", function () {
 			var manualEl = document.getElementById("printer-port-manual");
-			var manual = manualEl ? manualEl.value.trim() : "";
+			var manualWrap = document.getElementById("printer-manual-field");
+			var manualEnabled = !(manualWrap && manualWrap.hidden);
+			var manual = manualEl && manualEnabled ? manualEl.value.trim() : "";
 			var sel = document.getElementById("printer-port");
 			var parsed = parsePrinterTargetOption(sel ? sel.value.trim() : "");
 			var baud = parseInt(document.getElementById("printer-baud").value, 10);
@@ -2122,7 +2150,9 @@
 			function runPrinterTest(payload) {
 				if (!hasPrintTargetPayload(payload)) {
 					showAlert(
-						"Listeden yazıcı kuyruğu veya COM seçin. Elle adres için «Port (elle)» alanını kullanın (örn. COM3).",
+						manualEnabled
+							? "Listeden hedef seçin. Gerekirse «Port (elle)» alanını kullanın."
+							: "Listeden bir yazıcı seçin.",
 						"err"
 					);
 					return;

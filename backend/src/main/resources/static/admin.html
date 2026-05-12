@@ -410,15 +410,14 @@
 			<section class="admin-card">
 				<h2>Fiş yazıcı testi (Sewoo / ESC-POS)</h2>
 				<p class="admin-sub">
-					Test fişi başarılı olduktan sonra port ve hız <strong>sunucuda kaydedilir</strong> (yazıcı USB’si
+					Test fişi başarılı olduktan sonra hedef ve hız <strong>sunucuda kaydedilir</strong> (yazıcı USB’si
 					<strong>API’nin çalıştığı bilgisayara</strong> takılıysa). Birden fazla kasa PC’si varsa her kasada POS
-					alt çubuktan <strong>Fiş USB</strong> ile yerel yazıcı kullanın; bu ekrandaki COM yalnızca sunucu modu içindir.
-					İsterseniz <code>APP_PRINTER_PORT</code> ile de tanımlayabilirsiniz (veritabanı kaydı önceliklidir).
+					alt çubuktan <strong>Fiş USB</strong> ile yerel yazıcı kullanın.
 				</p>
 				<p id="printer-windows-notice" class="admin-sub" hidden></p>
 				<p class="admin-sub admin-sub--inline">
-					<strong>Windows (USB yazıcı):</strong> İsterseniz COM yerine yazıcıyı normal kurup
-					<code>APP_PRINTER_WINDOWS_QUEUE</code> ile kuyruk adını verin (API bu PC’de çalışmalı). Aksi halde
+					<strong>Windows (USB yazıcı):</strong> Yazıcıyı normal kurup
+					<code>APP_PRINTER_WINDOWS_QUEUE</code> ile kuyruk adını verin (API bu PC’de çalışmalı). Yalnızca gerekirse
 					<strong>Windows:</strong> Aygıt Yöneticisi → <em>Bağlantı noktaları (COM ve LPT)</em> → COM numarası.
 					<strong>Mac:</strong> Terminal’de <code>ls /dev/cu.*</code> — yazıcı takılıyken çıkan ad (örn.
 					<code>/dev/cu.usbserial-…</code>) genelde doğru porttur; listede yoksa aşağıya elle yazın.
@@ -428,12 +427,10 @@
 				</p>
 				<div class="admin-form-grid">
 					<div class="field">
-						<label for="printer-port">Yazıcı hedefi (Windows’ta Java kuyrukları; yoksa COM)</label>
+						<label for="printer-port" id="printer-port-label">Yazıcı hedefi</label>
 						<select id="printer-port"></select>
-						<p class="admin-sub" style="margin-top: 0.35rem; font-size: 0.88rem">
-							Windows kasada liste genelde <strong>Aygıtlar ve Yazıcılar</strong> kuyruk adlarıdır. Java kuyruk
-							göstermiyorsa yalnızca COM listelenir. Elle COM veya Mac <code>/dev/cu.…</code> için alttaki
-							«Port (elle)».
+						<p class="admin-sub" id="printer-target-hint" style="margin-top: 0.35rem; font-size: 0.88rem">
+							Windows kasada listeden doğrudan yazıcı kuyruğunu seçin.
 						</p>
 					</div>
 					<div class="field" style="grid-column: 1 / -1">
@@ -446,7 +443,7 @@
 							—
 						</div>
 					</div>
-					<div class="field">
+					<div class="field" id="printer-manual-field">
 						<label for="printer-port-manual">Port (elle — liste boşsa zorunlu)</label>
 						<input
 							type="text"

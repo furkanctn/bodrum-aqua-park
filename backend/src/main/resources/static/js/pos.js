@@ -66,6 +66,9 @@
 	const viewBakiye = document.getElementById("view-bakiye");
 	const viewSorgu = document.getElementById("view-sorgu");
 	const viewUrun = document.getElementById("view-urun");
+	const statusInternetEl = document.getElementById("status-internet");
+	const statusServerEl = document.getElementById("status-server");
+	const statusPrinterEl = document.getElementById("status-printer");
 	const footerPrimaryLabel = document.getElementById("footer-primary-label");
 	const bakiyeDisplay = document.getElementById("bakiye-display");
 	const bakiyeKeypadEl = document.getElementById("bakiye-keypad");
@@ -968,6 +971,109 @@
 		return "server";
 	}
 
+	function setConnectionBadgeState(el, state, text) {
+		if (!el) {
+			return;
+		}
+		el.classList.remove("is-offline", "is-warn");
+		if (state === "offline") {
+			el.classList.add("is-offline");
+		} else if (state === "warn") {
+			el.classList.add("is-warn");
+		}
+		var label = el.querySelector(".pos-lux-connect-label");
+		if (label && text) {
+			label.textContent = text;
+		}
+	}
+
+	function updateInternetStatusBadge() {
+		var online = typeof navigator === "undefined" ? true : navigator.onLine !== false;
+		setConnectionBadgeState(
+			statusInternetEl,
+			online ? "ok" : "offline",
+			online ? "İnternet bağlı" : "İnternet yok"
+		);
+		return online;
+	}
+
+	function checkServerReady() {
+		// Gerçek operasyon kontrolü: DB'ye dokunan bir API başarılı mı?
+		return fetch("/api/sale-areas", { headers: authHeaders(), cache: "no-store" })
+			.then(function (r) {
+				return r.ok;
+			})
+			.catch(function () {
+				return false;
+			});
+	}
+
+	function checkPrinterReady() {
+		var target = getReceiptPrintTarget();
+		if (target === "local") {
+			if (!navigator.serial) {
+				return Promise.resolve({
+					ok: false,
+					text: "Yazıcı hazır değil (USB için Chrome/Edge)",
+				});
+			}
+			return resolveReceiptPrinterPort(false)
+				.then(function (port) {
+					if (port) {
+						return { ok: true, text: "Yazıcı hazır (bu PC / USB)" };
+					}
+					return { ok: false, text: "Yazıcı seçilmedi (Fiş USB)" };
+				})
+				.catch(function () {
+					return { ok: false, text: "Yazıcı kontrol hatası" };
+				});
+		}
+		return fetch("/api/printer/settings", { headers: authHeaders(), cache: "no-store" })
+			.then(function (r) {
+				if (!r.ok) {
+					throw new Error("http");
+				}
+				return r.json();
+			})
+			.then(function (s) {
+				var ready = !!(s && (s.windowsQueueName || s.port));
+				return {
+					ok: ready,
+					text: ready ? "Yazıcı hazır (sunucu)" : "Yazıcı tanımlı değil (sunucu)",
+				};
+			})
+			.catch(function () {
+				return { ok: false, text: "Yazıcı ayarı okunamadı" };
+			});
+	}
+
+	function refreshConnectionBadges() {
+		var online = updateInternetStatusBadge();
+		if (!online) {
+			setConnectionBadgeState(statusServerEl, "offline", "Sunucu yok");
+			setConnectionBadgeState(statusPrinterEl, "offline", "Yazıcı kontrol bekliyor");
+			return;
+		}
+		checkServerReady().then(function (serverOk) {
+			setConnectionBadgeState(
+				statusServerEl,
+				serverOk ? "ok" : "offline",
+				serverOk ? "Sunucu bağlı" : "Sunucu yok"
+			);
+			if (!serverOk) {
+				setConnectionBadgeState(statusPrinterEl, "offline", "Yazıcı kontrol bekliyor");
+				return;
+			}
+			checkPrinterReady().then(function (prn) {
+				setConnectionBadgeState(
+					statusPrinterEl,
+					prn.ok ? "ok" : "warn",
+					prn.text || (prn.ok ? "Yazıcı hazır" : "Yazıcı hazır değil")
+				);
+			});
+		});
+	}
+
 	function receiptPrinterUsbFingerprint(port) {
 		if (!port || typeof port.getInfo !== "function") {
 			return "";
@@ -1233,6 +1339,7 @@
 				try {
 					localStorage.setItem(LS_RECEIPT_TARGET, el.value);
 				} catch (e) {}
+				refreshConnectionBadges();
 				showToast(el.value === "local" ? "Fiş: bu bilgisayar (USB)" : "Fiş: sunucu COM", { duration: 2200 });
 			});
 		});
@@ -1262,6 +1369,7 @@
 								localStorage.setItem(LS_RECEIPT_USB_FP, fp);
 							}
 						} catch (e) {}
+						refreshConnectionBadges();
 						showToast(
 							fp ? "USB yazıcı kaydedildi (" + fp + ")" : "USB yazıcı izni kaydedildi.",
 							{ duration: 4000 }
@@ -1321,6 +1429,7 @@
 									localStorage.setItem(LS_RECEIPT_USB_FP, fp);
 								}
 							} catch (e) {}
+							refreshConnectionBadges();
 							return writeEscPosToWebSerialPort(port, bytes, baud);
 						});
 					})
@@ -4136,6 +4245,10 @@
 	}
 	tick();
 	setInterval(tick, 1000);
+	refreshConnectionBadges();
+	setInterval(refreshConnectionBadges, 15000);
+	window.addEventListener("online", refreshConnectionBadges);
+	window.addEventListener("offline", refreshConnectionBadges);
 
 	function wirePosAppWindowClose() {
 		var btn = document.getElementById("pos-app-window-close");
