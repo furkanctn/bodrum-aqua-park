@@ -8,12 +8,15 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+import com.bodrumaquapark.config.AquaparkUpdateProperties;
 import com.bodrumaquapark.config.PrinterProperties;
 import com.bodrumaquapark.desktop.DesktopApp;
 
 @SpringBootApplication
-@EnableConfigurationProperties(PrinterProperties.class)
+@EnableScheduling
+@EnableConfigurationProperties({ PrinterProperties.class, AquaparkUpdateProperties.class })
 public class BodrumAquaParkApiApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(BodrumAquaParkApiApplication.class);

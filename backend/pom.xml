@@ -136,6 +136,24 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>repackage</id>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>smart-launcher</id>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+						<configuration>
+							<classifier>launcher</classifier>
+							<mainClass>com.bodrumaquapark.launcher.SmartLauncher</mainClass>
+						</configuration>
+					</execution>
+				</executions>
 				<configuration>
 					<!-- JavaFX native kütüphaneleri nested JAR’tan çıkarılsın (yükleyici için) -->
 					<requiresUnpack>
@@ -165,6 +183,32 @@
 						</dependency>
 					</requiresUnpack>
 				</configuration>
+			</plugin>
+			<!-- package sonrası BAT, target içinde JAR'larla aynı klasöre kopyalanır -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>copy-launcher-bat</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/scripts/windows</directory>
+									<includes>
+										<include>Aquapark-Launcher-Startup.bat</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
