@@ -1,6 +1,6 @@
 /**
  * Ortak ölçek başlatma — tüm sayfalar bu dosyayı (pos-terminal-scale.css ile birlikte) kullanır.
- * localStorage: aqua_pos_ui_scale | session: aqua_pos_perf (posPerf=1)
+ * localStorage: aqua_pos_ui_scale | session: aqua_pos_perf (posPerf=1), aqua_login_lite_ui (liteUi=1)
  * aqua_pos_ui_scale_rev: migrasyon sürümü (2 = %105 artefact → %124 vb.)
  */
 (function () {
@@ -12,6 +12,9 @@
 			sessionStorage.setItem("aqua_pos_perf", "1");
 		} else {
 			sessionStorage.removeItem("aqua_pos_perf");
+		}
+		if (window.location.search.indexOf("liteUi=1") >= 0) {
+			sessionStorage.setItem("aqua_login_lite_ui", "1");
 		}
 		if (sessionStorage.getItem("aqua_pos_perf") === "1") {
 			document.documentElement.classList.add("pos-perf");
@@ -40,4 +43,36 @@
 			}
 		}
 	} catch (e) {}
+	try {
+		var ua = typeof navigator !== "undefined" ? String(navigator.userAgent || "") : "";
+		var isLogin =
+			document.documentElement.classList.contains("login-html") ||
+			(typeof location !== "undefined" &&
+				(location.pathname === "/" || /index\.html$/i.test(location.pathname || "")));
+		/** Gömülü WebView / eski motor: girişte blur, mask ve backdrop’tan kaçın */
+		function loginNeedsLiteUi(u) {
+			if (!u) return false;
+			if (/JavaFX/i.test(u)) return true;
+			if (/;\s*wv\)/i.test(u) || /\bwv\b/i.test(u)) return true;
+			if (/WebView/i.test(u)) return true;
+			if (/FBAN|FBAV/i.test(u)) return true;
+			return false;
+		}
+		var forceLite =
+			typeof window !== "undefined" &&
+			window.location.search.indexOf("liteUi=1") >= 0;
+		try {
+			if (!forceLite && sessionStorage.getItem("aqua_login_lite_ui") === "1") {
+				forceLite = true;
+			}
+		} catch (sf) {}
+		if (isLogin && (loginNeedsLiteUi(ua) || forceLite)) {
+			document.documentElement.classList.add("login-javafx-lite", "login-lite-ui");
+			try {
+				if (forceLite) sessionStorage.setItem("aqua_login_lite_ui", "1");
+			} catch (sf2) {}
+		} else if (/JavaFX/i.test(ua)) {
+			document.documentElement.classList.add("login-javafx-lite");
+		}
+	} catch (e2) {}
 })();

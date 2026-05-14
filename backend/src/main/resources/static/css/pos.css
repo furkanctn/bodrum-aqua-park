@@ -4159,14 +4159,14 @@ body.module-kart #view-kart .pos-grid-section {
 
 .pos-lux-categories .kart-area-tab {
 	width: 100%;
-	writing-mode: vertical-rl;
+	writing-mode: horizontal-tb;
 	text-orientation: mixed;
-	transform: rotate(180deg);
-	min-height: 4.5rem;
-	padding: 0.45rem 0.25rem;
+	transform: none;
+	min-height: 2.65rem;
+	padding: 0.42rem 0.35rem;
 	font-size: 0.58rem;
 	font-weight: 800;
-	letter-spacing: 0.08em;
+	letter-spacing: 0.06em;
 	text-transform: uppercase;
 	border-radius: 0.5rem;
 	border: 1px solid rgba(234, 88, 12, 0.15);
@@ -4174,6 +4174,13 @@ body.module-kart #view-kart .pos-grid-section {
 	color: #64748b;
 	cursor: pointer;
 	font-family: inherit;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	line-height: 1.2;
+	word-break: break-word;
+	hyphens: auto;
 }
 
 .pos-lux-categories .kart-area-tab:hover {
@@ -4202,14 +4209,14 @@ body.module-kart #view-kart .pos-grid-section {
 
 .pos-lux-cat-pill {
 	width: 100%;
-	writing-mode: vertical-rl;
+	writing-mode: horizontal-tb;
 	text-orientation: mixed;
-	transform: rotate(180deg);
-	min-height: 5rem;
-	padding: 0.5rem 0.28rem;
+	transform: none;
+	min-height: 2.65rem;
+	padding: 0.42rem 0.35rem;
 	font-size: 0.58rem;
 	font-weight: 800;
-	letter-spacing: 0.12em;
+	letter-spacing: 0.06em;
 	text-transform: uppercase;
 	border-radius: 0.55rem;
 	border: 1px solid rgba(234, 88, 12, 0.2);
@@ -4217,6 +4224,13 @@ body.module-kart #view-kart .pos-grid-section {
 	color: #7c2d12;
 	cursor: default;
 	font-family: inherit;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	line-height: 1.2;
+	word-break: break-word;
+	hyphens: auto;
 }
 
 .pos-lux-cat-pill:disabled {

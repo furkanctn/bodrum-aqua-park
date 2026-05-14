@@ -94,8 +94,13 @@
 		var enter = document.createElement("button");
 		enter.type = "button";
 		enter.className = "np-key np-key--enter";
-		enter.innerHTML =
-			'<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" width="26" height="26" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg><span class="sr-only">Giriş yap</span>';
+		var liteEnter =
+			typeof document !== "undefined" &&
+			(document.documentElement.classList.contains("login-lite-ui") ||
+				document.documentElement.classList.contains("pos-perf"));
+		enter.innerHTML = liteEnter
+			? '<span class="np-key-enter-mark" aria-hidden="true">✓</span><span class="sr-only">Giriş yap</span>'
+			: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" width="26" height="26" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg><span class="sr-only">Giriş yap</span>';
 		enter.setAttribute("aria-label", "Giriş yap");
 		enter.addEventListener("click", function () {
 			form.requestSubmit();
@@ -103,7 +108,13 @@
 		bottom.appendChild(enter);
 
 		keyboardEl.appendChild(bottom);
-		setActiveField(activeField);
+		if (typeof requestAnimationFrame === "function") {
+			requestAnimationFrame(function () {
+				setActiveField(activeField);
+			});
+		} else {
+			setActiveField(activeField);
+		}
 	}
 
 	userIdInput.addEventListener("focus", function () {

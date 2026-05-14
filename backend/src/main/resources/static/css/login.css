@@ -93,7 +93,7 @@ body.login-premium {
 .premium-orb {
 	position: absolute;
 	border-radius: 50%;
-	filter: blur(80px);
+	filter: blur(72px);
 	opacity: 0.45;
 }
 
@@ -731,19 +731,74 @@ body.login-premium .field.field-active label {
 	}
 }
 
-/* posPerf=1: zayif POS / JavaFX WebView — harici font yok; blur ve agir katmanlar kapali */
-html.pos-perf * {
-	backdrop-filter: none !important;
-	-webkit-backdrop-filter: none !important;
+/* posPerf, JavaFX veya login-lite-ui: pahalı boyamalar hafifletilir */
+html.login-html:is(.pos-perf, .login-javafx-lite, .login-lite-ui) body.login-premium {
+	background-attachment: scroll;
 }
-html.pos-perf .page-premium-bg,
-html.pos-perf .premium-orb,
-html.pos-perf .grid-overlay,
-html.pos-perf .premium-watermark {
+html.login-html:is(.pos-perf, .login-javafx-lite) .premium-orb {
+	filter: blur(42px);
+	opacity: 0.4;
+	animation: none !important;
+}
+html.login-html:is(.pos-perf, .login-javafx-lite) .grid-overlay--dark {
+	mask-image: none;
+	-webkit-mask-image: none;
+	opacity: 0.52;
+}
+html.login-html:is(.pos-perf, .login-javafx-lite) .card--premium {
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+html.login-html:is(.pos-perf, .login-javafx-lite) .keypad-panel--premium {
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+html.login-html:is(.pos-perf, .login-javafx-lite) .alert--premium.error {
+	backdrop-filter: blur(5px);
+	-webkit-backdrop-filter: blur(5px);
+}
+
+/* Gömülü WebView veya posPerf: girişte arka plan katmanlarını kapat — en büyük kazanım */
+html.login-html:is(.login-lite-ui, .pos-perf) body.login-premium {
+	background: #fff7ed;
+	background-image: none;
+}
+html.login-html:is(.login-lite-ui, .pos-perf) .page-premium-bg {
 	display: none !important;
 }
-html.pos-perf body.login-premium {
-	background-image: none !important;
-	background: #fff7ed !important;
-	color: #0f172a !important;
+html.login-html:is(.login-lite-ui, .pos-perf) .grid-overlay--dark {
+	display: none !important;
+}
+html.login-html:is(.login-lite-ui, .pos-perf) .card--premium,
+html.login-html:is(.login-lite-ui, .pos-perf) .keypad-panel--premium,
+html.login-html:is(.login-lite-ui, .pos-perf) .alert--premium.error {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	box-shadow: 0 8px 24px -12px rgba(194, 65, 12, 0.12);
+}
+html.login-html:is(.login-lite-ui, .pos-perf) .np-key {
+	transition: none;
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+html.login-html:is(.login-lite-ui, .pos-perf) .np-key:hover {
+	filter: none;
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+html.login-html:is(.login-lite-ui, .pos-perf) .np-key-enter-mark {
+	font-size: 1.5rem;
+	font-weight: 800;
+	line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html.login-html body.login-premium {
+		background-attachment: scroll !important;
+	}
+	html.login-html .premium-orb {
+		animation: none !important;
+	}
+	html.login-html .grid-overlay--dark {
+		mask-image: none !important;
+		-webkit-mask-image: none !important;
+	}
 }
