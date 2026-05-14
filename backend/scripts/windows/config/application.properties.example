@@ -1,0 +1,7 @@
+# Bu dosyayi kopyalayin: config\application.properties (BAT ile ayni klasorde config alt klasoru)
+# Boylece java -jar app.jar dogrudan acilsa bile Spring bu ayarlari okur.
+# Bu ornek dosyayi GIT'e sifre yazmadan birakin; canlida config\application.properties olusturun.
+
+spring.datasource.url=jdbc:postgresql://127.0.0.1:5432/bodrum_aqua_park
+spring.datasource.username=postgres
+spring.datasource.password=DEGISTIR

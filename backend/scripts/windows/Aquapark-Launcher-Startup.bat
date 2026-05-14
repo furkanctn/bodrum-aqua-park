@@ -26,19 +26,20 @@ if not defined SPRING_PROFILES_ACTIVE set "SPRING_PROFILES_ACTIVE=pos"
 set "LOG_FILE=%AQUAPARK_LOCAL_DIR%\bodrum-sunucu.log"
 
 rem ---- PostgreSQL (pos profili): sifre ZORUNLU; yoksa "SCRAM ... no password" hatasi ----
-rem Asagidaki satirlari kendi sunucunuza gore acin (rem'i kaldirin) veya Windows'ta
-rem Kalici ortam degiskeni olarak SPRING_DATASOURCE_* tanimlayin.
-set "SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/bodrum_aqua_park"
-set "SPRING_DATASOURCE_USERNAME=postgres"
-set "SPRING_DATASOURCE_PASSWORD=123123"
+rem Asagidaki satirlarda rem kaldirarak sifreyi yazin VEYA Windows'ta kalici SPRING_DATASOURCE_PASSWORD tanimlayin.
+rem Alternatif: bu klasorde config\application.properties (spring.datasource.url/username/password)
+rem NOT: bodrum-aqua-park-api-*.jar'a cift tiklarsaniz BAT'taki degiskenler GITMEZ; her zaman bu BAT'i calistirin.
+if not defined SPRING_DATASOURCE_URL set "SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/bodrum_aqua_park"
+if not defined SPRING_DATASOURCE_USERNAME set "SPRING_DATASOURCE_USERNAME=postgres"
+rem set "SPRING_DATASOURCE_PASSWORD=POSTGRES_SIFRENIZ"
 echo %SPRING_PROFILES_ACTIVE% | findstr /i "pos" >nul 2>&1
 if not errorlevel 1 if not defined SPRING_DATASOURCE_PASSWORD (
-	echo [HATA] PostgreSQL: sifre yok. pos profili icin SPRING_DATASOURCE_PASSWORD ayarlayin.
-	echo        BAT icinde SET satirlarini acin ^(rem kaldir^) veya ortam degiskeni kullanin.
+	echo [HATA] PostgreSQL: sifre yok. SPRING_DATASOURCE_PASSWORD ayarlayin ^(yukaridaki SET satirinin rem'ini kaldirin^).
 	echo        Gecici test: set SPRING_PROFILES_ACTIVE=dev ^(H2; uretimde kullanmayin^)
 	pause
 	exit /b 1
 )
+if not exist "%AQUAPARK_LAUNCHER_JAR%" (
 	echo [HATA] Launcher JAR yok: "%AQUAPARK_LAUNCHER_JAR%"
 	echo        Maven: mvn -DskipTests package  sonrasi *-launcher.jar bu dosyaya kopyalanmali.
 	pause

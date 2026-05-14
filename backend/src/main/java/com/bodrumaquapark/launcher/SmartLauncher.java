@@ -6,6 +6,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import com.bodrumaquapark.util.AquaparkDiagnosticLog;
 
@@ -87,7 +88,19 @@ public final class SmartLauncher {
 			cmd.add(a);
 		}
 		try {
-			new ProcessBuilder(cmd).directory(localRoot.toFile()).inheritIO().start();
+			ProcessBuilder pb = new ProcessBuilder(cmd);
+			pb.directory(localRoot.toFile());
+			pb.inheritIO();
+			// Windows'ta alt JVM'e Spring ortam degiskenlerinin iletildiginden emin ol
+			Map<String, String> env = pb.environment();
+			for (String key : List.of("SPRING_DATASOURCE_URL", "SPRING_DATASOURCE_USERNAME", "SPRING_DATASOURCE_PASSWORD",
+					"SPRING_PROFILES_ACTIVE", "SPRING_APPLICATION_JSON", "LOG_FILE")) {
+				String v = System.getenv(key);
+				if (v != null && !v.isBlank()) {
+					env.put(key, v);
+				}
+			}
+			pb.start();
 			AquaparkDiagnosticLog.append("launcher", "Ana uygulama başlatıldı, launcher çıkıyor.", null);
 		} catch (Exception e) {
 			AquaparkDiagnosticLog.append("launcher", "Ana uygulama başlatılamadı.", e);

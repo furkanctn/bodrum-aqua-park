@@ -1,0 +1,25 @@
+# Üretim profili: --spring.profiles.active=prod
+# Veritabanı ve JWT: mevcut application-prod.properties ile birlikte yüklenir.
+
+spring:
+  jpa:
+    open-in-view: false
+
+app:
+  access:
+    http:
+      # Örn: https://pos.sirketiniz.com,https://admin.sirketiniz.com  (boş = CORS kapalı)
+      cors-allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:}
+      rate-limit-requests-per-minute: ${APP_ACCESS_RATE_LIMIT_PER_MINUTE:180}
+      device-online-threshold-seconds: ${APP_ACCESS_DEVICE_ONLINE_THRESHOLD_SEC:120}
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: WARN
+    com.bodrumaquapark: INFO
+    org.springframework.web.servlet.DispatcherServlet: WARN

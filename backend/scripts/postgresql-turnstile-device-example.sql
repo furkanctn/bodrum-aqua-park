@@ -1,0 +1,13 @@
+-- Turnike cihazı (turnstile_devices) örnek kurulum
+--
+-- 1) Önerilen: Uygulama ortam değişkenleri ile ilk kayıt (BCrypt otomatik)
+--    APP_ACCESS_BOOTSTRAP_DEVICE_ID=TURNSTILE-RPI-1
+--    APP_ACCESS_BOOTSTRAP_DEVICE_TOKEN=güçlü-bir-parola
+--
+-- 2) Elle INSERT: device_token_hash sütununa BCrypt (ör. strength 12) hash koyun.
+--    Hash üretmek için geçici olarak sunucuda:
+--      jshell veya küçük bir main ile Spring BCryptPasswordEncoder(12).encode("düz-token")
+--
+-- Tablolar Hibernate ddl-auto=update ile oluşturulabilir; aşağıdaki şema referans içindir.
+
+-- CREATE TABLE IF NOT EXISTS turnstile_devices (...);

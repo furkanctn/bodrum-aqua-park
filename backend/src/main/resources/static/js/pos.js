@@ -1548,6 +1548,158 @@
 			}
 		});
 	}
+
+	/** Turnike RFID günlük pas: /api/cards/assign-pass */
+	var passAccessSaleOverlay = document.getElementById("pass-access-sale-overlay");
+	var passAccessSaleInput = document.getElementById("pass-access-sale-input");
+	var passAccessSaleType = document.getElementById("pass-access-sale-type");
+	var passAccessSaleConfirmBtn = document.getElementById("pass-access-sale-confirm");
+	var passAccessSaleCancelBtn = document.getElementById("pass-access-sale-cancel");
+	var passAccessSaleSubmitting = false;
+	var passAccessSaleIdleTimer = null;
+	var PASS_ACCESS_IDLE_MS = 150;
+	var PASS_ACCESS_IDLE_MIN_LEN = 4;
+
+	function clearPassAccessSaleIdle() {
+		if (passAccessSaleIdleTimer) {
+			clearTimeout(passAccessSaleIdleTimer);
+			passAccessSaleIdleTimer = null;
+		}
+	}
+
+	function schedulePassAccessSaleIdle() {
+		if (!passAccessSaleOverlay || passAccessSaleOverlay.hidden || !passAccessSaleInput) {
+			return;
+		}
+		clearPassAccessSaleIdle();
+		passAccessSaleIdleTimer = setTimeout(function () {
+			passAccessSaleIdleTimer = null;
+			if (!passAccessSaleOverlay || passAccessSaleOverlay.hidden || passAccessSaleSubmitting) {
+				return;
+			}
+			var v = cleanUid(passAccessSaleInput.value);
+			if (v.length >= PASS_ACCESS_IDLE_MIN_LEN) {
+				confirmPassAccessSale();
+			}
+		}, PASS_ACCESS_IDLE_MS);
+	}
+
+	function openPassAccessSaleModal() {
+		if (!passAccessSaleOverlay || !passAccessSaleInput) {
+			return;
+		}
+		clearPassAccessSaleIdle();
+		passAccessSaleSubmitting = false;
+		if (passAccessSaleConfirmBtn) passAccessSaleConfirmBtn.disabled = false;
+		if (passAccessSaleCancelBtn) passAccessSaleCancelBtn.disabled = false;
+		passAccessSaleInput.value = "";
+		passAccessSaleOverlay.hidden = false;
+		passAccessSaleOverlay.setAttribute("aria-hidden", "false");
+		setTimeout(function () {
+			passAccessSaleInput.focus();
+		}, 30);
+		setTimeout(function () {
+			passAccessSaleInput.focus();
+		}, 120);
+	}
+
+	function closePassAccessSaleModal() {
+		clearPassAccessSaleIdle();
+		passAccessSaleSubmitting = false;
+		if (passAccessSaleOverlay) {
+			blurFocusInsideOverlay(passAccessSaleOverlay);
+			passAccessSaleOverlay.hidden = true;
+			passAccessSaleOverlay.setAttribute("aria-hidden", "true");
+		}
+		if (passAccessSaleInput) {
+			passAccessSaleInput.value = "";
+			try {
+				passAccessSaleInput.blur();
+			} catch (e) {}
+		}
+	}
+
+	function confirmPassAccessSale() {
+		if (!passAccessSaleInput || passAccessSaleSubmitting) {
+			return;
+		}
+		var uid = cleanUid(passAccessSaleInput.value);
+		if (!uid.length) {
+			showToast("Kartı okutun veya kimlik girin");
+			passAccessSaleInput.focus();
+			return;
+		}
+		var pt = passAccessSaleType && passAccessSaleType.value ? passAccessSaleType.value : "DAILY_SINGLE_ENTRY";
+		clearPassAccessSaleIdle();
+		passAccessSaleSubmitting = true;
+		if (passAccessSaleConfirmBtn) passAccessSaleConfirmBtn.disabled = true;
+		if (passAccessSaleCancelBtn) passAccessSaleCancelBtn.disabled = true;
+		fetch("/api/cards/assign-pass", {
+			method: "POST",
+			headers: authHeadersJson(),
+			body: JSON.stringify({ cardId: uid, passType: pt }),
+		})
+			.then(function (r) {
+				if (r.status === 401) {
+					window.location.replace("/index.html");
+					return null;
+				}
+				return r.json().then(function (data) {
+					return { ok: r.ok, status: r.status, data: data };
+				});
+			})
+			.then(function (res) {
+				passAccessSaleSubmitting = false;
+				if (passAccessSaleConfirmBtn) passAccessSaleConfirmBtn.disabled = false;
+				if (passAccessSaleCancelBtn) passAccessSaleCancelBtn.disabled = false;
+				if (!res) {
+					return;
+				}
+				if (!res.ok) {
+					var msg =
+						(res.data && (res.data.detail || res.data.message || res.data.error)) || "Pas tanımlanamadı";
+					showToast(typeof msg === "string" ? msg : "Pas tanımlanamadı");
+					if (passAccessSaleInput) passAccessSaleInput.focus();
+					return;
+				}
+				var m = res.data && res.data.message ? res.data.message : "Turnike pası kaydedildi";
+				showToast(m + " · " + uid);
+				closePassAccessSaleModal();
+			})
+			.catch(function (err) {
+				passAccessSaleSubmitting = false;
+				if (passAccessSaleConfirmBtn) passAccessSaleConfirmBtn.disabled = false;
+				if (passAccessSaleCancelBtn) passAccessSaleCancelBtn.disabled = false;
+				if (err && err.name === "TypeError") {
+					showToast("Sunucuya bağlanılamadı");
+				} else {
+					showToast("İstek başarısız");
+				}
+				if (passAccessSaleInput) passAccessSaleInput.focus();
+			});
+	}
+
+	if (passAccessSaleConfirmBtn) {
+		passAccessSaleConfirmBtn.addEventListener("click", function () {
+			clearPassAccessSaleIdle();
+			confirmPassAccessSale();
+		});
+	}
+	if (passAccessSaleCancelBtn) {
+		passAccessSaleCancelBtn.addEventListener("click", function () {
+			closePassAccessSaleModal();
+		});
+	}
+	if (passAccessSaleInput) {
+		passAccessSaleInput.addEventListener("input", schedulePassAccessSaleIdle);
+		passAccessSaleInput.addEventListener("keydown", function (e) {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				clearPassAccessSaleIdle();
+				confirmPassAccessSale();
+			}
+		});
+	}
 	/** Bakiye yükleme: Yüklemeyi tamamla → kart UID (HID) */
 	var bakiyeCardBindOverlay = document.getElementById("bakiye-card-bind-overlay");
 	var bakiyeCardBindInput = document.getElementById("bakiye-card-bind-input");
@@ -2443,6 +2595,11 @@
 
 	document.addEventListener("keydown", function (e) {
 		if (e.key !== "Escape") {
+			return;
+		}
+		if (passAccessSaleOverlay && !passAccessSaleOverlay.hidden) {
+			e.preventDefault();
+			closePassAccessSaleModal();
 			return;
 		}
 		if (bakiyeCardBindOverlay && !bakiyeCardBindOverlay.hidden) {
@@ -3900,6 +4057,13 @@
 		renderGrid();
 		updateSummary();
 		showToast("Yeni sepet");
+	});
+	wireLuxRail("pos-lux-rail-pass-access", function () {
+		if (currentModule !== "kart") {
+			showToast("Kart satışı yalnızca bilet ekranında");
+			return;
+		}
+		openPassAccessSaleModal();
 	});
 	wireLuxRail("pos-lux-rail-cancel", function () {
 		if (currentModule !== "kart") {

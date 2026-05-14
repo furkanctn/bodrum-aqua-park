@@ -1,0 +1,40 @@
+# Ortak YAML (profil dosyaları ile birleşir). Özel ayarlar için application.properties kullanılmaya devam eder.
+
+spring:
+  application:
+    name: bodrum-aqua-park-api
+
+server:
+  tomcat:
+    connection-timeout: 20s
+    threads:
+      max: 200
+
+# Turnike / actuator / HTTP sınırları
+app:
+  access:
+    http:
+      cors-allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:}
+      rate-limit-requests-per-minute: ${APP_ACCESS_RATE_LIMIT_PER_MINUTE:120}
+      device-online-threshold-seconds: ${APP_ACCESS_DEVICE_ONLINE_THRESHOLD_SEC:120}
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    defaults:
+      enabled: true
+
+logging:
+  level:
+    com.bodrumaquapark.service.AccessControlService: INFO
+    com.bodrumaquapark.web.AccessControlController: INFO
+    com.bodrumaquapark.access.AccessCheckRateLimitFilter: WARN

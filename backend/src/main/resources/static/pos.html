@@ -70,6 +70,9 @@
 					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-new" title="Yeni sepet">
 						<span class="pos-lux-rail-ico" aria-hidden="true">+</span><span class="pos-lux-rail-txt">Yeni</span>
 					</button>
+					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-pass-access" title="Turnike — günlük RFID pas tanımla">
+						<span class="pos-lux-rail-ico" aria-hidden="true">▣</span><span class="pos-lux-rail-txt">Kart satışı</span>
+					</button>
 					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-treat" title="İkram">
 						<span class="pos-lux-rail-ico" aria-hidden="true">★</span><span class="pos-lux-rail-txt">İkram</span>
 					</button>
@@ -408,6 +411,34 @@
 		</div>
 	</div>
 
+	<!-- Turnike RFID günlük pas: POS → kart okut → /api/cards/assign-pass -->
+	<div id="pass-access-sale-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="pass-access-sale-title">
+			<h2 id="pass-access-sale-title" class="pos-rfid-overlay__title">Kart satışı (turnike)</h2>
+			<p id="pass-access-sale-msg" class="pos-rfid-overlay__msg">
+				Kartı HID okuyucuya okutun veya kimliği yazıp Enter’a basın. Bugün için geçerli <strong>günlük geçiş pası</strong> sunucuya kaydedilir.
+			</p>
+			<label class="pos-rfid-overlay__msg" for="pass-access-sale-type" style="display: block; margin-bottom: 0.35rem">Pas türü</label>
+			<select id="pass-access-sale-type" class="pos-rfid-overlay__input" aria-label="Pas türü">
+				<option value="DAILY_SINGLE_ENTRY">Günlük tek geçiş</option>
+				<option value="DAILY_UNLIMITED">Günlük sınırsız</option>
+			</select>
+			<input
+				type="text"
+				id="pass-access-sale-input"
+				class="pos-rfid-overlay__input"
+				autocomplete="off"
+				autocapitalize="off"
+				spellcheck="false"
+				aria-label="RFID kart kimliği"
+			/>
+			<div class="pos-rfid-overlay__actions">
+				<button type="button" class="footer-btn primary" id="pass-access-sale-confirm">Pas tanımla</button>
+				<button type="button" class="footer-btn danger" id="pass-access-sale-cancel">İptal</button>
+			</div>
+		</div>
+	</div>
+
 	<!-- Bilet satışı (kart satış yetkisi): sipariş tamamla → fiziksel karta turnike hakkı (rfid üstünde) -->
 	<div id="ticket-card-bind-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
 		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="ticket-card-bind-title">
@@ -591,6 +622,6 @@
 	</div>
 
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js?v=13" defer></script>
+	<script src="/js/pos.js?v=14" defer></script>
 </body>
 </html>

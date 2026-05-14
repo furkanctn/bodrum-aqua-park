@@ -115,6 +115,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		if (path.equals("/api/auth/login") && "POST".equalsIgnoreCase(method)) {
 			return true;
 		}
+		/* Turnike: cihaz gövdesi + X-DEVICE-TOKEN; JWT kullanılmaz */
+		if (path.equals("/api/access/check") && "POST".equalsIgnoreCase(method)) {
+			return true;
+		}
 		return false;
 	}
 
