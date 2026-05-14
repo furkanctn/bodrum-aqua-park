@@ -3625,6 +3625,17 @@ body.module-kart .footer-btn.primary {
 	border-radius: 50%;
 	background: #4ade80;
 	box-shadow: 0 0 8px #4ade80;
+	transition: background 0.3s, box-shadow 0.3s;
+}
+
+.pos-lux-dot.offline {
+	background: #f87171;
+	box-shadow: 0 0 8px #f87171;
+}
+
+.pos-lux-dot.checking {
+	background: #fbbf24;
+	box-shadow: 0 0 8px #fbbf24;
 }
 
 .pos-lux-user-chip {

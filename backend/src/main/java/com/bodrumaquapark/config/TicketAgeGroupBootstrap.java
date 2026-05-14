@@ -16,7 +16,7 @@ public class TicketAgeGroupBootstrap {
 	@Bean
 	@Order(3)
 	ApplicationRunner seedTicketAgeGroups(TicketAgeGroupRepository repo) {
-		return args -> {
+		return BootstrapResilience.safely("seedTicketAgeGroups", args -> {
 			if (repo.count() > 0) {
 				return;
 			}
@@ -32,6 +32,6 @@ public class TicketAgeGroupBootstrap {
 			repo.save(new TicketAgeGroup("Öğrenci", new BigDecimal("11.00"), o, true));
 			o += 10;
 			repo.save(new TicketAgeGroup("65+ Yaş", new BigDecimal("9.50"), o, true));
-		};
+		});
 	}
 }

@@ -1198,6 +1198,7 @@
 
 		function openOverlay() {
 			syncModalFromStorage();
+			refreshPrinterDisplay();
 			overlay.hidden = false;
 			overlay.setAttribute("aria-hidden", "false");
 		}
@@ -1248,24 +1249,95 @@
 			});
 		}
 
+		var printerNameEl = document.getElementById("printer-selected-name");
+		var printerStatusBox = document.getElementById("printer-status-box");
+
+		function updatePrinterDisplayName(name, isConnected) {
+			if (!printerNameEl) return;
+			printerNameEl.textContent = name || "Henüz seçilmedi";
+			if (printerStatusBox) {
+				if (isConnected) {
+					printerStatusBox.style.background = "#f0fdf4";
+					printerStatusBox.style.borderColor = "#22c55e";
+					printerNameEl.style.color = "#15803d";
+				} else if (name && name !== "Henüz seçilmedi") {
+					printerStatusBox.style.background = "#fef9c3";
+					printerStatusBox.style.borderColor = "#eab308";
+					printerNameEl.style.color = "#a16207";
+				} else {
+					printerStatusBox.style.background = "#fef2f2";
+					printerStatusBox.style.borderColor = "#ef4444";
+					printerNameEl.style.color = "#dc2626";
+				}
+			}
+		}
+
+		function refreshPrinterDisplay() {
+			if (!navigator.serial) {
+				updatePrinterDisplayName("Web Serial desteklenmiyor", false);
+				return;
+			}
+			navigator.serial.getPorts().then(function (ports) {
+				var saved = "";
+				try { saved = (localStorage.getItem(LS_RECEIPT_USB_FP) || "").trim().toLowerCase(); } catch (e) {}
+
+				if (ports.length === 0) {
+					updatePrinterDisplayName("Yazıcı bağlı değil", false);
+					return;
+				}
+
+				for (var i = 0; i < ports.length; i++) {
+					var p = ports[i];
+					var info = p.getInfo ? p.getInfo() : {};
+					var fp = receiptPrinterUsbFingerprint(p).toLowerCase();
+					var name = "";
+					if (info.usbVendorId && info.usbProductId) {
+						name = "USB Yazıcı (" + info.usbVendorId.toString(16).toUpperCase() + ":" + info.usbProductId.toString(16).toUpperCase() + ")";
+					} else {
+						name = "USB Yazıcı #" + (i + 1);
+					}
+					if (saved && fp === saved) {
+						updatePrinterDisplayName(name + " ✓", true);
+						return;
+					}
+				}
+
+				if (ports.length === 1) {
+					var info = ports[0].getInfo ? ports[0].getInfo() : {};
+					var name = info.usbVendorId ? "USB Yazıcı (" + info.usbVendorId.toString(16).toUpperCase() + ":" + info.usbProductId.toString(16).toUpperCase() + ")" : "USB Yazıcı";
+					updatePrinterDisplayName(name, true);
+				} else {
+					updatePrinterDisplayName(ports.length + " yazıcı bulundu - seçin", false);
+				}
+			}).catch(function () {
+				updatePrinterDisplayName("Yazıcı kontrol edilemedi", false);
+			});
+		}
+
 		if (pickBtn) {
 			pickBtn.addEventListener("click", function () {
 				if (!navigator.serial) {
+					showToast("Web Serial API desteklenmiyor. Chrome veya Edge kullanın.", { duration: 4000 });
 					return;
 				}
 				navigator.serial
 					.requestPort()
 					.then(function (port) {
 						var fp = receiptPrinterUsbFingerprint(port);
+						var info = port.getInfo ? port.getInfo() : {};
+						var name = "";
+						if (info.usbVendorId && info.usbProductId) {
+							name = "USB Yazıcı (" + info.usbVendorId.toString(16).toUpperCase() + ":" + info.usbProductId.toString(16).toUpperCase() + ")";
+						} else {
+							name = fp || "USB Yazıcı";
+						}
 						try {
 							if (fp) {
 								localStorage.setItem(LS_RECEIPT_USB_FP, fp);
 							}
 						} catch (e) {}
-						showToast(
-							fp ? "USB yazıcı kaydedildi (" + fp + ")" : "USB yazıcı izni kaydedildi.",
-							{ duration: 4000 }
-						);
+						updatePrinterDisplayName(name + " ✓", true);
+						showToast("Yazıcı seçildi: " + name, { duration: 3000 });
 					})
 					.catch(function (e) {
 						if (e && e.name === "NotFoundError") {
@@ -4300,6 +4372,115 @@
 	}
 	tick();
 	setInterval(tick, 1000);
+
+	/* === Durum ışıkları: İnternet, Sunucu, Yazıcı === */
+	var dotInternet = document.getElementById("dot-internet");
+	var dotServer = document.getElementById("dot-server");
+	var dotPrinter = document.getElementById("dot-printer");
+
+	function setDotStatus(dotEl, online) {
+		if (!dotEl) return;
+		if (online) {
+			dotEl.classList.remove("offline", "checking");
+		} else {
+			dotEl.classList.remove("checking");
+			dotEl.classList.add("offline");
+		}
+	}
+
+	function checkInternetStatus() {
+		if (dotInternet) {
+			setDotStatus(dotInternet, navigator.onLine);
+		}
+	}
+
+	function checkServerStatus() {
+		if (!dotServer) return;
+		fetch("/actuator/health", { method: "GET", cache: "no-store" })
+			.then(function (res) {
+				setDotStatus(dotServer, res.ok);
+			})
+			.catch(function () {
+				setDotStatus(dotServer, false);
+			});
+	}
+
+	function checkPrinterStatus() {
+		if (!dotPrinter) return;
+
+		// Fiş hedefi: local (Web Serial) veya server (COM port)
+		var target = getReceiptPrintTarget();
+
+		if (target === "local") {
+			// Web Serial API ile kontrol
+			if (!navigator.serial) {
+				setDotStatus(dotPrinter, false);
+				return;
+			}
+			navigator.serial.getPorts()
+				.then(function (ports) {
+					if (ports.length === 0) {
+						setDotStatus(dotPrinter, false);
+						return;
+					}
+					// Kaydedilmiş yazıcıyı ara
+					var saved = "";
+					try {
+						saved = (localStorage.getItem(LS_RECEIPT_USB_FP) || "").trim().toLowerCase();
+					} catch (e) {}
+
+					if (saved && saved.indexOf(":") >= 0) {
+						// Kaydedilmiş yazıcı var, eşleşme ara
+						var found = ports.some(function (p) {
+							var fp = receiptPrinterUsbFingerprint(p).toLowerCase();
+							return fp && fp === saved;
+						});
+						setDotStatus(dotPrinter, found);
+					} else if (ports.length >= 1) {
+						// Kaydedilmiş yok ama port var
+						setDotStatus(dotPrinter, true);
+					} else {
+						setDotStatus(dotPrinter, false);
+					}
+				})
+				.catch(function () {
+					setDotStatus(dotPrinter, false);
+				});
+		} else {
+			// Sunucu COM port kontrolü
+			fetch("/api/printer/status", { method: "GET", headers: authHeaders(), cache: "no-store" })
+				.then(function (res) {
+					if (!res.ok) {
+						setDotStatus(dotPrinter, false);
+						return;
+					}
+					return res.json();
+				})
+				.then(function (data) {
+					if (data && data.available !== undefined) {
+						setDotStatus(dotPrinter, data.available);
+					}
+				})
+				.catch(function () {
+					setDotStatus(dotPrinter, false);
+				});
+		}
+	}
+
+	function checkAllStatuses() {
+		checkInternetStatus();
+		checkServerStatus();
+		checkPrinterStatus();
+	}
+
+	// İlk kontrol
+	checkAllStatuses();
+	// Her 3 saniyede bir kontrol
+	setInterval(checkAllStatuses, 3000);
+
+	// İnternet durumu değiştiğinde hemen güncelle
+	window.addEventListener("online", checkInternetStatus);
+	window.addEventListener("offline", checkInternetStatus);
 
 	function wirePosAppWindowClose() {
 		var btn = document.getElementById("pos-app-window-close");

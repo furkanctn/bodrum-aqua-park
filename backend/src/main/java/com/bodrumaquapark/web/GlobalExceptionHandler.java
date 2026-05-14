@@ -17,6 +17,7 @@ import com.bodrumaquapark.exception.CardNotFoundException;
 import com.bodrumaquapark.exception.DuplicateCardUidException;
 import com.bodrumaquapark.exception.InsufficientBalanceException;
 import com.bodrumaquapark.exception.OutOfStockException;
+import com.bodrumaquapark.exception.PrinterNotAvailableException;
 import com.bodrumaquapark.exception.ProductNotFoundException;
 
 @RestControllerAdvice
@@ -81,6 +82,16 @@ public class GlobalExceptionHandler {
 		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
 		pd.setTitle("Out Of Stock");
 		pd.setType(URI.create("about:blank"));
+		return pd;
+	}
+
+	@ExceptionHandler(PrinterNotAvailableException.class)
+	public ProblemDetail handlePrinterNotAvailable(PrinterNotAvailableException ex) {
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+		pd.setTitle("Printer Not Available");
+		pd.setType(URI.create("about:blank"));
+		pd.setProperty("code", "printer_not_available");
+		pd.setProperty("printerTarget", ex.getPrinterTarget());
 		return pd;
 	}
 

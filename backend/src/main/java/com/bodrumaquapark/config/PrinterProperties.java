@@ -21,6 +21,20 @@ public class PrinterProperties {
 	 */
 	private String windowsQueueName = "";
 
+	/**
+	 * true ise satış işlemi için yazıcı bağlı olmalı; yazıcı yoksa satış yapılmaz.
+	 * Varsayılan: false (yazıcı olmadan satış yapılabilir).
+	 */
+	private boolean requiredForSale = false;
+
+	public boolean isRequiredForSale() {
+		return requiredForSale;
+	}
+
+	public void setRequiredForSale(boolean requiredForSale) {
+		this.requiredForSale = requiredForSale;
+	}
+
 	public String getWindowsQueueName() {
 		return windowsQueueName;
 	}

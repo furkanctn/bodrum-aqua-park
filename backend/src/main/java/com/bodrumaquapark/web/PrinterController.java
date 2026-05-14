@@ -31,15 +31,11 @@ public class PrinterController {
 	}
 
 	/**
-	 * JWT gerekmez — sunucuda fiş modülünün yüklü olduğunu ve doğru adres/port ile erişildiğini doğrular.
+	 * Yazıcı durumu — bağlı mı, erişilebilir mi kontrol eder.
 	 */
 	@GetMapping("/status")
 	public Map<String, Object> status() {
-		return Map.of(
-				"ok", true,
-				"module", "escpos-serial-or-windows-spooler",
-				"hint",
-				"Windows: APP_PRINTER_WINDOWS_QUEUE ile yazıcı kuyruk adı (USB yazıcı, ham ESC/POS) — COM gerekmez. Aksi halde COM veya POS «Fiş USB» (Web Serial).");
+		return printerService.getPrinterStatus();
 	}
 
 	@GetMapping("/ports")

@@ -442,7 +442,7 @@ public class PrinterService {
 	}
 
 	/**
-	 * Fiş gönderiminde kullanılacak port: istek gövdesi (varsa) → veritabanı → ortam/properties.
+	 * Fiş gönderiminde kullanılacak port: istek gövdesi (varsa) → veritabanı → otomatik algılama → ortam/properties.
 	 */
 	public String effectivePort(String requestPortOverride) {
 		if (requestPortOverride != null && !requestPortOverride.isBlank()) {
@@ -451,6 +451,10 @@ public class PrinterService {
 		Optional<String> db = databasePortOrEmpty();
 		if (db.isPresent()) {
 			return db.get();
+		}
+		// Otomatik algılanan port
+		if (autoSelectedPort != null && !autoSelectedPort.isBlank()) {
+			return autoSelectedPort;
 		}
 		return configuredPortOrNull();
 	}
@@ -546,5 +550,184 @@ public class PrinterService {
 			sb.append(" …");
 		}
 		return sb.toString();
+	}
+
+	/**
+	 * Fiş yazıcının bağlı ve erişilebilir olup olmadığını kontrol eder.
+	 * Windows kuyruk veya seri port açılabiliyorsa true döner.
+	 */
+	public boolean isPrinterAvailable() {
+		// Windows kuyruk kontrolü
+		Optional<String> winQueue = effectiveWindowsQueueName();
+		if (winQueue.isPresent()) {
+			PrintService ps = findPrintServiceByQueueName(winQueue.get());
+			boolean available = ps != null;
+			log.debug("Yazıcı kontrolü (Windows kuyruk {}): {}", winQueue.get(), available ? "erişilebilir" : "erişilemez");
+			return available;
+		}
+
+		// Seri port kontrolü
+		String port = effectivePort(null);
+		if (port == null || port.isBlank()) {
+			log.debug("Yazıcı kontrolü: port tanımlı değil");
+			return false;
+		}
+
+		try {
+			SerialPort serialPort = SerialPort.getCommPort(port);
+			boolean opened = serialPort.openPort();
+			if (opened) {
+				serialPort.closePort();
+				log.debug("Yazıcı kontrolü (seri port {}): erişilebilir", port);
+				return true;
+			} else {
+				log.debug("Yazıcı kontrolü (seri port {}): açılamadı", port);
+				return false;
+			}
+		} catch (Exception e) {
+			log.debug("Yazıcı kontrolü (seri port {}): hata - {}", port, e.getMessage());
+			return false;
+		}
+	}
+
+	/**
+	 * Yazıcı durumu bilgisi (API için).
+	 */
+	public Map<String, Object> getPrinterStatus() {
+		// Önce otomatik algılama dene
+		AutoDetectResult autoResult = autoDetectPrinter();
+
+		Map<String, Object> status = new LinkedHashMap<>();
+		boolean available = isPrinterAvailable();
+		status.put("available", available);
+
+		Optional<String> winQueue = effectiveWindowsQueueName();
+		if (winQueue.isPresent()) {
+			status.put("type", "windows-queue");
+			status.put("target", winQueue.get());
+			status.put("message", available ? "Fiş yazıcı bağlı ve hazır" : "Fiş yazıcı bağlı değil veya erişilemiyor");
+		} else {
+			String port = effectivePort(null);
+			status.put("type", "serial");
+			status.put("target", port != null ? port : "tanımlı değil");
+
+			// Otomatik algılama sonucu
+			status.put("autoDetect", autoResult.toMap());
+
+			if (port == null || port.isBlank()) {
+				if (autoResult.status == AutoDetectStatus.SINGLE_FOUND) {
+					status.put("message", "Yazıcı bulundu: " + autoResult.portName + " - Otomatik kullanılacak");
+					status.put("available", true);
+				} else if (autoResult.status == AutoDetectStatus.MULTIPLE_FOUND) {
+					status.put("message", "Birden fazla yazıcı bulundu. Lütfen seçin.");
+				} else {
+					status.put("message", "Fiş yazıcı bağlı değil veya erişilemiyor");
+				}
+			} else {
+				status.put("message", available ? "Fiş yazıcı bağlı ve hazır" : "Fiş yazıcı bağlı değil veya erişilemiyor");
+			}
+		}
+		return status;
+	}
+
+	/**
+	 * USB/Seri port yazıcıları otomatik algıla.
+	 * Sewoo, termal yazıcı veya USB-Serial adaptörleri arar.
+	 */
+	public AutoDetectResult autoDetectPrinter() {
+		List<Map<String, String>> ports = listSerialPorts();
+
+		if (ports.isEmpty()) {
+			return new AutoDetectResult(AutoDetectStatus.NONE_FOUND, null, null, List.of());
+		}
+
+		// Sewoo veya termal yazıcı olabilecek portları filtrele
+		List<Map<String, String>> printerPorts = new ArrayList<>();
+		for (Map<String, String> port : ports) {
+			String desc = port.get("description");
+			String name = port.get("name");
+			if (desc == null) desc = "";
+
+			// Sewoo, termal yazıcı, USB-Serial adaptör tanımlayıcıları
+			String descLower = desc.toLowerCase(Locale.ROOT);
+			if (descLower.contains("sewoo") ||
+				descLower.contains("thermal") ||
+				descLower.contains("printer") ||
+				descLower.contains("pos") ||
+				descLower.contains("receipt") ||
+				descLower.contains("usb-serial") ||
+				descLower.contains("usbserial") ||
+				descLower.contains("ch340") ||
+				descLower.contains("pl2303") ||
+				descLower.contains("cp210") ||
+				descLower.contains("ftdi") ||
+				(name != null && name.toLowerCase(Locale.ROOT).contains("usbserial"))) {
+				printerPorts.add(port);
+			}
+		}
+
+		// Hiç yazıcı adayı bulunamadıysa tüm seri portları göster
+		if (printerPorts.isEmpty()) {
+			if (ports.size() == 1) {
+				// Tek port var, muhtemelen yazıcı
+				Map<String, String> single = ports.get(0);
+				return new AutoDetectResult(AutoDetectStatus.SINGLE_FOUND, single.get("name"), single.get("description"), ports);
+			}
+			return new AutoDetectResult(AutoDetectStatus.NONE_FOUND, null, null, ports);
+		}
+
+		if (printerPorts.size() == 1) {
+			Map<String, String> single = printerPorts.get(0);
+			String portName = single.get("name");
+			// Otomatik olarak bu portu kaydet
+			autoSelectPort(portName);
+			return new AutoDetectResult(AutoDetectStatus.SINGLE_FOUND, portName, single.get("description"), printerPorts);
+		}
+
+		// Birden fazla yazıcı adayı var
+		return new AutoDetectResult(AutoDetectStatus.MULTIPLE_FOUND, null, null, printerPorts);
+	}
+
+	/**
+	 * Otomatik algılanan portu geçici olarak kullan (veritabanına kaydetmeden).
+	 */
+	private String autoSelectedPort = null;
+
+	private void autoSelectPort(String portName) {
+		this.autoSelectedPort = portName;
+		log.info("Yazıcı otomatik algılandı ve seçildi: {}", portName);
+	}
+
+	/**
+	 * Kullanıcının seçtiği portu veritabanına kaydet.
+	 */
+	@Transactional
+	public void selectAndSavePrinter(String portName, int baudRate) {
+		savePrinterSettingsToDatabase(portName, baudRate);
+		this.autoSelectedPort = null; // Artık DB'den okunsun
+		log.info("Yazıcı kullanıcı tarafından seçildi ve kaydedildi: {}, baud: {}", portName, baudRate);
+	}
+
+	public enum AutoDetectStatus {
+		NONE_FOUND,      // Hiç yazıcı bulunamadı
+		SINGLE_FOUND,    // Tek yazıcı bulundu, otomatik kullanılacak
+		MULTIPLE_FOUND   // Birden fazla yazıcı var, kullanıcı seçmeli
+	}
+
+	public record AutoDetectResult(
+		AutoDetectStatus status,
+		String portName,
+		String description,
+		List<Map<String, String>> availablePorts
+	) {
+		public Map<String, Object> toMap() {
+			Map<String, Object> m = new LinkedHashMap<>();
+			m.put("status", status.name());
+			m.put("portName", portName);
+			m.put("description", description);
+			m.put("availablePorts", availablePorts);
+			m.put("needsSelection", status == AutoDetectStatus.MULTIPLE_FOUND);
+			return m;
+		}
 	}
 }

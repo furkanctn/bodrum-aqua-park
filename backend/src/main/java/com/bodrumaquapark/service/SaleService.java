@@ -3,11 +3,14 @@ package com.bodrumaquapark.service;
 import java.math.BigDecimal;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.bodrumaquapark.config.PrinterProperties;
 import com.bodrumaquapark.entity.Card;
 import com.bodrumaquapark.entity.CardLedgerEntry;
 import com.bodrumaquapark.entity.CardStatus;
@@ -16,6 +19,7 @@ import com.bodrumaquapark.entity.TransactionType;
 import com.bodrumaquapark.exception.CardBlockedException;
 import com.bodrumaquapark.exception.InsufficientBalanceException;
 import com.bodrumaquapark.exception.OutOfStockException;
+import com.bodrumaquapark.exception.PrinterNotAvailableException;
 import com.bodrumaquapark.exception.ProductNotFoundException;
 import com.bodrumaquapark.repository.CardLedgerEntryRepository;
 import com.bodrumaquapark.repository.ProductRepository;
@@ -24,19 +28,38 @@ import com.bodrumaquapark.util.Money;
 @Service
 public class SaleService {
 
+	private static final Logger log = LoggerFactory.getLogger(SaleService.class);
+
 	private final ProductRepository productRepository;
 	private final CardLedgerEntryRepository ledgerEntryRepository;
 	private final CardService cardService;
+	private final PrinterService printerService;
+	private final PrinterProperties printerProperties;
 
 	public SaleService(ProductRepository productRepository,
-			CardLedgerEntryRepository ledgerEntryRepository, CardService cardService) {
+			CardLedgerEntryRepository ledgerEntryRepository, CardService cardService,
+			PrinterService printerService, PrinterProperties printerProperties) {
 		this.productRepository = productRepository;
 		this.ledgerEntryRepository = ledgerEntryRepository;
 		this.cardService = cardService;
+		this.printerService = printerService;
+		this.printerProperties = printerProperties;
 	}
 
 	@Transactional
 	public SaleResult sell(String cardUid, Long productId, Set<String> allowedSaleAreaCodes) {
+		// Yazıcı zorunluysa önce kontrol et - bakiye düşmeden hata ver
+		if (printerProperties.isRequiredForSale()) {
+			if (!printerService.isPrinterAvailable()) {
+				String target = printerService.effectivePort(null);
+				if (target == null) {
+					target = printerService.effectiveWindowsQueueName().orElse("tanımlı değil");
+				}
+				log.warn("Satış reddedildi: Fiş yazıcı bağlı değil (hedef: {})", target);
+				throw new PrinterNotAvailableException(target);
+			}
+		}
+
 		String uid = cardUid != null ? cardUid.trim() : "";
 		Card card = cardService.findCardForUpdateByUidFlexible(uid);
 		if (card.getStatus() != CardStatus.ACTIVE) {

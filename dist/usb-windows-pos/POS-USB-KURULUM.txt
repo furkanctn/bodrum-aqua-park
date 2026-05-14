@@ -1,87 +1,72 @@
 ================================================================================
-Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
+Bodrum Aqua Park POS - Windows Kurulum
 ================================================================================
 
-1) MAC'TE (geliştirme bilgisayarı)
-   - Proje kökünde veya backend klasöründe:
-     mvn -f backend/pom.xml clean package -DskipTests
-   - Çıktı: backend/target/bodrum-aqua-park-api-1.2.0.0.jar
-   - Not: pom.xml içinde javafx.platform=win olduğu sürece bu JAR Windows POS
-     için doğru JavaFX DLL'lerini içerir (Mac'te derlense bile).
+GEREKSINIMLER
+-------------
+1. Windows 10/11 (64-bit)
+2. JDK 21: https://adoptium.net
+3. PostgreSQL sunucusu: 192.168.0.15:5432
+4. Edge veya Chrome tarayici
 
-2) USB'YE KOPYALANACAKLAR (aynı klasörde olsun)
-   - bodrum-aqua-park-api-1.2.0.0.jar   (target klasöründen)
-   - BodrumAquaPark.bat   ← POS'ta çift tıklanacak başlatıcı
-   - javafx-logging.properties  ← JavaFX konsol uyarilarini susturur (usb-paket-olustur.sh ile gelir)
-   - Olustur-Masaustu-Kisayolu.ps1  ← masaüstü kısayolu + simge (isteğe bağlı)
-   - app.ico  ← kısayol simgesi için bu klasöre koyun (yoksa varsayılan simge)
-   - Bu dosya: POS-USB-KURULUM.txt (isteğe bağlı)
+KURULUM
+-------
+1. JDK 21 kurun (Adoptium onerilir)
+2. java -version komutu ile dogrulayin (21 gormeli)
+3. Bu klasoru POS bilgisayara kopyalayin
 
-   Mac'te tek seferde klasör oluşturmak için (BAT + JAR birlikte):
-   backend/scripts/usb-paket-olustur.sh çalıştırın → dist/usb-windows-pos/
+CALISTIRMA
+----------
+1. PostgreSQL sunucusunun (192.168.0.15) acik oldugundan emin olun
+2. BodrumAquaPark.bat dosyasina cift tiklayin
+3. Sunucu baslayana kadar bekleyin (~30 saniye)
+4. Edge/Chrome otomatik acilir
+5. Giris: kullanici adi ve sifre ile
 
-3) WINDOWS POS (POSBANK) — İLK KURULUM
-   - JDK 21 (64-bit) kurun: https://adoptium.net veya Oracle JDK 21
-   - Kurulumdan sonra "java" komutunun çalışması için:
-     * Denetim Masası > Sistem > Gelişmiş > Ortam değişkenleri
-     * JAVA_HOME = ör. C:\Program Files\Eclipse Adoptium\jdk-21...
-     * PATH'e ekleyin: %JAVA_HOME%\bin
-   - Komut İstemi'nde doğrulayın:  java -version   (21 görünmeli)
+DOSYALAR
+--------
+- bodrum-aqua-park-api-1.2.0.0.jar  : Ana uygulama
+- BodrumAquaPark.bat                : Baslatici
+- bodrum-sunucu.log                 : Hata kaydi (calisirken olusur)
 
-4) ÇALIŞTIRMA
-   - USB'deki klasörü POS'a kopyalayın (veya USB'den doğrudan çalıştırın).
-   - BodrumAquaPark.bat dosyasına çift tıklayın.
-   - Günlük dosyaları (JAR ile aynı klasör):
-     * bodrum-sunucu.log  → Spring Boot / hata kaydı (BAT LOG_FILE ile mutlak yol; yoksa eski sürüm BAT veya yazma izni)
-     * bodrum-baslat.log  → yalnızca BAT’ın kısa notları (sunucu çıktısı burada değil)
-   - Not: Bazı yavaş PC'lerde sunucunun açılması 20–60 sn sürebilir. BAT artık /api/health yanıtını bekler;
-     hazır olunca tarayıcıyı açar.
-   - Dokunmatik / klavye yok: tam ekrandan çıkmak için POS alt çubukta «Pencere» düğmesi (onay sonrası kapatır).
-     JavaFX masaüstü modunda ekran klavyesinden ESC de tam ekrandan çıkar.
-   - Masaüstünde logo/kısayol isterseniz (bir kez):
-       * İsteğe bağlı: klasöre app.ico koyun (PNG’den ICO üretilebilir).
-       * Olustur-Masaustu-Kisayolu.ps1 dosyasına sağ tık > PowerShell ile çalıştır
-         veya: powershell -ExecutionPolicy Bypass -File "Olustur-Masaustu-Kisayolu.ps1"
-       * Masaüstünde "Bodrum Aqua Park POS" kısayolu oluşur; bundan sonra çoğu kez bunu
-         kullanırsınız (yine BodrumAquaPark.bat'ı çalıştırır).
-   - Varsayılan: Sunucu (minimize pencere) + Edge veya Chrome uygulama penceresi (hızlı).
-   - Yavaş tek pencere (JavaFX WebView) isterseniz: BodrumAquaPark.bat desktop
-   - Giriş (varsayılan test): kullanıcı 0000, şifre 0000
-   - Sunucu penceresini kapatmayın; kapatırsanız tarayıcı çalışmaz.
+YAPILANDIRMA (BodrumAquaPark.bat icinde)
+----------------------------------------
+PostgreSQL:
+  SPRING_DATASOURCE_URL=jdbc:postgresql://192.168.0.15:5432/bodrum_aqua_park
+  SPRING_DATASOURCE_USERNAME=postgres
+  SPRING_DATASOURCE_PASSWORD=123123
 
-   --- Sewoo / Windows: kuyrukta iş görünmüyor ---
-   - Spring Boot varsayılanı «headless» moddur; javax.print bazen kuyruğa hiç iş koymaz.
-   - Güncel BodrumAquaPark.bat: -Djava.awt.headless=false ve JAR içi lowresource profilinde
-     spring.main.headless=false vardır. Sunucuyu tamamen kapatıp BAT ile yeniden başlatın.
-   - Yönetim → API: GET /api/printer/windows-diagnostics yanıtında awtHeadless: false olmalı.
+Yazici (Sewoo):
+  APP_PRINTER_WINDOWS_QUEUE=Sewoo
+  (Aygitlar ve Yazicilar'daki isimle eslesmelidir)
 
-   --- Arayüz (POS) neden eski görünüyor? ---
-   - Sadece BodrumAquaPark.bat dosyasını güncellemek YETERLİ DEĞİL.
-   - pos.html / pos.js / css dosyaları derleme sırasında JAR içine gömülür.
-   - Kodda değişiklik yaptıktan sonra Mac’te (veya geliştirme PC’de) MUTLAKA:
-       mvn -f backend/pom.xml clean package -DskipTests
-     veya:  bash backend/scripts/usb-paket-olustur.sh
-   - Oluşan YENİ bodrum-aqua-park-api-1.2.0.0.jar dosyasını USB/POS
-     klasörüne kopyalayıp ESKİ JAR’ın üzerine yazın; ardından BAT’ı yeniden çalıştırın.
-   - Geliştirme: Tüm backend klasörü (mvnw dahil) Windows’ta aynı yolda ise:
-       BodrumAquaPark.bat dev
-     derlemeden çalıştırır (Maven gerekir). USB’de sadece JAR+Bat varsa “dev” çalışmaz.
+YAZICI SECIMI
+-------------
+1. POS ekraninda sol altta "Fis USB" tiklayin
+2. "USB yaziciyi sec" butonuna tiklayin
+3. Listeden Sewoo yaziciyi secin
+4. Yazici isigi yesil olacak
 
-5) jpackage ile .exe (İSTEĞE BAĞLI, yalnızca Windows + tam repo)
-   - jpackage Mac'te Windows .exe üretmez.
-   - Geliştirme PC'de (backend\scripts\windows içindeki BAT ile) komut isteminde:
-     BodrumAquaPark.bat exe
-   - Çıktı: backend\dist-exe\BodrumAquaPark\BodrumAquaPark.exe (gömülü JRE).
-   - Bu klasörü USB ile taşıyabilirsiniz; hedefte ayrı JDK gerekmez.
+DURUM ISIKLARI (Sag ust)
+------------------------
+- Internet : Yesil = bagli, Kirmizi = bagli degil
+- Sunucu   : Yesil = calisiyor, Kirmizi = kapali
+- Yazici   : Yesil = bagli, Kirmizi = secilmemis
 
-6) ÜRETİM (PostgreSQL)
-   - Şu an BAT: SPRING_PROFILES_ACTIVE=lowresource,dev (H2 bellek, test içindir).
-   - Canlı veritabanı için BAT içinde lowresource,prod yapın ve ortam değişkenlerini
-     ayarlayın (SPRING_DATASOURCE_URL, kullanıcı, şifre, APP_JWT_SECRET).
+SORUN GIDERME
+-------------
+- "java bulunamadi" : JDK 21 kurun, PATH'e ekleyin
+- "Sunucu hazir olmadi" : PostgreSQL 192.168.0.15 acik mi kontrol edin
+- Yazici calismiyor : "Fis USB" den yaziciyi secin
+- Beyaz ekran : 127.0.0.1:8081 adresini kontrol edin
 
-7) Sorun giderme
-   - "java bulunamadı" → PATH veya JAVA_HOME
-   - Uygulama açılmıyor → BAT'ı sağ tık > düzenle, hata mesajı için pencereyi kapatmayın
-   - 8081 kullanımda → başka program kapatın veya server.port değiştirin
+NOTLAR
+------
+- Sunucu penceresini KAPATMAYIN (minimize olarak gorev cubugunda kalir)
+- Her POS bilgisayar kendi yazicisini secer (Fis USB)
+- Veritabani tum POS'lardan ortak kullanilir (192.168.0.15)
 
+================================================================================
+Versiyon: 1.2.0.0
+Tarih: 2026-05-15
 ================================================================================

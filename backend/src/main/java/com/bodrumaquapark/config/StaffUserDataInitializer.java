@@ -22,7 +22,7 @@ public class StaffUserDataInitializer {
 	@Order(2)
 	ApplicationRunner seedStaffUsers(StaffUserRepository repository, PasswordEncoder passwordEncoder,
 			SaleAreaRepository saleAreaRepository, Environment env) {
-		return args -> {
+		return BootstrapResilience.safely("seedStaffUsers", args -> {
 			long countBefore = repository.count();
 			ensureDefaultAdmin(repository, passwordEncoder, saleAreaRepository);
 			if (Boolean.parseBoolean(env.getProperty("app.bootstrap.repair-admin0000", "false"))) {
@@ -36,7 +36,7 @@ public class StaffUserDataInitializer {
 			if (countBefore == 0) {
 				seedDemoCashiers(repository, passwordEncoder, saleAreaRepository);
 			}
-		};
+		});
 	}
 
 	private static void ensureDefaultAdmin(StaffUserRepository repository, PasswordEncoder passwordEncoder,
