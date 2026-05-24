@@ -21,14 +21,15 @@ public class DataInitializer {
 	@Bean
 	@Order(0)
 	ApplicationRunner backfillMenuPages(MenuPageBootstrapService menuPageBootstrapService) {
-		return args -> menuPageBootstrapService.ensureMenuPagesAndOrphanProducts();
+		return BootstrapResilience.safely("backfillMenuPages",
+				args -> menuPageBootstrapService.ensureMenuPagesAndOrphanProducts());
 	}
 
 	@Bean
 	@Order(1)
 	ApplicationRunner seedSaleAreasAndProducts(SaleAreaRepository saleAreas, ProductRepository products,
 			MenuPageRepository menuPages) {
-		return args -> {
+		return BootstrapResilience.safely("seedSaleAreasAndProducts", args -> {
 			if (saleAreas.count() > 0) {
 				return;
 			}
@@ -55,7 +56,7 @@ public class DataInitializer {
 
 			products.save(new Product(iceCream, iceGen, "Dondurma külah", new BigDecimal("85.00"), 60));
 			products.save(new Product(iceCream, iceGen, "Dondurma kutu", new BigDecimal("95.00"), 45));
-		};
+		});
 	}
 
 	/**
@@ -65,8 +66,9 @@ public class DataInitializer {
 	@Order(2)
 	ApplicationRunner ensureBakeryCatalog(ProductRepository products, SaleAreaRepository saleAreas,
 			MenuPageRepository menuPages) {
-		return args -> saleAreas.findByCode("BAKERY")
-				.ifPresent(bakery -> seedExtraBakeryProducts(products, menuPages, bakery));
+		return BootstrapResilience.safely("ensureBakeryCatalog",
+				args -> saleAreas.findByCode("BAKERY")
+						.ifPresent(bakery -> seedExtraBakeryProducts(products, menuPages, bakery)));
 	}
 
 	private static void seedExtraBakeryProducts(ProductRepository products, MenuPageRepository menuPages,

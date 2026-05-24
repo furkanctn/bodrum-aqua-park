@@ -15,13 +15,13 @@ public class DemoCardInitializer {
 	@Bean
 	@Order(3)
 	ApplicationRunner ensureDemoCard(CardService cardService, CardProperties cardProperties) {
-		return args -> {
+		return BootstrapResilience.safely("ensureDemoCard", args -> {
 			String uid = cardProperties.getDemoUid() != null ? cardProperties.getDemoUid().trim() : "";
 			if (uid.isEmpty()) {
 				return;
 			}
 			BigDecimal bal = cardProperties.getDemoBalance() != null ? cardProperties.getDemoBalance() : BigDecimal.ZERO;
 			cardService.ensureDemoCard(uid, bal);
-		};
+		});
 	}
 }

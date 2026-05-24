@@ -34,18 +34,20 @@ public class TurnstileDeviceBootstrapRunner implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) {
-		String id = properties.getDeviceId() != null ? properties.getDeviceId().trim() : "";
-		String token = properties.getDeviceToken() != null ? properties.getDeviceToken().trim() : "";
-		if (id.isEmpty() || token.isEmpty()) {
-			return;
-		}
-		if (turnstileDeviceRepository.findByDeviceId(id).isPresent()) {
-			return;
-		}
-		String hash = passwordEncoder.encode(token);
-		turnstileDeviceRepository.save(new TurnstileDevice(id, hash, "Bootstrap cihazı", true));
-		log.warn(
-				"Turnike cihazı otomatik oluşturuldu: {}. Üretimde app.access.bootstrap.* değerlerini kapatın ve token'ı güvenli şekilde yönetin.",
-				id);
+		BootstrapResilience.safelyRun("turnstileDeviceBootstrap", () -> {
+			String id = properties.getDeviceId() != null ? properties.getDeviceId().trim() : "";
+			String token = properties.getDeviceToken() != null ? properties.getDeviceToken().trim() : "";
+			if (id.isEmpty() || token.isEmpty()) {
+				return;
+			}
+			if (turnstileDeviceRepository.findByDeviceId(id).isPresent()) {
+				return;
+			}
+			String hash = passwordEncoder.encode(token);
+			turnstileDeviceRepository.save(new TurnstileDevice(id, hash, "Bootstrap cihazı", true));
+			log.warn(
+					"Turnike cihazı otomatik oluşturuldu: {}. Üretimde app.access.bootstrap.* değerlerini kapatın ve token'ı güvenli şekilde yönetin.",
+					id);
+		});
 	}
 }

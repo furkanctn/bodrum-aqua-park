@@ -61,8 +61,9 @@
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" width="22" height="22" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.082A9.043 9.043 0 0 1 18 9.75v-.102M12 21a2.25 2.25 0 0 0 2.25-2.25h-4.5A2.25 2.25 0 0 0 12 21Zm0 0a2.25 2.25 0 0 1-2.25-2.25h9a2.25 2.25 0 0 1-2.25 2.25Zm-4.5-9.75V9.75A6.75 6.75 0 0 1 18 3v.75" /></svg>
 				</button>
 				<div class="pos-lux-connect" aria-hidden="false">
-					<span class="pos-lux-connect-item"><span class="pos-lux-dot" aria-hidden="true"></span>İnternet bağlı</span>
-					<span class="pos-lux-connect-item"><span class="pos-lux-dot" aria-hidden="true"></span>Sunucu bağlı</span>
+					<span class="pos-lux-connect-item" id="status-internet"><span class="pos-lux-dot" id="dot-internet" aria-hidden="true"></span><span id="label-internet">İnternet</span></span>
+					<span class="pos-lux-connect-item" id="status-server"><span class="pos-lux-dot" id="dot-server" aria-hidden="true"></span><span id="label-server">Sunucu</span></span>
+					<span class="pos-lux-connect-item" id="status-printer"><span class="pos-lux-dot" id="dot-printer" aria-hidden="true"></span><span id="label-printer">Yazıcı</span></span>
 				</div>
 				<span class="pos-lux-user-chip" id="pos-lux-user-chip" title="Oturum">—</span>
 			</header>
@@ -593,26 +594,45 @@
 	<div id="receipt-printer-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
 		<div class="pos-rfid-overlay__panel pos-receipt-panel" role="dialog" aria-modal="true" aria-labelledby="receipt-printer-title">
 			<button type="button" class="pos-receipt-dismiss" id="receipt-printer-dismiss" title="Kapat" aria-label="Fiş yazıcı penceresini kapat">×</button>
-			<h2 id="receipt-printer-title" class="pos-rfid-overlay__title">Fiş yazıcı (bu bilgisayar)</h2>
-			<p id="receipt-printer-msg" class="pos-rfid-overlay__msg">
-				Birden fazla kasada her PC kendi USB termal yazıcısını kullanır; fiş verisi sunucuda üretilir, yazdırma bu
-				tarayıcıdan çıkar (Chrome / Edge, güvenli köken veya localhost).
-				
-			</p>
+			<h2 id="receipt-printer-title" class="pos-rfid-overlay__title">Fiş Yazıcı Ayarları</h2>
+
 			<div class="pos-rfid-overlay__actions pos-rfid-overlay__actions--stack" style="flex-direction: column; align-items: stretch; gap: 0.75rem">
-				<label class="pos-receipt-radio"><input type="radio" name="receipt-printer-target" id="receipt-printer-target-local" value="local" /> Fiş: bu PCnin USB yazıcısı (önerilen, çoklu kasa)</label>
-				<label class="pos-receipt-radio"><input type="radio" name="receipt-printer-target" id="receipt-printer-target-server" value="server" /> Fiş: sunucu COM / yönetim kaydı (yazıcı sunucuya takılıysa)</label>
-				<label for="receipt-printer-baud">USB yazıcı hızı (baud)</label>
-				<select id="receipt-printer-baud" class="pos-rfid-overlay__input">
-					<option value="9600">9600</option>
-					<option value="115200">115200</option>
-					<option value="19200">19200</option>
-					<option value="38400">38400</option>
-				</select>
-				<div class="pos-rfid-overlay__actions" style="margin-top: 0.25rem">
-					<button type="button" class="footer-btn" id="receipt-printer-pick-usb">USB yazıcıyı seç</button>
-					<button type="button" class="footer-btn" id="receipt-printer-test-local">Test fişi (USB)</button>
-					<button type="button" class="footer-btn primary" id="receipt-printer-close">Kapat</button>
+
+				<!-- Seçili Yazıcı Durumu -->
+				<div id="printer-status-box" style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+					<div style="font-weight: 600; margin-bottom: 4px;">Seçili Yazıcı:</div>
+					<div id="printer-selected-name" style="font-size: 1.1em; color: #0369a1;">Henüz seçilmedi</div>
+				</div>
+
+				<!-- Yazıcı Seçimi -->
+				<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+					<button type="button" class="footer-btn primary" id="receipt-printer-pick-usb" style="flex: 1;">Yazıcı Seç (USB)</button>
+					<button type="button" class="footer-btn" id="receipt-printer-test-local" style="flex: 1;">Test Fişi</button>
+				</div>
+
+				<!-- Baud Rate -->
+				<div style="display: flex; align-items: center; gap: 8px;">
+					<label for="receipt-printer-baud" style="white-space: nowrap;">Yazıcı Hızı:</label>
+					<select id="receipt-printer-baud" class="pos-rfid-overlay__input" style="flex: 1;">
+						<option value="9600">9600 (Sewoo standart)</option>
+						<option value="115200">115200 (hızlı)</option>
+						<option value="19200">19200</option>
+						<option value="38400">38400</option>
+					</select>
+				</div>
+
+				<!-- Gelişmiş Ayarlar -->
+				<details style="margin-top: 8px;">
+					<summary style="cursor: pointer; color: #666;">Gelişmiş Ayarlar</summary>
+					<div style="padding: 8px 0;">
+						<label class="pos-receipt-radio"><input type="radio" name="receipt-printer-target" id="receipt-printer-target-local" value="local" checked /> Bu bilgisayarın USB yazıcısı (önerilen)</label>
+						<label class="pos-receipt-radio"><input type="radio" name="receipt-printer-target" id="receipt-printer-target-server" value="server" /> Sunucu COM port (yazıcı sunucuya bağlıysa)</label>
+					</div>
+				</details>
+
+				<!-- Kapat -->
+				<div style="margin-top: 8px; text-align: right;">
+					<button type="button" class="footer-btn" id="receipt-printer-close">Kapat</button>
 				</div>
 			</div>
 		</div>
