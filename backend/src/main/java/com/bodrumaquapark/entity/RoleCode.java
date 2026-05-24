@@ -1,8 +1,8 @@
 package com.bodrumaquapark.entity;
 
 /**
- * Kasa personeli rolleri. ADMIN: kullanıcı/rol yönetimi + tüm POS işlemleri.
- * TICKET: yalnızca kart satış ekranında bilet / yaş grubu (ürün alanı atanması zorunlu değil).
+ * Kasa personeli rolleri. ADMIN: yönetim paneli (satış alanı atanması zorunlu değil).
+ * TICKET: yalnızca kart satış ekranında bilet / yaş grubu.
  */
 public enum RoleCode {
 	ADMIN,

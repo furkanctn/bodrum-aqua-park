@@ -32,6 +32,21 @@
 	</div>
 	<script>
 		(function () {
+			function logoutToLogin() {
+				sessionStorage.removeItem("aqua_token");
+				sessionStorage.removeItem("aqua_user");
+				sessionStorage.removeItem("aqua_role");
+				sessionStorage.removeItem("aqua_display_name");
+				sessionStorage.removeItem("aqua_sale_areas");
+				sessionStorage.removeItem("aqua_ticket_sales");
+				sessionStorage.removeItem("aqua_balance_load");
+				sessionStorage.removeItem("aqua_admin_panel");
+				window.location.replace("/index.html");
+			}
+			var logoutBtn = document.getElementById("logout-btn");
+			if (logoutBtn) {
+				logoutBtn.addEventListener("click", logoutToLogin);
+			}
 			if (!sessionStorage.getItem("aqua_token")) {
 				window.location.replace("/index.html");
 				return;

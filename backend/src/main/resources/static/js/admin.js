@@ -21,6 +21,30 @@
 		return;
 	}
 
+	function clearAdminSession() {
+		sessionStorage.removeItem(TOKEN_KEY);
+		sessionStorage.removeItem("aqua_user");
+		sessionStorage.removeItem(ROLE_KEY);
+		sessionStorage.removeItem("aqua_display_name");
+		sessionStorage.removeItem("aqua_sale_areas");
+		sessionStorage.removeItem("aqua_ticket_sales");
+		sessionStorage.removeItem("aqua_balance_load");
+		sessionStorage.removeItem(ADMIN_PANEL_KEY);
+	}
+
+	function logoutToLogin() {
+		clearAdminSession();
+		window.location.replace("/index.html");
+	}
+
+	var adminLogoutBtn = document.getElementById("admin-logout-btn");
+	if (adminLogoutBtn) {
+		adminLogoutBtn.addEventListener("click", function (e) {
+			e.preventDefault();
+			logoutToLogin();
+		});
+	}
+
 	const alertEl = document.getElementById("admin-alert");
 	const tbody = document.getElementById("users-tbody");
 	const editPanel = document.getElementById("edit-panel");
@@ -141,9 +165,23 @@
 	function collectSaleAreas(formEl) {
 		var out = [];
 		formEl.querySelectorAll('input[name="sale-area"]:checked').forEach(function (cb) {
+			if (cb.disabled) {
+				return;
+			}
 			out.push(cb.value);
 		});
 		return out;
+	}
+
+	function permBadgeForUser(u, field) {
+		if (u.role === "ADMIN") {
+			if (field === "admin") {
+				return '<span class="badge ok">Evet</span>';
+			}
+			return "—";
+		}
+		var on = field === "ticket" ? u.ticketSalesAllowed !== false : field === "balance" ? u.balanceLoadAllowed !== false : !!u.adminPanelAccess;
+		return on ? '<span class="badge ok">Evet</span>' : '<span class="badge off">Hayır</span>';
 	}
 
 	function renderRows(users) {
@@ -161,22 +199,16 @@
 				escapeHtml(roleLabels[u.role] || u.role) +
 				"</td>" +
 				"<td>" +
-				(u.ticketSalesAllowed !== false
-					? '<span class="badge ok">Evet</span>'
-					: '<span class="badge off">Hayır</span>') +
+				permBadgeForUser(u, "ticket") +
 				"</td>" +
 				"<td>" +
-				(u.balanceLoadAllowed !== false
-					? '<span class="badge ok">Evet</span>'
-					: '<span class="badge off">Hayır</span>') +
+				permBadgeForUser(u, "balance") +
 				"</td>" +
 				"<td>" +
-				(u.adminPanelAccess
-					? '<span class="badge ok">Evet</span>'
-					: '<span class="badge off">Hayır</span>') +
+				permBadgeForUser(u, "admin") +
 				"</td>" +
-				'<td class="td-areas">' +
-				escapeHtml(formatSaleAreas(u.saleAreaCodes)) +
+				"<td>" +
+				(u.role === "ADMIN" ? "—" : escapeHtml(formatSaleAreas(u.saleAreaCodes))) +
 				"</td>" +
 				"<td>" +
 				(u.active ? '<span class="badge ok">Aktif</span>' : '<span class="badge off">Pasif</span>') +
@@ -254,6 +286,9 @@
 		document.getElementById("e-role").value = u.role;
 		document.getElementById("e-active").checked = u.active;
 		pendingEditSaleCodes = Array.isArray(u.saleAreaCodes) ? u.saleAreaCodes.slice() : [];
+		if (u.role === "ADMIN") {
+			pendingEditSaleCodes = [];
+		}
 		renderSaleAreaCheckboxes(document.getElementById("e-sale-area-checks"), pendingEditSaleCodes);
 		document.getElementById("e-ticket").checked = u.ticketSalesAllowed !== false;
 		document.getElementById("e-balance").checked = u.balanceLoadAllowed !== false;
@@ -266,6 +301,7 @@
 			}
 		}
 		syncEditAdminPanelUi();
+		syncEditSaleAreaUi();
 		editPanel.hidden = false;
 		editPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 	}
@@ -285,7 +321,7 @@
 			password: document.getElementById("c-password").value,
 			displayName: document.getElementById("c-displayName").value.trim() || null,
 			role: cRole,
-			saleAreaCodes: collectSaleAreas(formCreate),
+			saleAreaCodes: cRole === "ADMIN" || cRole === "TICKET" ? [] : collectSaleAreas(formCreate),
 			ticketSalesAllowed: document.getElementById("c-ticket").checked,
 			balanceLoadAllowed: document.getElementById("c-balance").checked,
 			adminPanelAccess:
@@ -332,7 +368,7 @@
 			displayName: document.getElementById("e-displayName").value.trim() || null,
 			role: eRole,
 			active: document.getElementById("e-active").checked,
-			saleAreaCodes: collectSaleAreas(formEdit),
+			saleAreaCodes: eRole === "ADMIN" || eRole === "TICKET" ? [] : collectSaleAreas(formEdit),
 			ticketSalesAllowed: document.getElementById("e-ticket").checked,
 			balanceLoadAllowed: document.getElementById("e-balance").checked,
 			adminPanelAccess:
@@ -1426,10 +1462,38 @@
 		activateAdminPanel(parseAdminPanelFromLocation(), { noWriteHash: false });
 	}
 
+	function setSaleAreaCheckboxesState(containerId, disabled, clearWhenDisable) {
+		var wrap = document.getElementById(containerId);
+		if (!wrap) {
+			return;
+		}
+		wrap.querySelectorAll('input[name="sale-area"]').forEach(function (cb) {
+			cb.disabled = disabled;
+			if (disabled && clearWhenDisable) {
+				cb.checked = false;
+			}
+		});
+	}
+
+	function syncCreateSaleAreaUi() {
+		var role = document.getElementById("c-role") && document.getElementById("c-role").value;
+		var isAdmin = role === "ADMIN";
+		var isTicket = role === "TICKET";
+		setSaleAreaCheckboxesState("c-sale-area-checks", isAdmin || isTicket, isAdmin || isTicket);
+	}
+
+	function syncEditSaleAreaUi() {
+		var role = document.getElementById("e-role") && document.getElementById("e-role").value;
+		var isAdmin = role === "ADMIN";
+		var isTicket = role === "TICKET";
+		setSaleAreaCheckboxesState("e-sale-area-checks", isAdmin || isTicket, isAdmin || isTicket);
+	}
+
 	function syncCreateAdminPanelUi() {
 		var sel = document.getElementById("c-role");
 		var cb = document.getElementById("c-admin-panel");
 		var tCk = document.getElementById("c-ticket");
+		var bCk = document.getElementById("c-balance");
 		if (!sel || !cb) {
 			return;
 		}
@@ -1447,12 +1511,22 @@
 				tCk.disabled = false;
 			}
 		}
+		if (bCk) {
+			if (sel.value === "ADMIN") {
+				bCk.checked = false;
+				bCk.disabled = true;
+			} else {
+				bCk.disabled = false;
+			}
+		}
+		syncCreateSaleAreaUi();
 	}
 
 	function syncEditAdminPanelUi() {
 		var sel = document.getElementById("e-role");
 		var cb = document.getElementById("e-admin-panel");
 		var tCk = document.getElementById("e-ticket");
+		var bCk = document.getElementById("e-balance");
 		if (!sel || !cb) {
 			return;
 		}
@@ -1470,6 +1544,15 @@
 				tCk.disabled = false;
 			}
 		}
+		if (bCk) {
+			if (sel.value === "ADMIN") {
+				bCk.checked = false;
+				bCk.disabled = true;
+			} else {
+				bCk.disabled = false;
+			}
+		}
+		syncEditSaleAreaUi();
 	}
 
 	var cRoleEl = document.getElementById("c-role");

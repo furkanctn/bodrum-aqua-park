@@ -24,7 +24,8 @@ public class StaffUserDataInitializer {
 			SaleAreaRepository saleAreaRepository, Environment env) {
 		return args -> {
 			long countBefore = repository.count();
-			ensureDefaultAdmin(repository, passwordEncoder, saleAreaRepository);
+			ensureDefaultAdmin(repository, passwordEncoder);
+			stripSaleAreasFromAdmins(repository);
 			if (Boolean.parseBoolean(env.getProperty("app.bootstrap.repair-admin0000", "false"))) {
 				repository.loadWithSaleAreasByUserId(ADMIN_USER_ID).ifPresent(u -> {
 					u.setPasswordHash(passwordEncoder.encode(ADMIN_PLAIN_PASSWORD));
@@ -39,8 +40,7 @@ public class StaffUserDataInitializer {
 		};
 	}
 
-	private static void ensureDefaultAdmin(StaffUserRepository repository, PasswordEncoder passwordEncoder,
-			SaleAreaRepository saleAreaRepository) {
+	private static void ensureDefaultAdmin(StaffUserRepository repository, PasswordEncoder passwordEncoder) {
 		if (repository.existsStaffUserByUserId(ADMIN_USER_ID)) {
 			return;
 		}
@@ -48,8 +48,16 @@ public class StaffUserDataInitializer {
 				RoleCode.ADMIN);
 		admin.setActive(true);
 		admin.setAdminPanelAccess(true);
-		saleAreaRepository.findAll().forEach(a -> admin.getSaleAreas().add(a));
 		repository.save(admin);
+	}
+
+	private static void stripSaleAreasFromAdmins(StaffUserRepository repository) {
+		repository.loadAllWithSaleAreasOrderByUserId().stream()
+				.filter(u -> u.getRole() == RoleCode.ADMIN && !u.getSaleAreas().isEmpty())
+				.forEach(u -> {
+					u.getSaleAreas().clear();
+					repository.save(u);
+				});
 	}
 
 	private static void seedDemoCashiers(StaffUserRepository repository, PasswordEncoder passwordEncoder,

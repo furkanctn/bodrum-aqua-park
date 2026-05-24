@@ -1,9 +1,12 @@
 package com.bodrumaquapark.policy;
 
+import java.math.BigDecimal;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.bodrumaquapark.entity.TransactionType;
+import com.bodrumaquapark.util.Money;
 
 /**
  * İş kuralı: kredi kartı ile yapılan bakiye yüklemeleri iade kapsamı dışındadır; yalnızca nakit (ve acenta kur)
@@ -37,5 +40,36 @@ public final class LoadRefundPolicy {
 			throw new ResponseStatusException(HttpStatus.CONFLICT,
 					"Kredi kartı yüklemesi iade edilemez; yalnızca nakit iade mümkündür.");
 		}
+	}
+
+	/**
+	 * Kart bakiyesinden nakit olarak iade edilebilecek tutar.
+	 * Harcama önce nakit (ve acenta kur) yüklemelerinden düşülür; kredi kartı yüklemesi korunur.
+	 */
+	public static BigDecimal computeCashRefundableAmount(
+			BigDecimal currentBalance,
+			BigDecimal cashLoadTotal,
+			BigDecimal agencyLoadTotal,
+			BigDecimal totalSpent,
+			BigDecimal refundTotal) {
+		BigDecimal balance = Money.normalize(currentBalance);
+		BigDecimal cashLoads = Money.normalize(cashLoadTotal).add(Money.normalize(agencyLoadTotal));
+		BigDecimal spent = Money.normalize(totalSpent);
+		BigDecimal refunded = Money.normalize(refundTotal);
+
+		BigDecimal cashPool = cashLoads.subtract(refunded);
+		if (cashPool.compareTo(BigDecimal.ZERO) < 0) {
+			cashPool = BigDecimal.ZERO;
+		}
+		BigDecimal cashSpent = spent.min(cashPool);
+		BigDecimal cashRemaining = cashPool.subtract(cashSpent);
+		if (cashRemaining.compareTo(BigDecimal.ZERO) < 0) {
+			cashRemaining = BigDecimal.ZERO;
+		}
+		BigDecimal refundable = balance.min(cashRemaining);
+		if (refundable.compareTo(BigDecimal.ZERO) < 0) {
+			refundable = BigDecimal.ZERO;
+		}
+		return Money.normalize(refundable);
 	}
 }

@@ -19,6 +19,40 @@
 		window.location.replace("/index.html");
 		return;
 	}
+	if ((sessionStorage.getItem(ROLE_KEY) || "").toUpperCase() === "ADMIN") {
+		window.location.replace("/admin.html");
+		return;
+	}
+
+	function clearPosSession() {
+		sessionStorage.removeItem(TOKEN_KEY);
+		sessionStorage.removeItem(USER_KEY);
+		sessionStorage.removeItem(ROLE_KEY);
+		sessionStorage.removeItem("aqua_display_name");
+		sessionStorage.removeItem("aqua_sale_areas");
+		sessionStorage.removeItem("aqua_ticket_sales");
+		sessionStorage.removeItem("aqua_balance_load");
+		sessionStorage.removeItem("aqua_admin_panel");
+	}
+
+	function logoutToLogin() {
+		clearPosSession();
+		window.location.replace("/index.html");
+	}
+
+	function wireLogoutButton() {
+		var btn = document.getElementById("nav-exit");
+		if (!btn || btn.dataset.logoutWired === "1") {
+			return;
+		}
+		btn.dataset.logoutWired = "1";
+		btn.addEventListener("click", function (e) {
+			e.preventDefault();
+			logoutToLogin();
+		});
+	}
+
+	wireLogoutButton();
 
 	/** Yalnızca /api/ticket-age-groups (yönetimde tanımlı aktif tarifeler); sabit demo listesi yok */
 	var ticketCatalog = [];
@@ -75,22 +109,91 @@
 		if (v === null || v === "") return def;
 		return v === "true" || v === "1";
 	}
-	var ticketSales = readBool("aqua_ticket_sales", true);
-	var balanceLoad = readBool("aqua_balance_load", true);
-	var receiptPrinterUiWired = false;
+
+	var ticketSales = false;
+	var balanceLoad = true;
 	var saleAreas = [];
-	try {
-		var rawAreas = JSON.parse(sessionStorage.getItem("aqua_sale_areas") || "[]");
-		saleAreas = Array.isArray(rawAreas)
-			? rawAreas
-					.map(function (c) {
-						return String(c || "").trim();
-					})
-					.filter(Boolean)
-			: [];
-	} catch (e) {
-		saleAreas = [];
+
+	function reloadPosPermissionFlagsFromSession() {
+		if (window.AquaPosPerms) {
+			var flags = AquaPosPerms.permissionFlagsFromSession();
+			ticketSales = flags.ticketSales;
+			balanceLoad = flags.balanceLoad;
+			saleAreas = flags.saleAreas.slice();
+			AquaPosPerms.persistPermissionFlags(flags);
+			return;
+		}
+		ticketSales = readBool("aqua_ticket_sales", false);
+		balanceLoad = readBool("aqua_balance_load", true);
+		try {
+			var rawAreas = JSON.parse(sessionStorage.getItem("aqua_sale_areas") || "[]");
+			saleAreas = Array.isArray(rawAreas)
+				? rawAreas
+						.map(function (c) {
+							return String(c || "").trim();
+						})
+						.filter(Boolean)
+				: [];
+		} catch (e) {
+			saleAreas = [];
+		}
 	}
+
+	function persistPosPermissionSession(data) {
+		if (!data) {
+			return;
+		}
+		sessionStorage.setItem(
+			"aqua_ticket_sales",
+			data.ticketSalesAllowed === true || data.ticketSalesAllowed === "true" ? "true" : "false"
+		);
+		sessionStorage.setItem(
+			"aqua_balance_load",
+			data.balanceLoadAllowed !== false && data.balanceLoadAllowed !== "false" ? "true" : "false"
+		);
+		if (Array.isArray(data.saleAreaCodes)) {
+			sessionStorage.setItem("aqua_sale_areas", JSON.stringify(data.saleAreaCodes));
+		}
+		if (data.displayName) {
+			sessionStorage.setItem("aqua_display_name", data.displayName);
+		}
+	}
+
+	function applyPosPermissionsFromUser(data) {
+		persistPosPermissionSession(data);
+		reloadPosPermissionFlagsFromSession();
+		initKartMode();
+		applyNavPermissions();
+		syncKartPaymentUi();
+		syncKartRailUi();
+		refreshKartProductGridIfNeeded();
+	}
+
+	function refreshKartProductGridIfNeeded(done) {
+		if (!ticketSales && saleAreas.length > 0) {
+			kartMode = "products";
+		}
+		if (kartMode !== "products" || !kartProductAreaCode) {
+			if (done) done();
+			return;
+		}
+		loadKartProducts(done);
+	}
+
+	function paintKartProductsGrid() {
+		if (!ticketSales && saleAreas.length > 0) {
+			kartMode = "products";
+		}
+		if (kartMode !== "products" || !gridEl) {
+			return;
+		}
+		renderGrid();
+		if (currentModule === "kart") {
+			updateSummary();
+		}
+		syncKartViewUi();
+	}
+	var receiptPrinterUiWired = false;
 	/** API’den gelen satış alanı adları (kod → ad) */
 	var saleAreaNamesByCode = {};
 	/** "tickets" | "products" — kart görünümünde bilet mi ürün mü */
@@ -104,6 +207,77 @@
 	var menuPagesAll = [];
 	/** Seçili satış alanına ait menü sayfası (ürün listesi ?menuPageId=…) */
 	var kartMenuPageId = null;
+	/** Tüm satış alanlarını tek ekranda göster (sağ şerit: Hepsi) */
+	var KART_ALL_AREAS = "*";
+	var kartCacheAllAreas = false;
+	/** Eşzamanlı /api/products isteklerinde eski yanıtın ızgarayı silmesini önler */
+	var kartProductsLoadSeq = 0;
+
+	function isKartAllAreasMode() {
+		return kartProductAreaCode === KART_ALL_AREAS;
+	}
+
+	function productSaleAreaCode(p) {
+		if (!p) {
+			return "";
+		}
+		var c = p.saleAreaCode != null ? p.saleAreaCode : p.sale_area_code;
+		return String(c == null ? "" : c).trim();
+	}
+
+	function productSaleAreaName(p) {
+		if (!p) {
+			return "";
+		}
+		var n = p.saleAreaName != null ? p.saleAreaName : p.sale_area_name;
+		return String(n == null ? "" : n).trim();
+	}
+
+	function seedSaleAreaNamesFromProducts(items) {
+		if (!Array.isArray(items)) {
+			return;
+		}
+		items.forEach(function (p) {
+			var code = productSaleAreaCode(p);
+			var name = productSaleAreaName(p);
+			if (code && name) {
+				saleAreaNamesByCode[code] = name;
+			}
+		});
+	}
+
+	function saleAreaDisplayName(code) {
+		if (!code || code === KART_ALL_AREAS) {
+			return "";
+		}
+		var c = String(code).trim();
+		if (saleAreaNamesByCode[c]) {
+			return saleAreaNamesByCode[c];
+		}
+		for (var i = 0; i < kartProducts.length; i++) {
+			var p = kartProducts[i];
+			if (productSaleAreaCode(p) === c) {
+				var nm = productSaleAreaName(p);
+				if (nm) {
+					return nm;
+				}
+			}
+		}
+		return c;
+	}
+
+	function refreshKartAreaHeadings() {
+		if (!gridEl) {
+			return;
+		}
+		gridEl.querySelectorAll(".pos-lux-area-section").forEach(function (section) {
+			var code = section.getAttribute("data-area-code");
+			var heading = section.querySelector(".pos-lux-area-heading");
+			if (heading && code) {
+				heading.textContent = saleAreaDisplayName(code);
+			}
+		});
+	}
 
 	/**
 	 * Satış alanı kodu ile birebir aynı koda sahip menü sayfası (ör. alan FIRIN + menü FIRIN):
@@ -173,15 +347,25 @@
 	}
 
 	function kartProductSelectionDirty() {
+		if (isKartAllAreasMode()) {
+			return !kartCacheAllAreas;
+		}
+		if (kartCacheAllAreas) {
+			return true;
+		}
 		return kartCacheArea !== kartProductAreaCode || kartCacheMenuPageId !== kartMenuPageId;
 	}
 
 	function initKartMode() {
-		kartMode = ticketSales ? "tickets" : saleAreas.length > 0 ? "products" : "tickets";
+		kartMode = ticketSales ? "tickets" : "products";
 		if (kartMode === "products") {
-			kartProductAreaCode = saleAreas[0] || null;
+			kartProductAreaCode = saleAreas.length > 1 ? KART_ALL_AREAS : saleAreas[0] || null;
 			kartMenuPageId = null;
 			discountPercent = 0;
+		} else {
+			kartProductAreaCode = null;
+			kartMenuPageId = null;
+			kartCacheAllAreas = false;
 		}
 		syncKartViewUi();
 	}
@@ -190,16 +374,26 @@
 		var el = document.getElementById("nav-kart-label");
 		var navKart = document.getElementById("nav-kart");
 		if (!el) return;
-		var label = "Kart satış";
+		var label = "Satış";
 		if (ticketSales) {
 			label = "Kart satış";
 		} else if (saleAreas.length === 1) {
-			label = saleAreaNamesByCode[saleAreas[0]] || saleAreas[0];
+			label = saleAreaDisplayName(saleAreas[0]);
 		} else if (saleAreas.length > 1) {
-			label = "Satış";
+			label = "Ürün satış";
 		}
 		el.textContent = label;
-		if (navKart) navKart.setAttribute("title", label);
+		if (navKart) {
+			navKart.setAttribute("title", label);
+			navKart.hidden = !(ticketSales || saleAreas.length > 0);
+		}
+	}
+
+	function syncKartRailUi() {
+		var passBtn = document.getElementById("pos-lux-rail-pass-access");
+		if (passBtn) {
+			setLuxDisplayHidden(passBtn, !ticketSales);
+		}
 	}
 
 	/** Lux sütununda [hidden] + author display:flex çakışmasını kesin kapat */
@@ -213,30 +407,45 @@
 		}
 	}
 
+	function syncKartAllAreasViewport() {
+		var vp = document.querySelector("#view-kart .pos-grid-viewport");
+		if (vp) {
+			vp.classList.toggle("pos-grid-viewport--all-areas", kartMode === "products" && isKartAllAreasMode());
+		}
+	}
+
 	function syncKartViewUi() {
 		var tabs = document.getElementById("kart-area-tabs");
 		var mptabs = document.getElementById("kart-menu-page-tabs");
 		var mpwrap = document.getElementById("pos-lux-menu-page-tabs-wrap");
 		var gh = document.getElementById("grid-heading");
 		if (kartMode === "products") {
-			syncMenuPageIdWithCurrentArea();
-			var mpl = getMenuPagesForSaleArea(kartProductAreaCode);
+			if (!isKartAllAreasMode()) {
+				syncMenuPageIdWithCurrentArea();
+			}
+			var mpl = isKartAllAreasMode() ? [] : getMenuPagesForSaleArea(kartProductAreaCode);
 			if (tabs) {
 				setLuxDisplayHidden(tabs, saleAreas.length <= 1);
 				renderKartAreaTabs();
 			}
 			if (mptabs) {
-				var hideMp = mpl.length <= 1;
+				var hideMp = isKartAllAreasMode() || mpl.length <= 1;
 				setLuxDisplayHidden(mptabs, hideMp);
 				setLuxDisplayHidden(mpwrap, hideMp);
-				renderKartMenuPageTabs();
+				if (!isKartAllAreasMode()) {
+					renderKartMenuPageTabs();
+				}
 			}
-			if (gh && kartProductAreaCode) {
-				var nm = saleAreaNamesByCode[kartProductAreaCode] || kartProductAreaCode;
-				var sub = currentMenuPageLabel();
-				gh.textContent = sub && mpl.length > 1 ? nm + " — " + sub : nm + " — ürünler";
-			} else if (gh) {
-				gh.textContent = "Ürünler";
+			if (gh) {
+				if (isKartAllAreasMode()) {
+					gh.textContent = "Tüm menüler";
+				} else if (kartProductAreaCode) {
+					var nm = saleAreaDisplayName(kartProductAreaCode);
+					var sub = currentMenuPageLabel();
+					gh.textContent = sub && mpl.length > 1 ? nm + " — " + sub : nm + " — ürünler";
+				} else {
+					gh.textContent = "Ürünler";
+				}
 			}
 		} else {
 			setLuxDisplayHidden(tabs, true);
@@ -246,12 +455,53 @@
 		}
 		updateLuxBreadcrumb();
 		syncLuxCategoryFallback();
+		syncKartAllAreasViewport();
+		syncKartPaymentUi();
+		syncKartRailUi();
+	}
+
+	function syncKartPaymentUi() {
+		var payBlock = document.getElementById("kart-pay-methods");
+		var paySection = document.querySelector("#view-kart .pos-payment--lux");
+		var ticketPay = kartMode === "tickets";
+		if (payBlock) {
+			setLuxDisplayHidden(payBlock, !ticketPay);
+		}
+		if (paySection) {
+			paySection.classList.toggle("pos-payment--no-pay-methods", !ticketPay);
+		}
+		if (!ticketPay) {
+			payMode = "";
+			document.querySelectorAll("#view-kart .pos-payment--lux .pay-option.active").forEach(function (el) {
+				el.classList.remove("active");
+			});
+		}
 	}
 
 	function renderKartAreaTabs() {
 		var tabs = document.getElementById("kart-area-tabs");
 		if (!tabs || saleAreas.length <= 1) return;
 		tabs.innerHTML = "";
+		var allBtn = document.createElement("button");
+		allBtn.type = "button";
+		allBtn.className = "kart-area-tab" + (isKartAllAreasMode() ? " active" : "");
+		allBtn.setAttribute("role", "tab");
+		allBtn.setAttribute("data-code", KART_ALL_AREAS);
+		allBtn.setAttribute("aria-selected", isKartAllAreasMode() ? "true" : "false");
+		allBtn.textContent = "Hepsi";
+		allBtn.addEventListener("click", function () {
+			if (isKartAllAreasMode()) return;
+			kartProductAreaCode = KART_ALL_AREAS;
+			kartMenuPageId = null;
+			cart = [];
+			luxCartSelectedIndex = null;
+			selectedTileId = null;
+			loadKartProducts(function () {
+				updateKartNavLabel();
+				updateContextBar();
+			});
+		});
+		tabs.appendChild(allBtn);
 		saleAreas.forEach(function (code) {
 			var b = document.createElement("button");
 			b.type = "button";
@@ -259,7 +509,7 @@
 			b.setAttribute("role", "tab");
 			b.setAttribute("data-code", code);
 			b.setAttribute("aria-selected", code === kartProductAreaCode ? "true" : "false");
-			b.textContent = saleAreaNamesByCode[code] || code;
+			b.textContent = saleAreaDisplayName(code);
 			b.addEventListener("click", function () {
 				if (code === kartProductAreaCode) return;
 				kartProductAreaCode = code;
@@ -268,9 +518,6 @@
 				luxCartSelectedIndex = null;
 				selectedTileId = null;
 				loadKartProducts(function () {
-					renderGrid();
-					updateSummary();
-					syncKartViewUi();
 					updateKartNavLabel();
 					updateContextBar();
 				});
@@ -299,9 +546,6 @@
 				luxCartSelectedIndex = null;
 				selectedTileId = null;
 				loadKartProducts(function () {
-					renderGrid();
-					updateSummary();
-					syncKartViewUi();
 					updateKartNavLabel();
 					updateContextBar();
 				});
@@ -312,17 +556,20 @@
 
 	function loadKartProducts(done) {
 		if (!kartProductAreaCode) {
-			kartProducts = [];
-			kartCacheArea = null;
-			kartCacheMenuPageId = null;
 			if (done) done();
 			return;
 		}
-		syncMenuPageIdWithCurrentArea();
-		var url =
-			kartMenuPageId != null
-				? "/api/products?menuPageId=" + encodeURIComponent(String(kartMenuPageId))
-				: "/api/products?saleAreaCode=" + encodeURIComponent(kartProductAreaCode);
+		var url;
+		if (isKartAllAreasMode()) {
+			url = "/api/products";
+		} else {
+			syncMenuPageIdWithCurrentArea();
+			url =
+				kartMenuPageId != null
+					? "/api/products?menuPageId=" + encodeURIComponent(String(kartMenuPageId))
+					: "/api/products?saleAreaCode=" + encodeURIComponent(kartProductAreaCode);
+		}
+		var seq = ++kartProductsLoadSeq;
 		fetch(url, { headers: authHeaders() })
 			.then(function (r) {
 				if (r.status === 401) {
@@ -335,16 +582,33 @@
 				return r.json();
 			})
 			.then(function (items) {
-				kartProducts = items || [];
-				kartCacheArea = kartProductAreaCode;
-				kartCacheMenuPageId = kartMenuPageId;
+				if (seq !== kartProductsLoadSeq) {
+					return;
+				}
+				kartProducts = Array.isArray(items) ? items : [];
+				seedSaleAreaNamesFromProducts(kartProducts);
+				kartCacheAllAreas = isKartAllAreasMode();
+				if (kartCacheAllAreas) {
+					kartCacheArea = null;
+					kartCacheMenuPageId = null;
+				} else {
+					kartCacheArea = kartProductAreaCode;
+					kartCacheMenuPageId = kartMenuPageId;
+				}
+				paintKartProductsGrid();
 				if (done) done();
 			})
 			.catch(function () {
-				kartProducts = [];
-				kartCacheArea = null;
-				kartCacheMenuPageId = null;
-				showToast("Ürünler yüklenemedi");
+				if (seq !== kartProductsLoadSeq) {
+					return;
+				}
+				if (!kartProducts.length) {
+					kartCacheArea = null;
+					kartCacheMenuPageId = null;
+					kartCacheAllAreas = false;
+					showToast("Ürünler yüklenemedi");
+					paintKartProductsGrid();
+				}
 				if (done) done();
 			});
 	}
@@ -410,6 +674,74 @@
 			line.qty = addQty;
 			cart.push(line);
 		}
+	}
+
+	function findKartProductById(productId) {
+		var pid = String(productId);
+		for (var i = 0; i < kartProducts.length; i++) {
+			if (String(kartProducts[i].id) === pid) {
+				return kartProducts[i];
+			}
+		}
+		return null;
+	}
+
+	function addProductToCart(p) {
+		if (!p) {
+			return;
+		}
+		var price = Number(p.price);
+		if (isNaN(price)) {
+			price = 0;
+		}
+		var soldOut = p.active === false || (p.stockQuantity != null && p.stockQuantity <= 0);
+		if (soldOut) {
+			showToast("Bu ürün tükendi");
+			return;
+		}
+		var id = "p" + p.id;
+		var linePrice = price;
+		var lineLabel = p.name || "Ürün";
+		if (luxIkramNext && kartMode === "products") {
+			linePrice = 0;
+			lineLabel = lineLabel + " (İkram)";
+			luxIkramNext = false;
+			syncLuxRailTreatBtn();
+		}
+		cartAddMerged({
+			id: id,
+			productId: p.id,
+			label: lineLabel,
+			price: linePrice,
+			qty: 1,
+		});
+		updateSummary();
+		showToast(lineLabel + " sepete eklendi");
+	}
+
+	var kartProductGridClickWired = false;
+
+	function onKartProductGridClick(e) {
+		if (kartMode !== "products" || !gridEl) {
+			return;
+		}
+		var btn = e.target.closest(".tile");
+		if (!btn || btn.disabled || !gridEl.contains(btn)) {
+			return;
+		}
+		var pid = btn.getAttribute("data-product-id");
+		if (!pid) {
+			return;
+		}
+		addProductToCart(findKartProductById(pid));
+	}
+
+	function wireKartProductGridClicks() {
+		if (!gridEl || kartProductGridClickWired) {
+			return;
+		}
+		kartProductGridClickWired = true;
+		gridEl.addEventListener("click", onKartProductGridClick);
 	}
 
 	function sumProductCartTotal() {
@@ -629,8 +961,11 @@
 			history.pushState(st, "", target);
 		}
 	}
+	reloadPosPermissionFlagsFromSession();
 	initKartMode();
 	applyNavPermissions();
+	syncKartRailUi();
+	wireKartProductGridClicks();
 
 	const elDiscount = document.getElementById("sum-discount");
 	const elDue = document.getElementById("sum-due");
@@ -691,7 +1026,12 @@
 			}
 			if (data.role) {
 				sessionStorage.setItem(ROLE_KEY, data.role);
+				if (String(data.role).toUpperCase() === "ADMIN") {
+					window.location.replace("/admin.html");
+					return;
+				}
 			}
+			applyPosPermissionsFromUser(data);
 			var panelOn =
 				data.adminPanelAccess === true ||
 				data.adminPanelAccess === "true" ||
@@ -734,7 +1074,12 @@
 		var el = document.getElementById("pos-lux-breadcrumb");
 		if (!el) return;
 		if (kartMode === "products") {
-			var nm = kartProductAreaCode ? saleAreaNamesByCode[kartProductAreaCode] || kartProductAreaCode : "Ürünler";
+			if (isKartAllAreasMode()) {
+				el.innerHTML =
+					'<span class="pos-lux-bc-root">Menüler</span><span class="pos-lux-bc-sep">›</span><span class="pos-lux-bc-leaf">Hepsi</span>';
+				return;
+			}
+			var nm = kartProductAreaCode ? saleAreaDisplayName(kartProductAreaCode) : "Ürünler";
 			var mpl = getMenuPagesForSaleArea(kartProductAreaCode);
 			var sub = currentMenuPageLabel();
 			var leaf = nm;
@@ -779,7 +1124,7 @@
 					pill.disabled = true;
 					pill.classList.add("pos-lux-cat-pill--on");
 					if (kartProductAreaCode) {
-						pill.textContent = saleAreaNamesByCode[kartProductAreaCode] || kartProductAreaCode;
+						pill.textContent = saleAreaDisplayName(kartProductAreaCode);
 					} else {
 						pill.textContent = "Ürünler";
 					}
@@ -801,8 +1146,14 @@
 		if (cnt) cnt.textContent = String(cartPieceCount());
 		var ctx = document.getElementById("pos-lux-context-label");
 		if (!ctx) return;
-		if (kartMode === "products" && kartProductAreaCode) {
-			ctx.textContent = saleAreaNamesByCode[kartProductAreaCode] || kartProductAreaCode;
+		if (kartMode === "products") {
+			if (isKartAllAreasMode()) {
+				ctx.textContent = "Tüm menüler";
+			} else if (kartProductAreaCode) {
+				ctx.textContent = saleAreaDisplayName(kartProductAreaCode);
+			} else {
+				ctx.textContent = "Gişe";
+			}
 		} else {
 			ctx.textContent = "Gişe";
 		}
@@ -916,6 +1267,16 @@
 			var titleEl = t.querySelector(".tile-title");
 			var title = titleEl ? titleEl.textContent : "";
 			t.hidden = !!(q && title.toLowerCase().indexOf(q) === -1);
+		});
+		gridEl.querySelectorAll(".pos-lux-area-section").forEach(function (section) {
+			var tiles = section.querySelectorAll(".tile");
+			var anyVisible = false;
+			tiles.forEach(function (t) {
+				if (!t.hidden) {
+					anyVisible = true;
+				}
+			});
+			section.hidden = !!(q && !anyVisible);
 		});
 	}
 
@@ -1273,7 +1634,7 @@
 						}
 						showToast(e && e.message ? e.message : "Seçim başarısız", { duration: 3500 });
 					});
-			});
+500			});
 		}
 
 		if (testBtn) {
@@ -1428,7 +1789,7 @@
 			showToast("Kart UID gerekli");
 			return Promise.resolve(false);
 		}
-		if (payMode !== "cash" && payMode !== "card" && payMode !== "credit") {
+		if (payMode !== "cash" && payMode !== "card") {
 			showToast("Önce ödeme yöntemi seçin");
 			return Promise.resolve(false);
 		}
@@ -2258,6 +2619,7 @@
 		var stEl = document.getElementById("sorgu-modal-status");
 		var loadEl = document.getElementById("sorgu-modal-loaded");
 		var spentEl = document.getElementById("sorgu-modal-spent");
+		var refundEl = document.getElementById("sorgu-modal-refundable");
 		if (uidEl) {
 			uidEl.textContent = d.uid != null ? String(d.uid) : "—";
 		}
@@ -2275,6 +2637,10 @@
 		}
 		if (spentEl) {
 			spentEl.textContent = ts != null && !isNaN(ts) ? money(ts) : "—";
+		}
+		var ref = d.cashRefundableAmount != null ? Number(d.cashRefundableAmount) : null;
+		if (refundEl) {
+			refundEl.textContent = ref != null && !isNaN(ref) ? money(ref) : "—";
 		}
 		var led = Array.isArray(d.ledger) ? d.ledger : [];
 		renderUrunLedgerRows(sorguModalLedgerBody, led);
@@ -3091,10 +3457,6 @@
 			if (kartProductSelectionDirty()) {
 				pendingKartProductLoad = true;
 				loadKartProducts(function () {
-					renderGrid();
-					updateSummary();
-					syncKartViewUi();
-					updateKartNavLabel();
 					var btnCode2 = document.getElementById("btn-code");
 					if (btnCode2) {
 						btnCode2.style.display = "";
@@ -3102,8 +3464,7 @@
 					updateContextBar();
 				});
 			} else {
-				renderGrid();
-				updateSummary();
+				paintKartProductsGrid();
 			}
 		}
 		var btnCode = document.getElementById("btn-code");
@@ -3651,14 +4012,11 @@
 
 		let cash = 0;
 		let card = 0;
-		let credit = 0;
 		if (payMode === "cash") cash = due;
 		else if (payMode === "card") card = due;
-		else if (payMode === "credit") credit = due;
 
 		if (elCash) elCash.textContent = money(cash);
 		if (elCard) elCard.textContent = money(card);
-		if (elCredit) elCredit.textContent = money(credit);
 		if (elChange) elChange.textContent = money(0);
 		updateContextBar();
 		renderLuxCartLines();
@@ -3710,9 +4068,98 @@
 		}
 	}
 
+	function appendKartProductTile(p) {
+		var id = "p" + p.id;
+		var price = Number(p.price);
+		if (isNaN(price)) price = 0;
+		var soldOut = p.active === false || (p.stockQuantity != null && p.stockQuantity <= 0);
+		var btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "tile" + (soldOut ? " tile--soldout" : "");
+		btn.dataset.id = id;
+		btn.setAttribute("data-product-id", String(p.id));
+		btn.disabled = soldOut;
+		btn.innerHTML =
+			luxThumbHtml(p.name) +
+			'<span class="tile-title">' +
+			escapeHtml(p.name) +
+			'</span><span class="tile-price">' +
+			money(price) +
+			'</span><span class="tile-meta"></span>';
+		return btn;
+	}
+
+	function kartDisplayAreaCodes() {
+		if (saleAreas.length) {
+			return saleAreas.slice();
+		}
+		var seen = {};
+		var out = [];
+		kartProducts.forEach(function (p) {
+			var c = productSaleAreaCode(p);
+			if (!c) return;
+			var key = c.toUpperCase();
+			if (seen[key]) return;
+			seen[key] = true;
+			out.push(c);
+		});
+		return out;
+	}
+
+	function renderAllAreasProductGrid() {
+		gridEl.innerHTML = "";
+		var hasAny = false;
+		kartDisplayAreaCodes().forEach(function (areaCode) {
+			var ac = String(areaCode || "")
+				.trim()
+				.toUpperCase();
+			var areaProducts = kartProducts.filter(function (p) {
+				return productSaleAreaCode(p).toUpperCase() === ac;
+			});
+			if (!areaProducts.length) {
+				return;
+			}
+			hasAny = true;
+			var section = document.createElement("section");
+			section.className = "pos-lux-area-section";
+			section.setAttribute("data-area-code", areaCode);
+			var heading = document.createElement("h3");
+			heading.className = "pos-lux-area-heading";
+			heading.textContent = saleAreaDisplayName(areaCode);
+			var productsWrap = document.createElement("div");
+			productsWrap.className = "pos-lux-area-products";
+			areaProducts.forEach(function (p) {
+				productsWrap.appendChild(appendKartProductTile(p));
+			});
+			section.appendChild(heading);
+			section.appendChild(productsWrap);
+			gridEl.appendChild(section);
+		});
+		if (!hasAny) {
+			var empty = document.createElement("p");
+			empty.className = "kart-grid-empty";
+			empty.textContent = "Tanımlı ürün yok.";
+			gridEl.appendChild(empty);
+		}
+		applyLuxTileFilter();
+		syncKartAllAreasViewport();
+		requestAnimationFrame(updateKartScrollButtons);
+	}
+
 	function renderGrid() {
+		if (!gridEl) {
+			return;
+		}
+		if (!ticketSales && saleAreas.length > 0) {
+			kartMode = "products";
+		}
 		if (kartMode === "products") {
 			delete gridEl.dataset.ticketsBuilt;
+			gridEl.classList.toggle("pos-grid--all-areas", isKartAllAreasMode());
+			if (isKartAllAreasMode()) {
+				renderAllAreasProductGrid();
+				return;
+			}
 			gridEl.innerHTML = "";
 			if (!kartProducts.length) {
 				var empty = document.createElement("p");
@@ -3722,44 +4169,7 @@
 				return;
 			}
 			kartProducts.forEach(function (p) {
-				var id = "p" + p.id;
-				var price = Number(p.price);
-				if (isNaN(price)) price = 0;
-				var soldOut = p.active === false || (p.stockQuantity != null && p.stockQuantity <= 0);
-				var btn = document.createElement("button");
-				btn.type = "button";
-				btn.className = "tile" + (soldOut ? " tile--soldout" : "");
-				btn.dataset.id = id;
-				btn.disabled = soldOut;
-				btn.innerHTML =
-					luxThumbHtml(p.name) +
-					'<span class="tile-title">' +
-					escapeHtml(p.name) +
-					'</span><span class="tile-price">' +
-					money(price) +
-					'</span><span class="tile-meta"></span>';
-				btn.addEventListener("click", function () {
-					if (soldOut) return;
-					var linePrice = price;
-					var lineLabel = p.name;
-					if (luxIkramNext && kartMode === "products") {
-						linePrice = 0;
-						lineLabel = p.name + " (İkram)";
-						luxIkramNext = false;
-						syncLuxRailTreatBtn();
-						showToast("İkram satırı eklendi");
-					}
-					cartAddMerged({
-						id: id,
-						productId: p.id,
-						label: lineLabel,
-						price: linePrice,
-						qty: 1,
-					});
-					// Tüm ızgarayı yeniden çizme — çok ürün varsa gecikme yaratır; özet anında güncellenir.
-					updateSummary();
-				});
-				gridEl.appendChild(btn);
+				gridEl.appendChild(appendKartProductTile(p));
 			});
 			applyLuxTileFilter();
 			return;
@@ -3894,17 +4304,7 @@
 		});
 	}
 
-	document.getElementById("nav-exit").addEventListener("click", function () {
-		sessionStorage.removeItem(TOKEN_KEY);
-		sessionStorage.removeItem(USER_KEY);
-		sessionStorage.removeItem(ROLE_KEY);
-		sessionStorage.removeItem("aqua_display_name");
-		sessionStorage.removeItem("aqua_sale_areas");
-		sessionStorage.removeItem("aqua_ticket_sales");
-		sessionStorage.removeItem("aqua_balance_load");
-		sessionStorage.removeItem("aqua_admin_panel");
-		window.location.href = "/index.html";
-	});
+	wireLogoutButton();
 
 	document.querySelectorAll("#view-kart .pay-option").forEach(function (opt) {
 		opt.addEventListener("click", function () {
@@ -4010,10 +4410,6 @@
 				showToast("Önce ürün seçin");
 				return;
 			}
-			if (payMode !== "cash" && payMode !== "card" && payMode !== "credit") {
-				showToast("Önce ödeme yöntemi seçin");
-				return;
-			}
 			openProductSaleCardModal();
 			return;
 		}
@@ -4021,7 +4417,7 @@
 			showToast("Önce bilet seçin");
 			return;
 		}
-		if (payMode !== "cash" && payMode !== "card" && payMode !== "credit") {
+		if (payMode !== "cash" && payMode !== "card") {
 			showToast("Önce ödeme yöntemi seçin");
 			return;
 		}
@@ -4385,17 +4781,22 @@
 	}
 
 	Promise.all([
-		fetchJsonOr401("/api/sale-areas"),
+		fetchJsonOr401("/api/auth/me"),
+		fetchJsonOr401("/api/sale-areas").catch(function () {
+			return [];
+		}),
 		fetchJsonOr401("/api/menu-pages").catch(function () {
 			return [];
 		}),
 		fetchTicketAgeGroupsForPos(),
 	])
-		.then(function (triple) {
-			if (!triple || triple[0] === null) {
+		.then(function (results) {
+			if (!results || results[0] === null) {
 				return;
 			}
-			var tag = triple[2];
+			var me = results[0];
+			applyPosPermissionsFromUser(me);
+			var tag = results[3];
 			if (tag && tag.unauthorized) {
 				return;
 			}
@@ -4420,11 +4821,12 @@
 					ticketCatalog = [];
 				}
 			}
-			var areas = triple[0] || [];
-			menuPagesAll = Array.isArray(triple[1]) ? triple[1] : [];
+			var areas = results[1] || [];
+			menuPagesAll = Array.isArray(results[2]) ? results[2] : [];
 			areas.forEach(function (a) {
 				saleAreaNamesByCode[a.code] = a.name || a.code;
 			});
+			refreshKartAreaHeadings();
 			/**
 			 * Oturumdaki sıra ile /api/sale-areas (koda göre sıralı) farklı olabiliyor; ilk alan yanlış
 			 * seçilince yalnızca o alanın menü sayfaları geliyordu — her açılışta sunucu listesini kullan.
@@ -4447,7 +4849,6 @@
 			syncKartViewUi();
 			if (kartMode === "products" && kartProductAreaCode) {
 				loadKartProducts(function () {
-					renderGrid();
 					bootstrapPos();
 				});
 			} else {
@@ -4458,7 +4859,15 @@
 		.catch(function () {
 			menuPagesAll = [];
 			initKartMode();
-			renderGrid();
-			bootstrapPos();
+			updateKartNavLabel();
+			syncKartViewUi();
+			if (kartMode === "products" && kartProductAreaCode) {
+				loadKartProducts(function () {
+					bootstrapPos();
+				});
+			} else {
+				renderGrid();
+				bootstrapPos();
+			}
 		});
 })();

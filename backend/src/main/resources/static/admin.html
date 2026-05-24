@@ -20,6 +20,7 @@
 			</div>
 			<div class="admin-header-actions">
 				<a class="btn btn-ghost" href="/pos">← POS’a dön</a>
+				<button type="button" class="btn btn-ghost" id="admin-logout-btn">Çıkış</button>
 			</div>
 		</header>
 
@@ -105,8 +106,9 @@
 					<div class="field field-sale-areas">
 						<span class="label-block">Satış alanları</span>
 						<p class="field-hint">
-							Yönetici için boş bırakılırsa tüm alanlar atanır. Kasiyer ve süpervizör için en az bir alan seçin.
-							<strong>Bilet satış</strong> rolünde satış alanı zorunlu değildir (yalnızca kart / bilet ekranı).
+							<strong>Yönetici</strong> ve <strong>bilet satış</strong> rolü için satış alanı zorunlu değildir.
+							Kasiyer/süpervizörde <strong>yalnızca bilet veya bakiye</strong> verilecekse alan seçmeyebilirsiniz;
+							<strong>ürün satışı</strong> için en az bir alan işaretleyin.
 						</p>
 						<div class="admin-perm-main-row">
 							<div class="sale-area-checks" id="c-sale-area-checks"></div>
@@ -187,7 +189,7 @@
 				<div class="admin-perm-panel">
 					<div class="field field-sale-areas">
 						<span class="label-block">Satış alanları</span>
-						<p class="field-hint">Yönetici için boş bırakılırsa tüm alanlar atanır.</p>
+						<p class="field-hint">Yönetici ve bilet satış rolü için satış alanı zorunlu değildir. Kasiyer/süpervizörde yalnızca bilet veya bakiye yetkisi verilecekse alan seçmeyin; ürün satışı için en az bir alan işaretleyin.</p>
 						<div class="admin-perm-main-row">
 							<div class="sale-area-checks" id="e-sale-area-checks"></div>
 							<div class="admin-pos-options admin-pos-options--three">
@@ -714,6 +716,6 @@
 	</div>
 	</div>
 
-	<script src="/js/admin.js?v=11" defer></script>
+	<script src="/js/admin.js?v=12" defer></script>
 </body>
 </html>

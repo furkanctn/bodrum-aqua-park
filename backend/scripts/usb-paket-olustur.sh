@@ -14,12 +14,20 @@ else
 	./backend/mvnw -f backend/pom.xml clean package -DskipTests
 fi
 
-JAR_NAME="bodrum-aqua-park-api-1.2.0.0.jar"
+JAR_NAME="bodrum-aqua-park-api-1.2.0.1.jar"
+LAUNCHER_JAR="bodrum-aqua-park-api-1.2.0.1-launcher.jar"
 OUT="$ROOT/dist/usb-windows-pos"
 mkdir -p "$OUT"
 
 cp "backend/target/$JAR_NAME" "$OUT/"
+cp "backend/target/$LAUNCHER_JAR" "$OUT/"
 cp backend/scripts/windows/BodrumAquaPark.bat "$OUT/"
+mkdir -p "$OUT/config"
+cp backend/scripts/windows/config/application.properties.example "$OUT/config/"
+if [[ -f backend/scripts/windows/config/application.properties ]]; then
+	cp backend/scripts/windows/config/application.properties "$OUT/config/"
+	echo "    config/application.properties (saha ayarlari) dist'e eklendi."
+fi
 cp backend/scripts/windows/javafx-logging.properties "$OUT/"
 cp backend/scripts/windows/Olustur-Masaustu-Kisayolu.ps1 "$OUT/"
 cp backend/scripts/windows/POS-USB-KURULUM.txt "$OUT/" 2>/dev/null || true

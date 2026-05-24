@@ -124,6 +124,9 @@ public class StaffUserService {
 		} else if (u.getRole() == RoleCode.TICKET) {
 			u.setTicketSalesAllowed(true);
 		}
+		if (u.getRole() == RoleCode.ADMIN) {
+			u.getSaleAreas().clear();
+		}
 		u = repository.save(u);
 		u = repository.loadWithSaleAreasById(u.getId()).orElseThrow();
 		return UserResponse.from(u);
@@ -140,20 +143,20 @@ public class StaffUserService {
 	}
 
 	/**
-	 * Boş veya null liste: yalnızca ADMIN için tüm satış alanları atanır; diğer rollerde hata.
+	 * Boş liste: ADMIN/TICKET için alan yok. Kasiyer/süpervizör yalnızca bilet, bakiye veya sınırlı yönetim
+	 * kullanacaksa satış alanı zorunlu değil; ürün satışı için en az bir alan gerekir.
 	 */
 	private void applySaleAreas(StaffUser u, List<String> codes, RoleCode role) {
 		u.getSaleAreas().clear();
+		if (role == RoleCode.ADMIN) {
+			return;
+		}
 		if (codes == null || codes.isEmpty()) {
-			if (role == RoleCode.ADMIN) {
-				saleAreaRepository.findAll().forEach(a -> u.getSaleAreas().add(a));
+			if (role == RoleCode.TICKET || posWithoutProductSaleAreas(u)) {
 				return;
 			}
-			if (role == RoleCode.TICKET) {
-				u.getSaleAreas().clear();
-				return;
-			}
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "En az bir satış alanı seçin");
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Ürün satışı için en az bir satış alanı seçin (yalnızca bilet/bakiye için alan gerekmez)");
 		}
 		for (String raw : codes) {
 			String c = raw != null ? raw.trim() : "";
@@ -165,11 +168,16 @@ public class StaffUserService {
 			u.getSaleAreas().add(sa);
 		}
 		if (u.getSaleAreas().isEmpty()) {
-			if (role == RoleCode.ADMIN) {
-				saleAreaRepository.findAll().forEach(a -> u.getSaleAreas().add(a));
-			} else {
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "En az bir satış alanı seçin");
+			if (role == RoleCode.TICKET || posWithoutProductSaleAreas(u)) {
+				return;
 			}
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+					"Ürün satışı için en az bir satış alanı seçin (yalnızca bilet/bakiye için alan gerekmez)");
 		}
+	}
+
+	/** Bilet, bakiye veya sınırlı yönetim paneli — ürün satış alanı atanmadan POS kullanılabilir. */
+	private static boolean posWithoutProductSaleAreas(StaffUser u) {
+		return u.isTicketSalesAllowed() || u.isBalanceLoadAllowed() || u.isAdminPanelAccess();
 	}
 }

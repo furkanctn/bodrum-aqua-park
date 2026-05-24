@@ -156,6 +156,10 @@
 			}
 
 			if (data.accessToken) {
+				sessionStorage.removeItem("aqua_ticket_sales");
+				sessionStorage.removeItem("aqua_balance_load");
+				sessionStorage.removeItem("aqua_sale_areas");
+				sessionStorage.removeItem("aqua_admin_panel");
 				sessionStorage.setItem("aqua_token", data.accessToken);
 				sessionStorage.setItem("aqua_user", data.userId || userId);
 				sessionStorage.setItem("aqua_role", data.role || "");
@@ -164,11 +168,11 @@
 				sessionStorage.setItem("aqua_sale_areas", JSON.stringify(areas));
 				sessionStorage.setItem(
 					"aqua_ticket_sales",
-					String(data.ticketSalesAllowed !== false && data.ticketSalesAllowed !== "false")
+					data.ticketSalesAllowed === true || data.ticketSalesAllowed === "true" ? "true" : "false"
 				);
 				sessionStorage.setItem(
 					"aqua_balance_load",
-					String(data.balanceLoadAllowed !== false && data.balanceLoadAllowed !== "false")
+					data.balanceLoadAllowed !== false && data.balanceLoadAllowed !== "false" ? "true" : "false"
 				);
 				var panelOn =
 					data.adminPanelAccess === true ||
@@ -176,7 +180,8 @@
 					data.adminPanelAccess === 1;
 				sessionStorage.setItem("aqua_admin_panel", panelOn ? "true" : "false");
 			}
-			window.location.href = "/pos";
+			var role = (data.role || "").toUpperCase();
+			window.location.href = role === "ADMIN" ? "/admin.html" : "/pos";
 		} catch (err) {
 			showError("Sunucuya bağlanılamadı. Ağınızı kontrol edin.");
 		} finally {

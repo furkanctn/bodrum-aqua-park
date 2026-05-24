@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import com.bodrumaquapark.entity.Card;
 import com.bodrumaquapark.entity.CardLedgerEntry;
 import com.bodrumaquapark.entity.TransactionType;
+import com.bodrumaquapark.policy.LoadRefundPolicy;
 import com.bodrumaquapark.util.Money;
 
 /**
@@ -35,6 +36,7 @@ public record CardDetailResponse(
 		BigDecimal depositTotal,
 		BigDecimal grandTotal,
 		BigDecimal refundTotal,
+		BigDecimal cashRefundableAmount,
 		BigDecimal expectedBalance,
 		List<LedgerEntryResponse> ledger
 ) {
@@ -77,6 +79,8 @@ public record CardDetailResponse(
 		refund = Money.normalize(refund);
 		BigDecimal grand = Money.normalize(cash.add(cardPay).add(agency));
 		BigDecimal expected = Money.normalize(card.getBalance());
+		BigDecimal cashRefundable = LoadRefundPolicy.computeCashRefundableAmount(
+				card.getBalance(), cash, agency, totalSpent, refund);
 
 		List<CardLedgerEntry> asc = new ArrayList<>(entries);
 		asc.sort(Comparator.comparing(CardLedgerEntry::getCreatedAt));
@@ -100,6 +104,7 @@ public record CardDetailResponse(
 				agency,
 				grand,
 				refund,
+				cashRefundable,
 				expected,
 				ledger);
 	}

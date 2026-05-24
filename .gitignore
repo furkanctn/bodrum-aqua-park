@@ -23,6 +23,9 @@ backend/.sts4-cache
 
 # USB Windows paketi — derlenmiş JAR çok büyük (GitHub 100MB); release / paylaşım kanalıyla verin
 dist/usb-windows-pos/*.jar
+# Saha DB sifresi (application.properties) — repoya koymayin; example kullanin
+backend/scripts/windows/config/application.properties
+dist/usb-windows-pos/config/application.properties
 
 # Günlük / geçici
 *.log

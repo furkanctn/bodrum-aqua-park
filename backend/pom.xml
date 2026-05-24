@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.bodrumaquapark</groupId>
 	<artifactId>bodrum-aqua-park-api</artifactId>
-	<version>1.2.0.0</version>
+	<version>1.2.0.1</version>
 	<name>bodrum-aqua-park-api</name>
 	<description>Bodrum Aqua Park Backend API</description>
 	<url/>
@@ -192,14 +192,14 @@
 					</requiresUnpack>
 				</configuration>
 			</plugin>
-			<!-- package sonrası BAT, target içinde JAR'larla aynı klasöre kopyalanır -->
+			<!-- package sonrası örnek config → target (JAR ile aynı klasör) -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
 				<version>3.3.1</version>
 				<executions>
 					<execution>
-						<id>copy-launcher-bat</id>
+						<id>copy-windows-config</id>
 						<phase>package</phase>
 						<goals>
 							<goal>copy-resources</goal>
@@ -210,8 +210,6 @@
 								<resource>
 									<directory>${project.basedir}/scripts/windows</directory>
 									<includes>
-										<include>Aquapark-Launcher-Startup.bat</include>
-										<include>Olustur-Masaustu-Aquapark-Launcher.ps1</include>
 										<include>config/**</include>
 									</includes>
 								</resource>

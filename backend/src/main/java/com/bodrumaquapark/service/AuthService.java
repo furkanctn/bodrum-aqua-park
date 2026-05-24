@@ -10,7 +10,6 @@ import org.springframework.web.server.ResponseStatusException;
 import com.bodrumaquapark.entity.RoleCode;
 import com.bodrumaquapark.entity.SaleArea;
 import com.bodrumaquapark.entity.StaffUser;
-import com.bodrumaquapark.repository.SaleAreaRepository;
 import com.bodrumaquapark.repository.StaffUserRepository;
 import com.bodrumaquapark.security.JwtService;
 
@@ -18,14 +17,12 @@ import com.bodrumaquapark.security.JwtService;
 public class AuthService {
 
 	private final StaffUserRepository staffUserRepository;
-	private final SaleAreaRepository saleAreaRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtService jwtService;
 
-	public AuthService(StaffUserRepository staffUserRepository, SaleAreaRepository saleAreaRepository,
-			PasswordEncoder passwordEncoder, JwtService jwtService) {
+	public AuthService(StaffUserRepository staffUserRepository, PasswordEncoder passwordEncoder,
+			JwtService jwtService) {
 		this.staffUserRepository = staffUserRepository;
-		this.saleAreaRepository = saleAreaRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.jwtService = jwtService;
 	}
@@ -79,12 +76,10 @@ public class AuthService {
 	public record PosPermissions(boolean ticketSalesAllowed, boolean balanceLoadAllowed) {
 	}
 
-	/**
-	 * Yönetici ve atanmış alan yoksa: tüm satış alanları. Diğer roller: yalnızca atanan kodlar.
-	 */
+	/** Yönetici POS satış alanı kullanmaz; diğer roller yalnızca atanan kodlar. */
 	private List<String> resolveSaleAreaCodesForToken(StaffUser u) {
-		if (u.getRole() == RoleCode.ADMIN && u.getSaleAreas().isEmpty()) {
-			return saleAreaRepository.findAll().stream().map(SaleArea::getCode).sorted().toList();
+		if (u.getRole() == RoleCode.ADMIN) {
+			return List.of();
 		}
 		return u.getSaleAreas().stream().map(SaleArea::getCode).sorted().toList();
 	}

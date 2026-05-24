@@ -5,13 +5,15 @@ Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
 1) MAC'TE (geliştirme bilgisayarı)
    - Proje kökünde veya backend klasöründe:
      mvn -f backend/pom.xml clean package -DskipTests
-   - Çıktı: backend/target/bodrum-aqua-park-api-1.2.0.0.jar
+   - Çıktı: backend/target/bodrum-aqua-park-api-1.2.0.1.jar
    - Not: pom.xml içinde javafx.platform=win olduğu sürece bu JAR Windows POS
      için doğru JavaFX DLL'lerini içerir (Mac'te derlense bile).
 
 2) USB'YE KOPYALANACAKLAR (aynı klasörde olsun)
-   - bodrum-aqua-park-api-1.2.0.0.jar   (target klasöründen)
+   - bodrum-aqua-park-api-1.2.0.1.jar   (target klasöründen)
+   - bodrum-aqua-park-api-1.2.0.1-launcher.jar  ← canlı güncelleme sonrası yeniden başlatma (BodrumAquaPark.bat bunu kullanır)
    - BodrumAquaPark.bat   ← POS'ta çift tıklanacak başlatıcı
+   - config\application.properties.example  ← ilk çalıştırmada application.properties olur; PostgreSQL + JWT burada
    - javafx-logging.properties  ← JavaFX konsol uyarilarini susturur (usb-paket-olustur.sh ile gelir)
    - Olustur-Masaustu-Kisayolu.ps1  ← masaüstü kısayolu + simge (isteğe bağlı)
    - app.ico  ← kısayol simgesi için bu klasöre koyun (yoksa varsayılan simge)
@@ -61,7 +63,7 @@ Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
    - Kodda değişiklik yaptıktan sonra Mac’te (veya geliştirme PC’de) MUTLAKA:
        mvn -f backend/pom.xml clean package -DskipTests
      veya:  bash backend/scripts/usb-paket-olustur.sh
-   - Oluşan YENİ bodrum-aqua-park-api-1.2.0.0.jar dosyasını USB/POS
+   - Oluşan YENİ bodrum-aqua-park-api-1.2.0.1.jar dosyasını USB/POS
      klasörüne kopyalayıp ESKİ JAR’ın üzerine yazın; ardından BAT’ı yeniden çalıştırın.
    - Geliştirme: Tüm backend klasörü (mvnw dahil) Windows’ta aynı yolda ise:
        BodrumAquaPark.bat dev
@@ -74,10 +76,11 @@ Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
    - Çıktı: backend\dist-exe\BodrumAquaPark\BodrumAquaPark.exe (gömülü JRE).
    - Bu klasörü USB ile taşıyabilirsiniz; hedefte ayrı JDK gerekmez.
 
-6) ÜRETİM (PostgreSQL)
-   - Şu an BAT: SPRING_PROFILES_ACTIVE=lowresource,dev (H2 bellek, test içindir).
-   - Canlı veritabanı için BAT içinde lowresource,prod yapın ve ortam değişkenlerini
-     ayarlayın (SPRING_DATASOURCE_URL, kullanıcı, şifre, APP_JWT_SECRET).
+6) ÜRETİM (PostgreSQL — uzak DATA-SERVER)
+   - BAT varsayılan profil: pos,lowresource (H2 dev kapalı).
+   - Veritabanı: config\application.properties (ilk çalıştırmada example'dan oluşur).
+     spring.datasource.url=jdbc:postgresql://DATA-SERVER.aqua.local:5433/bodrum_aqua_park
+     spring.datasource.password ve app.jwt.secret düzenleyin.
 
 7) Sorun giderme
    - "java bulunamadı" → PATH veya JAVA_HOME
