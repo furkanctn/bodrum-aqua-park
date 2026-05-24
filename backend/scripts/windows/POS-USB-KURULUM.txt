@@ -13,8 +13,7 @@ Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
    - bodrum-aqua-park-api-1.2.0.1.jar   (target klasöründen)
    - bodrum-aqua-park-api-1.2.0.1-launcher.jar  ← canlı güncelleme sonrası yeniden başlatma (BodrumAquaPark.bat bunu kullanır)
    - BodrumAquaPark.bat   ← POS'ta çift tıklanacak başlatıcı
-   - config\application.properties         ← saha ayarlari (DB URL, sifre, turnike); pakette hazir gelir
-   - config\application.properties.example ← yedek sablon (sifre: DEGISTIR)
+   - config\application.properties.example ← ilk çalıştırmada BAT ile application.properties olur
    - javafx-logging.properties  ← JavaFX konsol uyarilarini susturur (usb-paket-olustur.sh ile gelir)
    - Olustur-Masaustu-Kisayolu.ps1  ← masaüstü kısayolu + simge (isteğe bağlı)
    - app.ico  ← kısayol simgesi için bu klasöre koyun (yoksa varsayılan simge)

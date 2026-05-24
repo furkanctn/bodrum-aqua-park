@@ -24,10 +24,6 @@ cp "backend/target/$LAUNCHER_JAR" "$OUT/"
 cp backend/scripts/windows/BodrumAquaPark.bat "$OUT/"
 mkdir -p "$OUT/config"
 cp backend/scripts/windows/config/application.properties.example "$OUT/config/"
-if [[ -f backend/scripts/windows/config/application.properties ]]; then
-	cp backend/scripts/windows/config/application.properties "$OUT/config/"
-	echo "    config/application.properties (saha ayarlari) dist'e eklendi."
-fi
 cp backend/scripts/windows/javafx-logging.properties "$OUT/"
 cp backend/scripts/windows/Olustur-Masaustu-Kisayolu.ps1 "$OUT/"
 cp backend/scripts/windows/POS-USB-KURULUM.txt "$OUT/" 2>/dev/null || true
