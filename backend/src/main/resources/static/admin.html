@@ -378,7 +378,7 @@
 				<h2>Yeni kart tanımla</h2>
 				<p class="admin-sub admin-sub--inline">
 					Kart okuyucunun verdiği UID ile aynı biçimde girin (veya manuel). Aynı UID iki kez eklenemez.
-					<a class="admin-inline-link" href="/rfid-test.html" target="_blank" rel="noopener">Okuyucu bağlantı testi</a>
+					<a class="admin-inline-link" href="/rfid-test.html">Okuyucu bağlantı testi</a>
 					(HID / seri ayırımı için).
 				</p>
 				<form id="form-issue-card" class="admin-form-grid">
@@ -399,7 +399,7 @@
 					</div>
 					<div class="field">
 						<label for="card-issue-balance">İlk bakiye (₺)</label>
-						<input id="card-issue-balance" type="number" step="0.01" min="0" value="5000" required />
+						<input id="card-issue-balance" type="number" step="0.01" min="0" value="0" required readonly aria-readonly="true" title="Yeni kartlar sıfır bakiye ile tanımlanır; yükleme POS'tan yapılır" />
 					</div>
 					<div class="field field-actions">
 						<button type="submit" class="btn btn-primary" id="btn-issue-card">Kartı tanımla</button>
@@ -716,6 +716,7 @@
 	</div>
 	</div>
 
-	<script src="/js/admin.js?v=12" defer></script>
+	<script src="/js/mifare-uid.js?v=1"></script>
+	<script src="/js/admin.js?v=14" defer></script>
 </body>
 </html>

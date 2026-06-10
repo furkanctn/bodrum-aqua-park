@@ -44,7 +44,7 @@ class TurnstileSaleIntegrationTest {
 
 	@Test
 	void issueCard_turnstile_thenSale() throws Exception {
-		String uid = "INT-TEST-001";
+		String uid = "04A1B2C3";
 		mockMvc.perform(post("/api/cards").header(HttpHeaders.AUTHORIZATION, bearerAuth()).contentType(APPLICATION_JSON)
 				.content("{\"uid\":\"" + uid + "\",\"initialBalance\":500}")).andExpect(status().isCreated())
 				.andExpect(jsonPath("$.balance").value(500));
@@ -66,7 +66,7 @@ class TurnstileSaleIntegrationTest {
 
 	@Test
 	void ticketEntryGrant_thenTurnstile_usesGateWithoutBalance() throws Exception {
-		String uid = "RFID-TICKET-001";
+		String uid = "04DEAD01";
 		mockMvc.perform(post("/api/cards/" + uid + "/ticket-entry-grant").header(HttpHeaders.AUTHORIZATION, bearerAuth())
 				.contentType(APPLICATION_JSON).content("{\"amount\":1.00,\"paymentMethod\":\"cash\"}"))
 				.andExpect(status().isOk()).andExpect(jsonPath("$.entryGate").value(1));

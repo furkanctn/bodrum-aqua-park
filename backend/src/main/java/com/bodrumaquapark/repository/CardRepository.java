@@ -1,5 +1,6 @@
 package com.bodrumaquapark.repository;
 
+import java.util.Collection;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,4 +21,10 @@ public interface CardRepository extends JpaRepository<Card, Long> {
 	Optional<Card> findByUidForUpdate(@Param("uid") String uid);
 
 	boolean existsByUid(String uid);
+
+	Optional<Card> findFirstByUidIn(Collection<String> uids);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT c FROM Card c WHERE c.uid IN :uids ORDER BY c.id")
+	Optional<Card> findFirstByUidInForUpdate(@Param("uids") Collection<String> uids);
 }

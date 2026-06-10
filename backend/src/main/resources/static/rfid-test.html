@@ -144,7 +144,8 @@
 </head>
 <body>
 	<div class="shell">
-		<a class="back" href="/pos">← Satış ekranına dön</a>
+		<a class="back" href="/admin.html">← Yönetim paneline dön</a>
+		<a class="back" href="/pos" style="margin-left:0.75rem">POS</a>
 		<h1>Kart okuyucu bağlantı testi</h1>
 		<p class="lead">
 			<strong>Veri görmüyorsanız önce aşağıdaki HID testini deneyin.</strong> Piyasadaki çoğu USB kart okuyucu
@@ -155,7 +156,7 @@
 			<h2>1) Klavye (HID) — çoğu okuyucu</h2>
 			<p class="hint">
 				<strong>Klavye gibi dinle</strong> — okuyucu Mac’te klavye (HID) olarak görünüyorsa bu modu kullanın.
-				Kutuya odaklanır; kart okutunca rakamlar düşer. Enter / Tab veya kısa süre sonra otomatik tamamlanır.
+				Kutuya odaklanır; kart okutunca rakamlar düşer. Okuma bitince UID kutuda kalır; aynı satır alttaki günlükte de görünür.
 			</p>
 			<div class="row">
 				<button type="button" class="primary" id="btn-rfid-hid-global">Klavye gibi dinle</button>
@@ -241,6 +242,7 @@
 			<pre id="rfid-log" aria-live="polite"></pre>
 		</div>
 	</div>
-	<script src="/js/rfid-test.js" defer></script>
+	<script src="/js/mifare-uid.js?v=1"></script>
+	<script src="/js/rfid-test.js?v=2" defer></script>
 </body>
 </html>

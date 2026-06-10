@@ -8,6 +8,7 @@
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
 	<link rel="stylesheet" href="/css/pos.css?v=17" />
 	<script src="/js/pos-perms.js?v=2"></script>
+	<script src="/js/mifare-uid.js?v=1"></script>
 </head>
 <body class="module-kart">
 	<div class="pos-app">
@@ -262,9 +263,9 @@
 								type="text"
 								id="urun-card-input"
 								class="urun-input"
-								placeholder="Okutun veya girin (ör. 1234)"
+								placeholder="Mifare UID okutun (8 veya 14 hex)"
 								autocomplete="off"
-								maxlength="16"
+								maxlength="14"
 							/>
 							<button type="button" class="urun-btn-load" id="btn-urun-load-card">Kartı yükle</button>
 							<button type="button" class="urun-btn-clear-uid" id="btn-urun-clear-uid" title="UID ve kart özetini sıfırlar">Temizle</button>
@@ -639,6 +640,6 @@
 	</div>
 
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js?v=22" defer></script>
+	<script src="/js/pos.js?v=23" defer></script>
 </body>
 </html>

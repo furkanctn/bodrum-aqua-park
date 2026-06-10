@@ -5,7 +5,8 @@ allowed=true ise GPIO 17 röle (pinctrl) ile kısa süre aktif edilir.
 
 Gereksinimler:
   - Ortam: API_BASE (örn. http://192.168.1.10:8081), DEVICE_ID, DEVICE_TOKEN
-  - Kart okuyucu: bu örnek stdin satırı okur; evdev ile HID entegrasyonunu kendi donanımınıza göre ekleyin.
+  - Kart okuyucu: Mifare 13,56 MHz — UID 8 veya 14 hex karakter (büyük harf önerilir).
+  - Bu örnek stdin satırı okur; evdev/HID veya PN532 entegrasyonunu donanımınıza göre ekleyin.
 
 Örnek:
   export API_BASE=http://127.0.0.1:8081
@@ -63,6 +64,13 @@ def main() -> int:
 		card_id = sys.stdin.readline().strip()
 	if not card_id:
 		print("Kart ID boş", file=sys.stderr)
+		return 2
+
+	card_id = card_id.strip().replace(" ", "").upper()
+	if card_id.startswith("0X"):
+		card_id = card_id[2:]
+	if len(card_id) not in (8, 14) or not all(c in "0123456789ABCDEF" for c in card_id):
+		print("Geçersiz Mifare UID (8 veya 14 hex beklenir):", card_id, file=sys.stderr)
 		return 2
 
 	try:

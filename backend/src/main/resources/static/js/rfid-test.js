@@ -1,9 +1,5 @@
 (function () {
-	var TOKEN_KEY = "aqua_token";
-	if (!sessionStorage.getItem(TOKEN_KEY)) {
-		window.location.replace("/index.html");
-		return;
-	}
+	/* Donanım testi — oturum gerekmez (yeni sekmede sessionStorage boş kalabiliyordu). */
 
 	var statusEl = document.getElementById("rfid-status");
 	var logEl = document.getElementById("rfid-log");
@@ -319,26 +315,58 @@
 		}
 	}
 
+	function formatUidForDisplay(raw) {
+		var v = raw != null ? String(raw).trim() : "";
+		if (!v.length) {
+			return "";
+		}
+		if (typeof MifareUidUtil !== "undefined") {
+			var canon = MifareUidUtil.cleanUid(v);
+			if (canon) {
+				return canon;
+			}
+		}
+		return v;
+	}
+
 	function hidCommitScan(raw) {
 		hidClearIdleTimer();
 		var v = raw != null ? String(raw).trim() : "";
 		if (!v.length) {
 			return;
 		}
-		appendLog("[" + nowStr() + "] HID (klavye) → " + JSON.stringify(v));
-		if (hidInput) {
-			hidInput.value = "";
+		var display = formatUidForDisplay(v);
+		var logLine =
+			"[" + nowStr() + "] HID (klavye) → ham: " + JSON.stringify(v);
+		if (display !== v) {
+			logLine += " · kanonik: " + display;
 		}
+		appendLog(logLine);
+		if (hidInput) {
+			hidInput.value = display;
+			hidInput.select();
+		}
+		if (hidGlobalStateEl) {
+			hidGlobalStateEl.textContent =
+				"Son okuma: " + display + " (kutuda kalır — kopyalayabilirsiniz)";
+		}
+		setStatus("Kart okundu: " + display);
 	}
 
 	function hidScheduleIdleFlush() {
-		if (!hidGlobalOn || !hidInput) {
+		if (!hidInput) {
+			return;
+		}
+		if (!hidGlobalOn && document.activeElement !== hidInput) {
 			return;
 		}
 		hidClearIdleTimer();
 		hidIdleTimer = setTimeout(function () {
 			hidIdleTimer = null;
-			if (!hidGlobalOn || !hidInput) {
+			if (!hidInput) {
+				return;
+			}
+			if (!hidGlobalOn && document.activeElement !== hidInput) {
 				return;
 			}
 			var v = hidInput.value.trim();
@@ -603,9 +631,7 @@
 
 	if (hidInput) {
 		hidInput.addEventListener("input", function () {
-			if (hidGlobalOn) {
-				hidScheduleIdleFlush();
-			}
+			hidScheduleIdleFlush();
 		});
 		hidInput.addEventListener("keydown", function (e) {
 			if (e.key === "Enter") {

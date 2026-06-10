@@ -984,13 +984,17 @@
 	const sorguDisplay = document.getElementById("sorgu-display");
 	const sorguKeypadEl = document.getElementById("sorgu-keypad");
 
-	/** Sadece rakam, max 16 (kart UID) */
+	/** Sorgu tuş takımı — Mifare hex UID (max 14) */
 	let sorguDigits = "";
-	const MAX_SORGU_DIGITS = 16;
+	const MAX_SORGU_DIGITS =
+		typeof MifareUidUtil !== "undefined" ? MifareUidUtil.HEX_DOUBLE : 14;
 
 	let urunCardUid = "";
-	/** Aynı alana ikinci HID okuma (üst üste rakam) — yüklemeden önce engel; tam uzunluk için Temizle */
-	const URUN_UID_SCAN_BLOCK_LEN = 10;
+	/** Aynı alana ikinci HID okuma — tam uzunlukta Temizle gerekir */
+	const URUN_UID_SCAN_BLOCK_LEN =
+		typeof MifareUidUtil !== "undefined" ? MifareUidUtil.HEX_DOUBLE : 14;
+	const MIN_MIFARE_UID_LEN =
+		typeof MifareUidUtil !== "undefined" ? MifareUidUtil.HEX_SINGLE : 8;
 
 	userEl.textContent = sessionStorage.getItem("aqua_display_name") || sessionStorage.getItem(USER_KEY) || "—";
 	syncLuxHeaderUser();
@@ -2641,7 +2645,7 @@
 	var sorguModalSubmitting = false;
 	var sorguCardIdleTimer = null;
 	var SORGU_CARD_IDLE_MS = 150;
-	var SORGU_CARD_IDLE_MIN_LEN = 4;
+	var SORGU_CARD_IDLE_MIN_LEN = MIN_MIFARE_UID_LEN;
 
 	function clearSorguCardIdle() {
 		if (sorguCardIdleTimer) {
@@ -3063,9 +3067,13 @@
 	});
 
 	function cleanUid(s) {
+		if (typeof MifareUidUtil !== "undefined") {
+			return MifareUidUtil.cleanUid(s);
+		}
 		return String(s || "")
 			.trim()
-			.replace(/\s+/g, "");
+			.replace(/\s+/g, "")
+			.toUpperCase();
 	}
 
 	/**
@@ -3088,6 +3096,7 @@
 		if (slice.length < 4) {
 			return "";
 		}
+		/* Ham bayt → hex; kanonik Mifare formu cleanUid ile */
 		var allPrint = true;
 		var s = "";
 		for (var k = 0; k < slice.length; k++) {
@@ -3099,14 +3108,14 @@
 				break;
 			}
 		}
-		if (allPrint && s.length >= 4) {
+		if (allPrint && s.length >= MIN_MIFARE_UID_LEN) {
 			return cleanUid(s);
 		}
 		var hex = "";
 		for (var m = 0; m < slice.length; m++) {
 			hex += slice[m].toString(16).padStart(2, "0");
 		}
-		return hex.toUpperCase();
+		return cleanUid(hex);
 	}
 
 	function setRfidOverlayMessage(msg) {
@@ -3191,7 +3200,7 @@
 			buf = new Uint8Array(0);
 			releaseReader().then(function () {
 				var u = cleanUid(uidStr);
-				if (u.length >= 4) resolve(u);
+				if (u.length >= MIN_MIFARE_UID_LEN) resolve(u);
 				else reject(new Error("EMPTY_UID"));
 			});
 		}
@@ -3213,7 +3222,7 @@
 				}
 				buf = buf.slice(i + skip);
 				var uid = uidFromSerialBytes(line);
-				if (uid.length >= 4) {
+				if (uid.length >= MIN_MIFARE_UID_LEN) {
 					doneResolve(resolve, reject, uid);
 					return true;
 				}
@@ -3224,7 +3233,7 @@
 		function flushIdle(resolve, reject) {
 			if (settled) return;
 			var uid = uidFromSerialBytes(buf);
-			if (uid.length >= 4) {
+			if (uid.length >= MIN_MIFARE_UID_LEN) {
 				doneResolve(resolve, reject, uid);
 			}
 		}
@@ -3260,7 +3269,7 @@
 					}
 					if (!settled) {
 						var uid = uidFromSerialBytes(buf);
-						if (uid.length >= 4) {
+						if (uid.length >= MIN_MIFARE_UID_LEN) {
 							doneResolve(resolve, reject, uid);
 						} else {
 							settled = true;
@@ -3386,7 +3395,7 @@
 
 			function tryResolve() {
 				var v = cleanUid(input.value);
-				if (v.length >= 4) {
+				if (v.length >= MIN_MIFARE_UID_LEN) {
 					if (settled) return;
 					settled = true;
 					cleanup();
@@ -3403,7 +3412,11 @@
 				if (e.key === "Enter") {
 					e.preventDefault();
 					tryResolve();
-					if (!settled && cleanUid(input.value).length > 0 && cleanUid(input.value).length < 4) {
+					if (
+						!settled &&
+						cleanUid(input.value).length > 0 &&
+						cleanUid(input.value).length < MIN_MIFARE_UID_LEN
+					) {
 						showToast("Kart numarası çok kısa");
 					}
 				}

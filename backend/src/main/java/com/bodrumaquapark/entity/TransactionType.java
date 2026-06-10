@@ -10,5 +10,7 @@ public enum TransactionType {
 	TICKET_CASH,
 	TICKET_CARD,
 	TICKET_CREDIT,
-	REFUND_CASH
+	REFUND_CASH,
+	/** Her gece otomatik: kalan bakiye sıfırlanır */
+	DAILY_RESET
 }

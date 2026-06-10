@@ -2728,7 +2728,7 @@
 	function resetCardUidLiveHint() {
 		cardUidLastLen = 0;
 		setCardUidStatus(
-			"Kutuya tıklayın; imleç yanıp sönüyorsa kartı okutun. Rakamlar burada birikirse okuyucu veri gönderiyor demektir.",
+			"Mifare kartı okutun (8 veya 14 hex karakter). Okuyucu HID modunda hex veya ondalık gönderebilir.",
 			"wait"
 		);
 	}
@@ -2764,11 +2764,17 @@
 			e.preventDefault();
 			var uidEl = document.getElementById("card-issue-uid");
 			var balEl = document.getElementById("card-issue-balance");
-			var uid = uidEl ? uidEl.value.trim() : "";
+			var uidRaw = uidEl ? uidEl.value.trim() : "";
+			var uid =
+				typeof MifareUidUtil !== "undefined" ? MifareUidUtil.cleanUid(uidRaw) : uidRaw;
 			var balRaw = balEl ? String(balEl.value).trim().replace(",", ".") : "";
 			var bal = parseFloat(balRaw);
 			if (!uid) {
 				showAlert("Kart UID girin.", "err");
+				return;
+			}
+			if (typeof MifareUidUtil !== "undefined" && !MifareUidUtil.isPlausible(uidRaw)) {
+				showAlert("Geçersiz Mifare UID — 4 veya 7 bayt hex beklenir.", "err");
 				return;
 			}
 			if (isNaN(bal) || bal < 0) {
@@ -2798,7 +2804,7 @@
 						"ok"
 					);
 					if (uidEl) uidEl.value = "";
-					if (balEl) balEl.value = "5000";
+					if (balEl) balEl.value = "0";
 					resetCardUidLiveHint();
 				})
 				.catch(function () {

@@ -14,6 +14,7 @@ ALTER TABLE card_ledger ADD CONSTRAINT card_ledger_type_check CHECK (
 		'TICKET_CASH',
 		'TICKET_CARD',
 		'TICKET_CREDIT',
-		'REFUND_CASH'
+		'REFUND_CASH',
+		'DAILY_RESET'
 	)
 );

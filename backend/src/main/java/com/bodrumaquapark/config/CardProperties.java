@@ -20,6 +20,22 @@ public class CardProperties {
 	/** {@link #demoUid} için hedef bakiye (TL). */
 	private BigDecimal demoBalance = new BigDecimal("5000.00");
 
+	/**
+	 * true: yeni kart kayıtları ve arama Mifare UID formatını zorunlu kılar (önerilen, üretim).
+	 * false: yalnızca geliştirme / geçiş dönemi.
+	 */
+	private boolean mifareStrictValidation = true;
+
+	/**
+	 * Eski proximity ondalık UID ile kayıtlı kartların okunmasına izin verir (geçiş dönemi).
+	 */
+	private boolean legacyDecimalLookup = true;
+
+	/**
+	 * Okuyucunun bayt-ters (LSB-first) hex göndermesi durumunda alternatif eşleşme dener.
+	 */
+	private boolean reverseByteOrderLookup = true;
+
 	public BigDecimal getDefaultInitialBalance() {
 		return defaultInitialBalance;
 	}
@@ -42,5 +58,29 @@ public class CardProperties {
 
 	public void setDemoBalance(BigDecimal demoBalance) {
 		this.demoBalance = demoBalance;
+	}
+
+	public boolean isMifareStrictValidation() {
+		return mifareStrictValidation;
+	}
+
+	public void setMifareStrictValidation(boolean mifareStrictValidation) {
+		this.mifareStrictValidation = mifareStrictValidation;
+	}
+
+	public boolean isLegacyDecimalLookup() {
+		return legacyDecimalLookup;
+	}
+
+	public void setLegacyDecimalLookup(boolean legacyDecimalLookup) {
+		this.legacyDecimalLookup = legacyDecimalLookup;
+	}
+
+	public boolean isReverseByteOrderLookup() {
+		return reverseByteOrderLookup;
+	}
+
+	public void setReverseByteOrderLookup(boolean reverseByteOrderLookup) {
+		this.reverseByteOrderLookup = reverseByteOrderLookup;
 	}
 }

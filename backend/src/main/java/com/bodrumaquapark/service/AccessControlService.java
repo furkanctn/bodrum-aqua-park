@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.bodrumaquapark.access.ClientAccessMeta;
 import com.bodrumaquapark.access.DeviceTimingGuard;
+import com.bodrumaquapark.config.CardProperties;
 import com.bodrumaquapark.entity.AccessLog;
 import com.bodrumaquapark.entity.CardPass;
 import com.bodrumaquapark.entity.PassType;
@@ -28,6 +29,7 @@ import com.bodrumaquapark.repository.AccessLogRepository;
 import com.bodrumaquapark.repository.CardPassRepository;
 import com.bodrumaquapark.repository.RfidCardRepository;
 import com.bodrumaquapark.repository.TurnstileDeviceRepository;
+import com.bodrumaquapark.util.MifareUid;
 import com.bodrumaquapark.util.RfidCardIds;
 import com.bodrumaquapark.web.dto.AccessCheckRequest;
 import com.bodrumaquapark.web.dto.AccessCheckResponse;
@@ -50,18 +52,49 @@ public class AccessControlService {
 	private final AccessLogRepository accessLogRepository;
 	private final TurnstileDeviceRepository turnstileDeviceRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final CardProperties cardProperties;
 
 	public AccessControlService(
 			RfidCardRepository rfidCardRepository,
 			CardPassRepository cardPassRepository,
 			AccessLogRepository accessLogRepository,
 			TurnstileDeviceRepository turnstileDeviceRepository,
-			PasswordEncoder passwordEncoder) {
+			PasswordEncoder passwordEncoder,
+			CardProperties cardProperties) {
 		this.rfidCardRepository = rfidCardRepository;
 		this.cardPassRepository = cardPassRepository;
 		this.accessLogRepository = accessLogRepository;
 		this.turnstileDeviceRepository = turnstileDeviceRepository;
 		this.passwordEncoder = passwordEncoder;
+		this.cardProperties = cardProperties;
+	}
+
+	private MifareUid.Parsed requireParsedCardId(String raw) {
+		String key = raw != null ? raw.trim() : "";
+		if (key.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kart kimliği boş olamaz");
+		}
+		return MifareUid.parse(key, cardProperties.isLegacyDecimalLookup(), cardProperties.isReverseByteOrderLookup())
+				.orElseThrow(() -> new ResponseStatusException(
+						HttpStatus.BAD_REQUEST, "Geçersiz Mifare UID — 4 veya 7 bayt hex beklenir"));
+	}
+
+	private Optional<MifareUid.Parsed> tryParseCardId(String raw) {
+		String key = raw != null ? raw.trim() : "";
+		if (key.isEmpty()) {
+			return Optional.empty();
+		}
+		return MifareUid.parse(key, cardProperties.isLegacyDecimalLookup(), cardProperties.isReverseByteOrderLookup());
+	}
+
+	private Optional<RfidCard> findRfidCardFlexible(String raw) {
+		return tryParseCardId(raw)
+				.flatMap(p -> rfidCardRepository.findFirstByCardIdIn(p.lookupKeys()));
+	}
+
+	private RfidCard resolveOrCreateRfidCard(MifareUid.Parsed parsed) {
+		return findRfidCardFlexible(parsed.canonical())
+				.orElseGet(() -> rfidCardRepository.save(new RfidCard(parsed.canonical(), true)));
 	}
 
 	@Transactional
@@ -69,14 +102,12 @@ public class AccessControlService {
 		if (operatorUserId == null || operatorUserId.isBlank()) {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Oturum gerekli");
 		}
-		String cardId = RfidCardIds.normalize(request.cardId());
-		if (cardId.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kart kimliği boş olamaz");
-		}
+		MifareUid.Parsed parsed = requireParsedCardId(request.cardId());
+		String cardId = parsed.canonical();
 		PassType passType = request.passType() != null ? request.passType() : PassType.DAILY_SINGLE_ENTRY;
 		LocalDate today = LocalDate.now(PARK_ZONE);
 
-		RfidCard card = rfidCardRepository.findByCardId(cardId).orElseGet(() -> rfidCardRepository.save(new RfidCard(cardId, true)));
+		RfidCard card = resolveOrCreateRfidCard(parsed);
 		if (!card.isActive()) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Kart pasif; önce kartı yeniden aktifleştirin");
 		}
@@ -96,7 +127,7 @@ public class AccessControlService {
 	@Transactional
 	public void recordMissingDeviceToken(AccessCheckRequest request, ClientAccessMeta meta) {
 		String deviceId = request.deviceId() != null ? request.deviceId().trim() : "";
-		String normalizedCardId = RfidCardIds.normalize(request.cardId());
+		String normalizedCardId = tryParseCardId(request.cardId()).map(MifareUid.Parsed::canonical).orElse("");
 		persistLog(
 				normalizedCardId.isEmpty() ? "—" : normalizedCardId,
 				deviceId.isEmpty() ? "—" : deviceId,
@@ -116,7 +147,8 @@ public class AccessControlService {
 		ClientAccessMeta m = meta != null ? meta : new ClientAccessMeta("", "");
 		String deviceId = request.deviceId() != null ? request.deviceId().trim() : "";
 		String token = deviceTokenHeader != null ? deviceTokenHeader.trim() : "";
-		String normalizedCardId = RfidCardIds.normalize(request.cardId());
+		Optional<MifareUid.Parsed> parsedOpt = tryParseCardId(request.cardId());
+		String normalizedCardId = parsedOpt.map(MifareUid.Parsed::canonical).orElse("");
 
 		if (deviceId.isEmpty()) {
 			return denyWithoutDeviceAuth(
@@ -145,11 +177,11 @@ public class AccessControlService {
 
 		TurnstileDevice device = deviceOpt.get();
 
-		if (normalizedCardId.isEmpty()) {
-			return finishAuthenticated(device, "—", false, "Kart kimliği boş", "Kart kimliği boş", m);
+		if (parsedOpt.isEmpty()) {
+			return finishAuthenticated(device, "—", false, "Geçersiz Mifare UID", "Geçersiz Mifare UID", m);
 		}
 
-		Optional<RfidCard> cardOpt = rfidCardRepository.findByCardId(normalizedCardId);
+		Optional<RfidCard> cardOpt = findRfidCardFlexible(parsedOpt.get().canonical());
 		if (cardOpt.isEmpty()) {
 			return finishAuthenticated(device, normalizedCardId, false, "Kart kayıtlı değil", "Kart kayıtlı değil", m);
 		}
@@ -190,11 +222,8 @@ public class AccessControlService {
 
 	@Transactional(readOnly = true)
 	public RfidCardStatusResponse getCardStatus(String rawCardId) {
-		String cardId = RfidCardIds.normalize(rawCardId);
-		if (cardId.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kart kimliği boş olamaz");
-		}
-		RfidCard card = rfidCardRepository.findByCardId(cardId).orElseThrow(
+		MifareUid.Parsed parsed = requireParsedCardId(rawCardId);
+		RfidCard card = findRfidCardFlexible(parsed.canonical()).orElseThrow(
 				() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Kart bulunamadı"));
 		LocalDate today = LocalDate.now(PARK_ZONE);
 		List<CardPass> passes = cardPassRepository.findByRfidCard_IdAndValidDate(card.getId(), today);
@@ -212,7 +241,9 @@ public class AccessControlService {
 			String cardIdFilter,
 			Pageable pageable) {
 		String d = deviceIdFilter != null ? deviceIdFilter.trim() : "";
-		String c = cardIdFilter != null ? RfidCardIds.normalize(cardIdFilter) : "";
+		String c = cardIdFilter != null
+				? tryParseCardId(cardIdFilter).map(MifareUid.Parsed::canonical).orElse(RfidCardIds.normalize(cardIdFilter))
+				: "";
 		Page<AccessLog> page;
 		if (!d.isEmpty() && !c.isEmpty()) {
 			page = accessLogRepository.findByDeviceIdAndCardIdAndCreatedAtBetweenOrderByCreatedAtDesc(d, c, fromInclusive, toExclusive, pageable);
@@ -295,12 +326,6 @@ public class AccessControlService {
 	}
 
 	private static String cardIdMask(String normalizedCardId) {
-		if (normalizedCardId == null || normalizedCardId.isEmpty() || "—".equals(normalizedCardId)) {
-			return "—";
-		}
-		if (normalizedCardId.length() <= 6) {
-			return "****";
-		}
-		return normalizedCardId.substring(0, 2) + "…" + normalizedCardId.substring(normalizedCardId.length() - 2);
+		return MifareUid.mask(normalizedCardId);
 	}
 }
