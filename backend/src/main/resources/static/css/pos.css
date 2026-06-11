@@ -4004,6 +4004,54 @@ body.module-kart #view-kart .pos-payment.pos-payment--lux .summary-row {
 	transform: scale(0.98);
 }
 
+.pos-lux-pay-pos {
+	flex: 1;
+	max-width: 11rem;
+	padding: 0.65rem 0.75rem;
+	border: 1px solid rgba(30, 64, 175, 0.22);
+	border-radius: 0.65rem;
+	font-family: inherit;
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.03em;
+	color: #1e3a8a;
+	cursor: pointer;
+	background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 48%, #93c5fd 100%);
+	box-shadow: 0 4px 14px -6px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.pos-lux-pay-pos:hover:not(:disabled) {
+	filter: brightness(1.04);
+}
+
+.pos-lux-pay-pos:active:not(:disabled) {
+	transform: scale(0.98);
+}
+
+.pos-lux-pay-pos:disabled,
+.footer-btn-pos:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.footer-btn-pos {
+	color: #1e3a8a;
+	background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+	border: 1px solid rgba(30, 64, 175, 0.2);
+}
+
+.footer-btn-pos:hover:not(:disabled) {
+	background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+}
+
+body.module-bakiye .footer-actions .footer-btn-pos {
+	min-height: 3.15rem;
+	padding: 0.65rem 1rem;
+	font-size: clamp(0.88rem, 2.4vw, 1rem);
+	font-weight: 800;
+	border-radius: 0.75rem;
+}
+
 .pos-lux-total-big {
 	font-size: 1.15rem;
 	font-weight: 800;

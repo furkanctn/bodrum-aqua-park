@@ -458,6 +458,9 @@
 		syncKartAllAreasViewport();
 		syncKartPaymentUi();
 		syncKartRailUi();
+		if (typeof syncPosSendButtons === "function") {
+			syncPosSendButtons();
+		}
 	}
 
 	function syncKartPaymentUi() {
@@ -3525,6 +3528,7 @@
 				footerPrimaryLabel.textContent = "Satışı tamamla";
 			}
 		}
+		syncPosSendButtons();
 		if (m === "bakiye") {
 			updateBakiyeDisplay();
 			updateBakiyeSummary();
@@ -4510,12 +4514,157 @@
 	});
 
 	var btnOrderPay = document.getElementById("btn-order-pay");
+	var btnOrderPayPos = document.getElementById("btn-order-pay-pos");
+	var btnSendPos = document.getElementById("btn-send-pos");
 	var btnCompleteEl = document.getElementById("btn-complete");
+	var bekoPosSending = false;
+
+	function syncPosSendButtons() {
+		var showTicket = currentModule === "kart" && kartMode === "tickets";
+		var showBakiye = currentModule === "bakiye";
+		if (btnOrderPayPos) {
+			btnOrderPayPos.hidden = !showTicket;
+		}
+		if (btnSendPos) {
+			btnSendPos.hidden = !(showTicket || showBakiye);
+		}
+	}
+
+	function ticketDueAmount() {
+		var sub = subtotal();
+		var disc = sub * effectiveDiscount();
+		return Math.max(0, sub - disc);
+	}
+
+	function buildTicketBekoPayload() {
+		var lines = [];
+		cart.forEach(function (c) {
+			var qty = cartLineQty(c);
+			var price = Number(c.price);
+			if (isNaN(price)) {
+				price = 0;
+			}
+			lines.push({
+				name: String(c.label || "Bilet"),
+				unitPrice: price,
+				quantity: qty,
+			});
+		});
+		var payload = {
+			context: "ticket",
+			items: lines,
+			paymentMethod: payMode || "",
+			note: "Bodrum Aqua Park — bilet satışı",
+		};
+		if (discountPercent > 0) {
+			payload.discountPercent = discountPercent;
+		}
+		return payload;
+	}
+
+	function buildBakiyeBekoPayload() {
+		var amount = Math.round(keypadValue) / 100;
+		return {
+			context: "balance",
+			items: [{ name: "Bakiye yükleme", unitPrice: amount, quantity: 1 }],
+			paymentMethod: bakiyePayMode || "",
+			note: "Bodrum Aqua Park — bakiye yükleme",
+		};
+	}
+
+	function setBekoPosBusy(busy) {
+		bekoPosSending = busy;
+		if (btnOrderPayPos) {
+			btnOrderPayPos.disabled = busy;
+		}
+		if (btnSendPos) {
+			btnSendPos.disabled = busy;
+		}
+	}
+
+	function sendToBekoPos() {
+		if (bekoPosSending) {
+			return;
+		}
+		var payload = null;
+		if (currentModule === "bakiye") {
+			if (keypadValue <= 0) {
+				showToast("Yüklenecek tutarı girin");
+				return;
+			}
+			payload = buildBakiyeBekoPayload();
+		} else if (currentModule === "kart" && kartMode === "tickets") {
+			if (cart.length === 0) {
+				showToast("Önce bilet seçin");
+				return;
+			}
+			if (ticketDueAmount() <= 0) {
+				showToast("Gönderilecek tutar yok");
+				return;
+			}
+			payload = buildTicketBekoPayload();
+		} else {
+			showToast("POS gönderimi yalnızca bilet satışı ve bakiye yüklemede");
+			return;
+		}
+
+		setBekoPosBusy(true);
+		showToast("Beko POS'a gönderiliyor…", { duration: 2500 });
+		fetch("/api/beko-pos/send-basket", {
+			method: "POST",
+			headers: authHeadersJson(),
+			body: JSON.stringify(payload),
+		})
+			.then(function (r) {
+				if (r.status === 401) {
+					window.location.replace("/index.html");
+					return null;
+				}
+				return r.json()
+					.catch(function () {
+						return {};
+					})
+					.then(function (data) {
+						return { ok: r.ok, data: data };
+					});
+			})
+			.then(function (res) {
+				if (!res) {
+					return;
+				}
+				var d = res.data || {};
+				if (!res.ok || d.ok === false) {
+					showToast(d.error || d.message || "POS'a gönderilemedi", { duration: 5500 });
+					return;
+				}
+				var msg = d.message || "Sepet POS cihazına iletildi";
+				if (d.receiptNo != null) {
+					msg += " · Fiş " + d.receiptNo;
+				} else if (d.deviceResponse && d.deviceResponse.receiptNo != null) {
+					msg += " · Fiş " + d.deviceResponse.receiptNo;
+				}
+				showToast(msg, { duration: 5000 });
+			})
+			.catch(function () {
+				showToast("POS servisine bağlanılamadı", { duration: 5000 });
+			})
+			.finally(function () {
+				setBekoPosBusy(false);
+			});
+	}
+
 	if (btnOrderPay && btnCompleteEl) {
 		btnOrderPay.addEventListener("click", function () {
 			btnCompleteEl.click();
 		});
 	}
+	if (btnOrderPayPos) {
+		btnOrderPayPos.addEventListener("click", sendToBekoPos);
+	}
+	if (btnSendPos) {
+		btnSendPos.addEventListener("click", sendToBekoPos);
+	}
+	syncPosSendButtons();
 
 	var luxSearch = document.getElementById("pos-lux-search");
 	if (luxSearch) {

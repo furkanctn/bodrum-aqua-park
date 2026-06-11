@@ -19,6 +19,7 @@ import com.bodrumaquapark.security.JwtAuthenticationFilter;
 import com.bodrumaquapark.service.AdminReportService;
 import com.bodrumaquapark.web.dto.AdminDayCloseReportDto;
 import com.bodrumaquapark.web.dto.AdminSummaryReportDto;
+import com.bodrumaquapark.web.dto.PaymentSalesReportDto;
 import com.bodrumaquapark.web.dto.ProductRevenueDto;
 import com.bodrumaquapark.web.dto.SaleAreaRevenueDto;
 
@@ -43,11 +44,21 @@ public class AdminReportController {
 		body.put(
 				"endpoints",
 				List.of(
+						"GET /api/admin/reports/payment-sales?from=yyyy-MM-dd&to=yyyy-MM-dd",
 						"GET /api/admin/reports/summary?from=yyyy-MM-dd&to=yyyy-MM-dd",
 						"GET /api/admin/reports/sales-by-sale-area?from=&to=",
 						"GET /api/admin/reports/sales-by-product?from=&to=",
 						"GET /api/admin/reports/day-close?date=&limit=500"));
 		return body;
+	}
+
+	@GetMapping("/payment-sales")
+	public PaymentSalesReportDto paymentSales(
+			@RequestAttribute(JwtAuthenticationFilter.ATTR_ROLE) RoleCode role,
+			@RequestParam(name = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		requireAdmin(role);
+		return adminReportService.paymentSales(from, to);
 	}
 
 	@GetMapping("/summary")

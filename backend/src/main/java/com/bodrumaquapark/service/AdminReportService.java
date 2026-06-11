@@ -24,6 +24,7 @@ import com.bodrumaquapark.web.dto.AdminDayCloseReportDto;
 import com.bodrumaquapark.web.dto.AdminDayLedgerLineDto;
 import com.bodrumaquapark.web.dto.AdminSummaryReportDto;
 import com.bodrumaquapark.web.dto.LedgerTypeAggregateDto;
+import com.bodrumaquapark.web.dto.PaymentSalesReportDto;
 import com.bodrumaquapark.web.dto.ProductRevenueDto;
 import com.bodrumaquapark.web.dto.SaleAreaRevenueDto;
 
@@ -85,6 +86,30 @@ public class AdminReportService {
 			out.add(new ProductRevenueDto(pid, name, cnt, rev));
 		}
 		return out;
+	}
+
+	public PaymentSalesReportDto paymentSales(LocalDate from, LocalDate to) {
+		InstantRange r = resolveRange(from, to);
+		List<Object[]> rows = ledgerRepository.aggregateByTransactionType(r.fromInclusive(), r.toExclusive());
+		BigDecimal cash = BigDecimal.ZERO;
+		BigDecimal card = BigDecimal.ZERO;
+		BigDecimal agency = BigDecimal.ZERO;
+		for (Object[] row : rows) {
+			TransactionType type = (TransactionType) row[0];
+			BigDecimal sum = Money.normalize((BigDecimal) row[2]);
+			switch (type) {
+				case LOAD_CASH, TICKET_CASH -> cash = cash.add(sum);
+				case LOAD_CARD, TICKET_CARD -> card = card.add(sum);
+				case LOAD_AGENCY, TICKET_CREDIT -> agency = agency.add(sum);
+				default -> {
+				}
+			}
+		}
+		cash = Money.normalize(cash);
+		card = Money.normalize(card);
+		agency = Money.normalize(agency);
+		BigDecimal grand = Money.normalize(cash.add(card).add(agency));
+		return new PaymentSalesReportDto(r.fromDay(), r.toDay(), REPORT_ZONE.getId(), cash, card, agency, grand);
 	}
 
 	public AdminSummaryReportDto summary(LocalDate from, LocalDate to) {

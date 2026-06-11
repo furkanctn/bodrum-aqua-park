@@ -923,13 +923,11 @@
 		"ticket-age-groups",
 		"cards",
 		"printer",
-		"report-sale-areas",
-		"report-products",
 		"report-day-close",
 		"report-general",
 	];
 	var AQUAPARK_MENU_PANELS = ["users", "menu-pages", "products", "ticket-age-groups"];
-	var REPORT_MENU_PANELS = ["report-sale-areas", "report-products", "report-day-close", "report-general"];
+	var REPORT_MENU_PANELS = ["report-day-close", "report-general"];
 	var REPORT_TX_LABELS = {
 		SALE: "Ürün satışı (kart)",
 		ENTRY: "Turnike / giriş",
@@ -1083,8 +1081,6 @@
 		setAdminTabPanelVisible("admin-panel-cards", id === "cards");
 		setAdminTabPanelVisible("admin-panel-printer", id === "printer");
 		setAdminTabPanelVisible("admin-panel-ticket-age-groups", id === "ticket-age-groups");
-		setAdminTabPanelVisible("admin-panel-report-sale-areas", id === "report-sale-areas");
-		setAdminTabPanelVisible("admin-panel-report-products", id === "report-products");
 		setAdminTabPanelVisible("admin-panel-report-day-close", id === "report-day-close");
 		setAdminTabPanelVisible("admin-panel-report-general", id === "report-general");
 		if (id === "menu-pages") {
@@ -1105,12 +1101,6 @@
 			if (uidIn) {
 				uidIn.focus();
 			}
-		}
-		if (id === "report-sale-areas") {
-			loadAdminReportSaleAreas();
-		}
-		if (id === "report-products") {
-			loadAdminReportProducts();
 		}
 		if (id === "report-day-close") {
 			loadAdminReportDayClose();
@@ -1212,166 +1202,73 @@
 		});
 	}
 
-	function loadAdminReportSaleAreas() {
-		var fromEl = document.getElementById("report-area-from");
-		var toEl = document.getElementById("report-area-to");
-		var tbody = document.getElementById("report-area-tbody");
-		var empty = document.getElementById("report-area-empty");
-		if (!fromEl || !toEl || !tbody) {
+	function renderPaymentSalesSummary(containerEl, emptyEl, data) {
+		if (!containerEl) {
 			return;
 		}
-		ensureReportRangeInputs(fromEl, toEl);
-		hideAlert();
-		var q = "from=" + encodeURIComponent(fromEl.value) + "&to=" + encodeURIComponent(toEl.value);
-		fetch("/api/admin/reports/sales-by-sale-area?" + q, { headers: authHeaders() })
-			.then(adminReportParseResponse)
-			.then(function (x) {
-				return adminReportJsonOrThrow(x.r, x.data).then(function () {
-					return x.data;
-				});
-			})
-			.then(function (rows) {
-				tbody.innerHTML = "";
-				if (!rows || !rows.length) {
-					empty.hidden = false;
-					return;
-				}
-				empty.hidden = true;
-				rows.forEach(function (row) {
-					var tr = document.createElement("tr");
-					tr.innerHTML =
-						"<td>" +
-						escapeHtml(row.saleAreaCode || "") +
-						"</td><td>" +
-						escapeHtml(row.saleAreaName || "") +
-						"</td><td>" +
-						escapeHtml(String(row.saleLineCount != null ? row.saleLineCount : "")) +
-						"</td><td>" +
-						escapeHtml(formatTryAmount(row.revenueTry)) +
-						"</td>";
-					tbody.appendChild(tr);
-				});
-			})
-			.catch(function () {});
+		containerEl.innerHTML = "";
+		var grand = data && data.grandTotal != null ? parseFloat(String(data.grandTotal), 10) : 0;
+		var hasData = data && !isNaN(grand) && grand > 0;
+		if (emptyEl) {
+			emptyEl.hidden = hasData;
+		}
+		if (!data) {
+			containerEl.hidden = true;
+			return;
+		}
+		containerEl.hidden = false;
+		var period =
+			data.fromInclusive === data.toInclusive
+				? String(data.fromInclusive || "")
+				: (data.fromInclusive || "") + " → " + (data.toInclusive || "");
+		[
+			{ k: "Dönem", v: period },
+			{ k: "Nakit", v: formatTryAmount(data.cashTotal) },
+			{ k: "Kredi kartı", v: formatTryAmount(data.cardTotal) },
+			{ k: "Acenta", v: formatTryAmount(data.agencyTotal) },
+			{ k: "Toplam", v: formatTryAmount(data.grandTotal) },
+		].forEach(function (c) {
+			var div = document.createElement("div");
+			div.className = "admin-report-summary-card";
+			div.innerHTML =
+				"<span class=\"admin-report-summary-label\">" +
+				escapeHtml(c.k) +
+				"</span><strong>" +
+				escapeHtml(c.v) +
+				"</strong>";
+			containerEl.appendChild(div);
+		});
 	}
 
-	function loadAdminReportProducts() {
-		var fromEl = document.getElementById("report-prod-from");
-		var toEl = document.getElementById("report-prod-to");
-		var tbody = document.getElementById("report-prod-tbody");
-		var empty = document.getElementById("report-prod-empty");
-		if (!fromEl || !toEl || !tbody) {
-			return;
-		}
-		ensureReportRangeInputs(fromEl, toEl);
-		hideAlert();
-		var q = "from=" + encodeURIComponent(fromEl.value) + "&to=" + encodeURIComponent(toEl.value);
-		fetch("/api/admin/reports/sales-by-product?" + q, { headers: authHeaders() })
+	function fetchPaymentSalesReport(fromDate, toDate) {
+		var q =
+			"from=" +
+			encodeURIComponent(fromDate) +
+			"&to=" +
+			encodeURIComponent(toDate);
+		return fetch("/api/admin/reports/payment-sales?" + q, { headers: authHeaders() })
 			.then(adminReportParseResponse)
 			.then(function (x) {
 				return adminReportJsonOrThrow(x.r, x.data).then(function () {
 					return x.data;
 				});
-			})
-			.then(function (rows) {
-				tbody.innerHTML = "";
-				if (!rows || !rows.length) {
-					empty.hidden = false;
-					return;
-				}
-				empty.hidden = true;
-				rows.forEach(function (row) {
-					var tr = document.createElement("tr");
-					tr.innerHTML =
-						"<td>" +
-						escapeHtml(row.productName || "") +
-						"</td><td>" +
-						escapeHtml(String(row.saleLineCount != null ? row.saleLineCount : "")) +
-						"</td><td>" +
-						escapeHtml(formatTryAmount(row.revenueTry)) +
-						"</td>";
-					tbody.appendChild(tr);
-				});
-			})
-			.catch(function () {});
+			});
 	}
 
 	function loadAdminReportDayClose() {
 		var dateEl = document.getElementById("report-day-date");
 		var sumEl = document.getElementById("report-day-summary");
-		var tbody = document.getElementById("report-day-tbody");
 		var empty = document.getElementById("report-day-empty");
-		if (!dateEl || !sumEl || !tbody) {
+		if (!dateEl || !sumEl) {
 			return;
 		}
 		if (!dateEl.value) {
 			dateEl.value = adminReportTodayIso();
 		}
 		hideAlert();
-		var q = "date=" + encodeURIComponent(dateEl.value) + "&limit=500";
-		fetch("/api/admin/reports/day-close?" + q, { headers: authHeaders() })
-			.then(adminReportParseResponse)
-			.then(function (x) {
-				return adminReportJsonOrThrow(x.r, x.data).then(function () {
-					return x.data;
-				});
-			})
-			.then(function (payload) {
-				var sum = payload.summary;
-				sumEl.innerHTML = "";
-				if (sum) {
-					sumEl.hidden = false;
-					var cards = [
-						{ k: "Dönem", v: (sum.fromInclusive || "") + " → " + (sum.toInclusive || "") },
-						{ k: "Ürün satış geliri", v: formatTryAmount(sum.productSaleRevenueTotal) },
-						{ k: "Satış satırı", v: String(sum.productSaleLineCount != null ? sum.productSaleLineCount : "0") },
-					];
-					cards.forEach(function (c) {
-						var div = document.createElement("div");
-						div.className = "admin-report-summary-card";
-						div.innerHTML =
-							"<span class=\"admin-report-summary-label\">" +
-							escapeHtml(c.k) +
-							"</span><strong>" +
-							escapeHtml(c.v) +
-							"</strong>";
-						sumEl.appendChild(div);
-					});
-				} else {
-					sumEl.hidden = true;
-				}
-				tbody.innerHTML = "";
-				var lines = payload.lines || [];
-				if (!lines.length) {
-					empty.hidden = false;
-					return;
-				}
-				empty.hidden = true;
-				lines.forEach(function (line) {
-					var tr = document.createElement("tr");
-					var prod = line.productName || "—";
-					if (line.saleAreaName) {
-						prod = prod + " · " + line.saleAreaName;
-					}
-					var tStr = line.createdAt ? String(line.createdAt).replace("T", " ").replace("Z", "") : "—";
-					tr.innerHTML =
-						"<td>" +
-						escapeHtml(tStr) +
-						"</td><td>" +
-						escapeHtml(reportTxnTypeLabel(line.type)) +
-						"</td><td>" +
-						escapeHtml(formatTryAmount(line.amountChange)) +
-						"</td><td>" +
-						escapeHtml(formatTryAmount(line.balanceAfter)) +
-						"</td><td>" +
-						escapeHtml(prod) +
-						"</td><td>" +
-						escapeHtml(line.cardUidMasked || "—") +
-						"</td><td>" +
-						escapeHtml((line.description || "").slice(0, 120)) +
-						"</td>";
-					tbody.appendChild(tr);
-				});
+		fetchPaymentSalesReport(dateEl.value, dateEl.value)
+			.then(function (data) {
+				renderPaymentSalesSummary(sumEl, empty, data);
 			})
 			.catch(function () {});
 	}
@@ -1379,55 +1276,16 @@
 	function loadAdminReportGeneral() {
 		var fromEl = document.getElementById("report-gen-from");
 		var toEl = document.getElementById("report-gen-to");
-		var tbody = document.getElementById("report-gen-tbody");
 		var cardsEl = document.getElementById("report-gen-summary-cards");
-		if (!fromEl || !toEl || !tbody || !cardsEl) {
+		var empty = document.getElementById("report-gen-empty");
+		if (!fromEl || !toEl || !cardsEl) {
 			return;
 		}
 		ensureReportRangeInputs(fromEl, toEl);
 		hideAlert();
-		var q = "from=" + encodeURIComponent(fromEl.value) + "&to=" + encodeURIComponent(toEl.value);
-		fetch("/api/admin/reports/summary?" + q, { headers: authHeaders() })
-			.then(adminReportParseResponse)
-			.then(function (x) {
-				return adminReportJsonOrThrow(x.r, x.data).then(function () {
-					return x.data;
-				});
-			})
-			.then(function (sum) {
-				tbody.innerHTML = "";
-				cardsEl.innerHTML = "";
-				var saleRev = sum.productSaleRevenueTotal;
-				var saleLines = sum.productSaleLineCount;
-				cardsEl.hidden = false;
-				[
-					{ k: "Dönem", v: (sum.fromInclusive || "") + " → " + (sum.toInclusive || "") },
-					{ k: "Ürün satış geliri", v: formatTryAmount(saleRev) },
-					{ k: "Satış satırı", v: String(saleLines != null ? saleLines : "0") },
-				].forEach(function (c) {
-					var div = document.createElement("div");
-					div.className = "admin-report-summary-card";
-					div.innerHTML =
-						"<span class=\"admin-report-summary-label\">" +
-						escapeHtml(c.k) +
-						"</span><strong>" +
-						escapeHtml(c.v) +
-						"</strong>";
-					cardsEl.appendChild(div);
-				});
-				var rows = sum.byTransactionType || [];
-				rows.forEach(function (row) {
-					var tr = document.createElement("tr");
-					tr.innerHTML =
-						"<td>" +
-						escapeHtml(reportTxnTypeLabel(row.type)) +
-						"</td><td>" +
-						escapeHtml(String(row.lineCount != null ? row.lineCount : "")) +
-						"</td><td>" +
-						escapeHtml(formatTryAmount(row.amountChangeSum)) +
-						"</td>";
-					tbody.appendChild(tr);
-				});
+		fetchPaymentSalesReport(fromEl.value, toEl.value)
+			.then(function (data) {
+				renderPaymentSalesSummary(cardsEl, empty, data);
 			})
 			.catch(function () {});
 	}
@@ -1626,18 +1484,6 @@
 		});
 	});
 
-	var btnReportArea = document.getElementById("btn-report-area-refresh");
-	if (btnReportArea) {
-		btnReportArea.addEventListener("click", function () {
-			loadAdminReportSaleAreas();
-		});
-	}
-	var btnReportProd = document.getElementById("btn-report-prod-refresh");
-	if (btnReportProd) {
-		btnReportProd.addEventListener("click", function () {
-			loadAdminReportProducts();
-		});
-	}
 	var btnReportDay = document.getElementById("btn-report-day-refresh");
 	if (btnReportDay) {
 		btnReportDay.addEventListener("click", function () {

@@ -57,12 +57,6 @@
 					Raporlama
 				</button>
 				<div class="admin-report-menu" id="admin-report-menu" role="menu">
-					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-sale-areas" id="report-item-sale-areas">
-						Satış alanları
-					</button>
-					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-products" id="report-item-products">
-						Ürün bazlı
-					</button>
 					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-day-close" id="report-item-day-close">
 						Gün sonu
 					</button>
@@ -492,80 +486,13 @@
 			</section>
 		</div>
 
-		<div id="admin-panel-report-sale-areas" hidden>
-			<section class="admin-card">
-				<h2>Satış alanlarına göre gelir</h2>
-				<p class="admin-sub admin-sub--inline">
-					POS’tan yapılan <strong>ürün satışları</strong> (karttan harcama), ürünün bağlı olduğu satış alanına yazılır. Tarihler
-					<strong>İstanbul</strong> saatine göredir.
-				</p>
-				<div class="admin-report-toolbar">
-					<div class="field">
-						<label for="report-area-from">Başlangıç</label>
-						<input type="date" id="report-area-from" />
-					</div>
-					<div class="field">
-						<label for="report-area-to">Bitiş</label>
-						<input type="date" id="report-area-to" />
-					</div>
-					<div class="field field-actions">
-						<button type="button" class="btn btn-primary" id="btn-report-area-refresh">Yenile</button>
-					</div>
-				</div>
-				<div class="table-wrap">
-					<table class="admin-table">
-						<thead>
-							<tr>
-								<th>Kod</th>
-								<th>Satış alanı</th>
-								<th>Satır adedi</th>
-								<th>Gelir (₺)</th>
-							</tr>
-						</thead>
-						<tbody id="report-area-tbody"></tbody>
-					</table>
-				</div>
-				<p id="report-area-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta satış yok.</p>
-			</section>
-		</div>
-
-		<div id="admin-panel-report-products" hidden>
-			<section class="admin-card">
-				<h2>Ürün bazlı satış</h2>
-				<p class="admin-sub admin-sub--inline">Aynı dönemde ürün başına satış adedi ve karttan tahsil edilen tutar.</p>
-				<div class="admin-report-toolbar">
-					<div class="field">
-						<label for="report-prod-from">Başlangıç</label>
-						<input type="date" id="report-prod-from" />
-					</div>
-					<div class="field">
-						<label for="report-prod-to">Bitiş</label>
-						<input type="date" id="report-prod-to" />
-					</div>
-					<div class="field field-actions">
-						<button type="button" class="btn btn-primary" id="btn-report-prod-refresh">Yenile</button>
-					</div>
-				</div>
-				<div class="table-wrap">
-					<table class="admin-table">
-						<thead>
-							<tr>
-								<th>Ürün</th>
-								<th>Satır adedi</th>
-								<th>Gelir (₺)</th>
-							</tr>
-						</thead>
-						<tbody id="report-prod-tbody"></tbody>
-					</table>
-				</div>
-				<p id="report-prod-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta satış yok.</p>
-			</section>
-		</div>
-
 		<div id="admin-panel-report-day-close" hidden>
 			<section class="admin-card">
 				<h2>Gün sonu</h2>
-				<p class="admin-sub admin-sub--inline">Seçilen günün özet hareketleri ve defter satırları (en yeni üstte, en fazla 500 kayıt).</p>
+				<p class="admin-sub admin-sub--inline">
+					Seçilen günün toplam tahsilatı: nakit, kredi kartı ve acenta (bakiye yükleme + bilet). Tarihler
+					<strong>İstanbul</strong> saatine göredir.
+				</p>
 				<div class="admin-report-toolbar">
 					<div class="field">
 						<label for="report-day-date">Tarih</label>
@@ -576,24 +503,7 @@
 					</div>
 				</div>
 				<div id="report-day-summary" class="admin-report-summary" hidden></div>
-				<h3 class="admin-h3">Hareket listesi</h3>
-				<div class="table-wrap">
-					<table class="admin-table admin-table--compact">
-						<thead>
-							<tr>
-								<th>Zaman</th>
-								<th>Tip</th>
-								<th>Tutar</th>
-								<th>Bakiye sonra</th>
-								<th>Ürün / alan</th>
-								<th>Kart</th>
-								<th>Açıklama</th>
-							</tr>
-						</thead>
-						<tbody id="report-day-tbody"></tbody>
-					</table>
-				</div>
-				<p id="report-day-empty" class="admin-catalog-empty-hint" hidden>Bu günde hareket yok.</p>
+				<p id="report-day-empty" class="admin-catalog-empty-hint" hidden>Bu günde tahsilat yok.</p>
 			</section>
 		</div>
 
@@ -601,7 +511,7 @@
 			<section class="admin-card">
 				<h2>Genel rapor</h2>
 				<p class="admin-sub admin-sub--inline">
-					Dönem içi tüm <strong>kart defteri</strong> hareket tiplerine göre özet (satış, yükleme, turnike vb.).
+					Seçilen tarih aralığındaki toplam tahsilat: nakit, kredi kartı ve acenta (bakiye yükleme + bilet).
 				</p>
 				<div class="admin-report-toolbar">
 					<div class="field">
@@ -617,18 +527,7 @@
 					</div>
 				</div>
 				<div id="report-gen-summary-cards" class="admin-report-summary" hidden></div>
-				<div class="table-wrap">
-					<table class="admin-table">
-						<thead>
-							<tr>
-								<th>İşlem tipi</th>
-								<th>Satır adedi</th>
-								<th>Tutar toplamı (₺)</th>
-							</tr>
-						</thead>
-						<tbody id="report-gen-tbody"></tbody>
-					</table>
-				</div>
+				<p id="report-gen-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta tahsilat yok.</p>
 			</section>
 		</div>
 	</div>
@@ -717,6 +616,6 @@
 	</div>
 
 	<script src="/js/mifare-uid.js?v=1"></script>
-	<script src="/js/admin.js?v=14" defer></script>
+	<script src="/js/admin.js?v=15" defer></script>
 </body>
 </html>

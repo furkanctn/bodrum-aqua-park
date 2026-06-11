@@ -11,12 +11,13 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import com.bodrumaquapark.config.AquaparkUpdateProperties;
+import com.bodrumaquapark.config.BekoPosProperties;
 import com.bodrumaquapark.config.PrinterProperties;
 import com.bodrumaquapark.desktop.DesktopApp;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableConfigurationProperties({ PrinterProperties.class, AquaparkUpdateProperties.class })
+@EnableConfigurationProperties({ PrinterProperties.class, AquaparkUpdateProperties.class, BekoPosProperties.class })
 public class BodrumAquaParkApiApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(BodrumAquaParkApiApplication.class);
