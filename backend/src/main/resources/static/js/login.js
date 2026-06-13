@@ -190,4 +190,19 @@
 	});
 
 	buildNumpad();
+
+	var versionEl = document.getElementById("login-version");
+	if (versionEl) {
+		fetch("/api/info")
+			.then(function (r) {
+				return r.ok ? r.json() : null;
+			})
+			.then(function (data) {
+				if (!data || !data.version) {
+					return;
+				}
+				versionEl.textContent = "Bodrum Aqua Park · sürüm " + String(data.version);
+			})
+			.catch(function () {});
+	}
 })();

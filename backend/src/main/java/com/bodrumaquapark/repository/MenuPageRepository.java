@@ -9,7 +9,7 @@ import com.bodrumaquapark.entity.MenuPage;
 
 public interface MenuPageRepository extends JpaRepository<MenuPage, Long> {
 
-	Optional<MenuPage> findByCode(String code);
+	Optional<MenuPage> findFirstByCodeOrderByIdAsc(String code);
 
 	boolean existsByCode(String code);
 

@@ -25,9 +25,10 @@ public class MenuPageBootstrapService {
 	@Transactional
 	public void ensureMenuPagesAndOrphanProducts() {
 		catalogMigrationService.migrateLegacyMenuAreaLinksIfNeeded();
+		catalogMigrationService.deduplicateMenuPageCodesIfNeeded();
 		catalogMigrationService.ensureOrphanProductsHaveMenu();
 		for (Product p : productRepository.findByMenuPageIsNull()) {
-			MenuPage genel = menuPageRepository.findByCode("GENEL")
+			MenuPage genel = menuPageRepository.findFirstByCodeOrderByIdAsc("GENEL")
 					.orElseGet(() -> menuPageRepository.save(new MenuPage("GENEL", "Genel", 0)));
 			p.setMenuPage(genel);
 			productRepository.save(p);

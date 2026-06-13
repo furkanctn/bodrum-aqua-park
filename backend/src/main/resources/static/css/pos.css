@@ -3643,6 +3643,19 @@ body > .pos-rfid-overlay {
 	z-index: 99989;
 }
 
+#sorgu-card-scan-wrap[hidden],
+#sorgu-card-detail-wrap[hidden],
+#sorgu-card-loading-msg[hidden] {
+	display: none !important;
+}
+
+#sorgu-card-scan-wrap:not([hidden]),
+#sorgu-card-detail-wrap:not([hidden]) {
+	display: block;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
 #sorgu-card-scan-wrap .sorgu-scan-prompt {
 	margin: 0.35rem 0 1.35rem;
 	font-size: clamp(1.15rem, 3vw, 1.45rem);

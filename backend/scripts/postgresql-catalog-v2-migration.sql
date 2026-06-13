@@ -27,6 +27,8 @@ BEGIN
 END $$;
 
 ALTER TABLE ticket_age_groups ADD COLUMN IF NOT EXISTS agency_complimentary BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE card_ledger ADD COLUMN IF NOT EXISTS product_id BIGINT;
+ALTER TABLE card_ledger ADD COLUMN IF NOT EXISTS sale_area_id BIGINT;
 ALTER TABLE card_ledger ADD COLUMN IF NOT EXISTS ticket_age_group_id BIGINT;
 ALTER TABLE card_ledger ADD COLUMN IF NOT EXISTS line_quantity INTEGER;
 

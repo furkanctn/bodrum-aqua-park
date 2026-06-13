@@ -1254,8 +1254,7 @@
 			return false;
 		}
 		ensureOverlayOnBody(overlay);
-		overlay.hidden = false;
-		overlay.setAttribute("aria-hidden", "false");
+		setElHidden(overlay, false);
 		return true;
 	}
 
@@ -1264,8 +1263,23 @@
 			return;
 		}
 		blurFocusInsideOverlay(overlay);
-		overlay.hidden = true;
-		overlay.setAttribute("aria-hidden", "true");
+		setElHidden(overlay, true);
+	}
+
+	/** POS CSS display:flex kuralları tarayıcı [hidden] davranışını ezer; attribute + property birlikte kullan. */
+	function setElHidden(el, hide) {
+		if (!el) {
+			return;
+		}
+		if (hide) {
+			el.setAttribute("hidden", "");
+			el.hidden = true;
+			el.setAttribute("aria-hidden", "true");
+		} else {
+			el.removeAttribute("hidden");
+			el.hidden = false;
+			el.setAttribute("aria-hidden", "false");
+		}
 	}
 
 	function luxThumbHtml(name) {
@@ -3232,15 +3246,9 @@
 	}
 
 	function resetSorguModalScanUi() {
-		if (sorguCardDetailWrap) {
-			sorguCardDetailWrap.hidden = true;
-		}
-		if (sorguCardScanWrap) {
-			sorguCardScanWrap.hidden = false;
-		}
-		if (sorguCardLoadingMsg) {
-			sorguCardLoadingMsg.hidden = true;
-		}
+		setElHidden(sorguCardDetailWrap, true);
+		setElHidden(sorguCardScanWrap, false);
+		setElHidden(sorguCardLoadingMsg, true);
 		if (sorguModalLedgerBody) {
 			renderUrunLedgerRows(sorguModalLedgerBody, []);
 		}
@@ -3277,12 +3285,9 @@
 		}
 		var led = Array.isArray(d.ledger) ? d.ledger : [];
 		renderUrunLedgerRows(sorguModalLedgerBody, led);
-		if (sorguCardScanWrap) {
-			sorguCardScanWrap.hidden = true;
-		}
-		if (sorguCardDetailWrap) {
-			sorguCardDetailWrap.hidden = false;
-		}
+		setElHidden(sorguCardScanWrap, true);
+		setElHidden(sorguCardLoadingMsg, true);
+		setElHidden(sorguCardDetailWrap, false);
 	}
 
 	function apiErrorToast(r, fallback) {
@@ -3315,9 +3320,7 @@
 		if (sorguCardCancelScanBtn) {
 			sorguCardCancelScanBtn.disabled = true;
 		}
-		if (sorguCardLoadingMsg) {
-			sorguCardLoadingMsg.hidden = false;
-		}
+		setElHidden(sorguCardLoadingMsg, false);
 		return fetch("/api/cards/" + encodeURIComponent(uidT) + "/detail", { headers: authHeaders() })
 			.then(function (r) {
 				if (r.status === 401) {
@@ -3339,9 +3342,14 @@
 				if (!data) {
 					return false;
 				}
-				applySorguModalDetail(data);
-				showToast("Sorgu tamamlandı");
-				return true;
+				try {
+					applySorguModalDetail(data);
+					showToast("Sorgu tamamlandı");
+					return true;
+				} catch (ex) {
+					showToast("Sorgu sonucu gösterilemedi", { duration: 5500 });
+					return false;
+				}
 			})
 			.catch(function (err) {
 				if (err && err.name === "TypeError") {
@@ -3359,9 +3367,7 @@
 				if (sorguCardCancelScanBtn) {
 					sorguCardCancelScanBtn.disabled = false;
 				}
-				if (sorguCardLoadingMsg) {
-					sorguCardLoadingMsg.hidden = true;
-				}
+				setElHidden(sorguCardLoadingMsg, true);
 			});
 	}
 

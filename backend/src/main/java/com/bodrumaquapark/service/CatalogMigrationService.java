@@ -107,9 +107,61 @@ public class CatalogMigrationService {
 		}
 	}
 
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void deduplicateMenuPageCodesIfNeeded() {
+		@SuppressWarnings("unchecked")
+		List<String> duplicateCodes = entityManager.createNativeQuery("""
+				SELECT code FROM menu_pages GROUP BY code HAVING COUNT(*) > 1
+				""").getResultList();
+		if (duplicateCodes.isEmpty()) {
+			return;
+		}
+		log.info("Yinelenen menü kodları birleştiriliyor ({} kod)…", duplicateCodes.size());
+		for (String code : duplicateCodes) {
+			mergeDuplicateMenuPages(code);
+		}
+		log.info("Menü kodu birleştirme tamamlandı.");
+	}
+
+	private void mergeDuplicateMenuPages(String code) {
+		@SuppressWarnings("unchecked")
+		List<Long> ids = entityManager.createNativeQuery(
+				"SELECT id FROM menu_pages WHERE code = :code ORDER BY id ASC")
+				.setParameter("code", code)
+				.getResultList();
+		if (ids.size() < 2) {
+			return;
+		}
+		long keeperId = ids.get(0);
+		for (int i = 1; i < ids.size(); i++) {
+			long dupId = ids.get(i);
+			entityManager.createNativeQuery("UPDATE products SET menu_page_id = :keeper WHERE menu_page_id = :dup")
+					.setParameter("keeper", keeperId)
+					.setParameter("dup", dupId)
+					.executeUpdate();
+			if (tableExists("sale_area_menu_pages")) {
+				entityManager.createNativeQuery("""
+						INSERT INTO sale_area_menu_pages (sale_area_id, menu_page_id)
+						SELECT sale_area_id, :keeper FROM sale_area_menu_pages WHERE menu_page_id = :dup
+						ON CONFLICT DO NOTHING
+						""")
+						.setParameter("keeper", keeperId)
+						.setParameter("dup", dupId)
+						.executeUpdate();
+				entityManager.createNativeQuery("DELETE FROM sale_area_menu_pages WHERE menu_page_id = :dup")
+						.setParameter("dup", dupId)
+						.executeUpdate();
+			}
+			entityManager.createNativeQuery("DELETE FROM menu_pages WHERE id = :dup")
+					.setParameter("dup", dupId)
+					.executeUpdate();
+			log.info("Menü birleştirildi: code={} dupId={} → keeperId={}", code, dupId, keeperId);
+		}
+	}
+
 	@Transactional
 	public void ensureOrphanProductsHaveMenu() {
-		MenuPage genel = menuPageRepository.findByCode("GENEL").orElseGet(() -> menuPageRepository
+		MenuPage genel = menuPageRepository.findFirstByCodeOrderByIdAsc("GENEL").orElseGet(() -> menuPageRepository
 				.save(new MenuPage("GENEL", "Genel", 0)));
 		for (Product p : productRepository.findByMenuPageIsNull()) {
 			p.setMenuPage(genel);

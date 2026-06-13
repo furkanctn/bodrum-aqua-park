@@ -19,7 +19,7 @@ import com.bodrumaquapark.service.MenuPageBootstrapService;
 public class DataInitializer {
 
 	private static MenuPage resolveGenelMenuPage(MenuPageRepository menuPages) {
-		return menuPages.findByCode("GENEL")
+		return menuPages.findFirstByCodeOrderByIdAsc("GENEL")
 				.orElseGet(() -> menuPages.save(new MenuPage("GENEL", "Genel", 0)));
 	}
 
@@ -54,13 +54,13 @@ public class DataInitializer {
 				return;
 			}
 			MenuPage genelMenu = resolveGenelMenuPage(menuPages);
-			MenuPage beverageMenu = menuPages.findByCode("ICecek")
+			MenuPage beverageMenu = menuPages.findFirstByCodeOrderByIdAsc("ICecek")
 					.orElseGet(() -> menuPages.save(new MenuPage("ICecek", "İçecek", 0)));
-			MenuPage bakeryMenu = menuPages.findByCode("FIRIN")
+			MenuPage bakeryMenu = menuPages.findFirstByCodeOrderByIdAsc("FIRIN")
 					.orElseGet(() -> menuPages.save(new MenuPage("FIRIN", "Fırın", 0)));
-			MenuPage alcoholMenu = menuPages.findByCode("ALKOL")
+			MenuPage alcoholMenu = menuPages.findFirstByCodeOrderByIdAsc("ALKOL")
 					.orElseGet(() -> menuPages.save(new MenuPage("ALKOL", "Alkollü içecekler", 0)));
-			MenuPage iceMenu = menuPages.findByCode("DONDURMA")
+			MenuPage iceMenu = menuPages.findFirstByCodeOrderByIdAsc("DONDURMA")
 					.orElseGet(() -> menuPages.save(new MenuPage("DONDURMA", "Dondurmalar", 0)));
 
 			SaleArea beverage = saleAreas.save(new SaleArea("BEVERAGE", "İçecek"));
@@ -100,7 +100,7 @@ public class DataInitializer {
 	@Bean
 	@Order(2)
 	ApplicationRunner ensureBakeryCatalog(ProductRepository products, MenuPageRepository menuPages) {
-		return BootstrapResilience.safely("ensureBakeryCatalog", args -> menuPages.findByCode("FIRIN").ifPresent(
+		return BootstrapResilience.safely("ensureBakeryCatalog", args -> menuPages.findFirstByCodeOrderByIdAsc("FIRIN").ifPresent(
 				bakeryMenu -> seedExtraBakeryProducts(products, bakeryMenu)));
 	}
 }

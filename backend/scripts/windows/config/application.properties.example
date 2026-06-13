@@ -9,6 +9,9 @@ spring.datasource.password=DEGISTIR
 # Tum kasalarda ayni olmali (en az 32 karakter)
 app.jwt.secret=DEGISTIR-en-az-32-karakter-gizli-anahtar
 
+# Login ekraninda gorunen surum (bos birakilirsa JAR icindeki app.version kullanilir)
+# app.version=1.2.0.1
+
 # Turnike (istege bagli — bos birakilabilir)
 app.access.bootstrap.device-id=turnike_1
 app.access.bootstrap.device-token=turnike-secret-123
