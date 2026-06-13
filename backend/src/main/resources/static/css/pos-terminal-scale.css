@@ -18,8 +18,8 @@
  */
 
 :root {
-	/* Varsayılan açılış %124; kullanıcı footer’daki Ölçek ile değiştirir (localStorage aqua_pos_ui_scale) */
-	--pos-terminal-ui-scale: 1.24;
+	/* Varsayılan açılış %110; kullanıcı footer’daki Ölçek ile değiştirir (localStorage aqua_pos_ui_scale) */
+	--pos-terminal-ui-scale: 1.1;
 }
 
 /* --- Tam sayfa ölçek (giriş, dashboard, okuyucu testi) --- */

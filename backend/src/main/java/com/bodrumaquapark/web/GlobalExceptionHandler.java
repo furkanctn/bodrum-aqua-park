@@ -3,6 +3,7 @@ package com.bodrumaquapark.web;
 import java.net.URI;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.slf4j.Logger;
@@ -100,6 +101,24 @@ public class GlobalExceptionHandler {
 		HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
 		ProblemDetail pd = ProblemDetail.forStatusAndDetail(status, ex.getReason() != null ? ex.getReason() : status.getReasonPhrase());
 		pd.setTitle(status.getReasonPhrase());
+		pd.setType(URI.create("about:blank"));
+		return pd;
+	}
+
+	@ExceptionHandler(DataIntegrityViolationException.class)
+	public ProblemDetail handleDataIntegrity(DataIntegrityViolationException ex) {
+		log.warn("DataIntegrityViolationException", ex);
+		String detail = "Veritabanı kısıtı ihlali. Kayıt zaten var olabilir veya şema güncellemesi gerekebilir.";
+		String msg = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+		if (msg != null && !msg.isBlank()) {
+			if (msg.contains("SALE_AREA_ID")) {
+				detail = "Eski veritabanı şeması algılandı. Uygulamayı yeniden başlatın; sorun devam ederse yöneticiye bildirin.";
+			} else if (msg.contains("unique") || msg.contains("UNIQUE") || msg.contains("Duplicate")) {
+				detail = "Bu kayıt zaten mevcut (benzersiz kod veya ad çakışması).";
+			}
+		}
+		ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, detail);
+		pd.setTitle("Conflict");
 		pd.setType(URI.create("about:blank"));
 		return pd;
 	}

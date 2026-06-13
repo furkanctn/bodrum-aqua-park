@@ -2,6 +2,7 @@ package com.bodrumaquapark.web.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public record PaymentSalesReportDto(
 		LocalDate fromInclusive,
@@ -10,6 +11,7 @@ public record PaymentSalesReportDto(
 		BigDecimal cashTotal,
 		BigDecimal cardTotal,
 		BigDecimal agencyTotal,
-		BigDecimal grandTotal
-) {
+		BigDecimal grandTotal,
+		List<AgencyTicketCountDto> agencyTicketCounts,
+		long agencyTicketTotalCount) {
 }

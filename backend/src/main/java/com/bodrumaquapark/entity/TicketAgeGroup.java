@@ -35,6 +35,10 @@ public class TicketAgeGroup {
 	@Column(nullable = false)
 	private boolean active = true;
 
+	/** Ücretsiz acenta bileti — raporda adet olarak sayılır, tahsilat yapılmaz */
+	@Column(name = "agency_complimentary", nullable = false)
+	private boolean agencyComplimentary = false;
+
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
 
@@ -97,6 +101,14 @@ public class TicketAgeGroup {
 
 	public void setActive(boolean active) {
 		this.active = active;
+	}
+
+	public boolean isAgencyComplimentary() {
+		return agencyComplimentary;
+	}
+
+	public void setAgencyComplimentary(boolean agencyComplimentary) {
+		this.agencyComplimentary = agencyComplimentary;
 	}
 
 	public Instant getCreatedAt() {

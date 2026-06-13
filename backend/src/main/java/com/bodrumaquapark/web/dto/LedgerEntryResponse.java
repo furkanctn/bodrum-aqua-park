@@ -23,9 +23,9 @@ public record LedgerEntryResponse(
 		Product p = e.getProduct();
 		if (p != null) {
 			productName = p.getName();
-			if (p.getSaleArea() != null) {
-				saleAreaName = p.getSaleArea().getName();
-			}
+		}
+		if (e.getSaleArea() != null) {
+			saleAreaName = e.getSaleArea().getName();
 		}
 		return new LedgerEntryResponse(
 				e.getId(),

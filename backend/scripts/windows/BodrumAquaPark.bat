@@ -19,6 +19,7 @@ set "LOG_FILE=%SERVER_LOG%"
 set "SPRING_PROFILES_ACTIVE=pos,lowresource"
 set "JAVA_OPTS_SERVER=-Djava.awt.headless=false -Xms192m -Xmx352m -XX:MaxMetaspaceSize=112m -XX:+UseG1GC -XX:MaxGCPauseMillis=250 -XX:+UseStringDeduplication"
 set "APP_PRINTER_WINDOWS_QUEUE=Sewo"
+set POS_EDGE_FULLSCREEN=1
 
 call :ensure_pos_config
 if errorlevel 1 exit /b 1

@@ -1,0 +1,180 @@
+package com.bodrumaquapark.service;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.bodrumaquapark.entity.MenuPage;
+import com.bodrumaquapark.entity.Product;
+import com.bodrumaquapark.entity.SaleArea;
+import com.bodrumaquapark.repository.MenuPageRepository;
+import com.bodrumaquapark.repository.ProductRepository;
+import com.bodrumaquapark.repository.SaleAreaRepository;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+import org.hibernate.Session;
+
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+
+@Service
+public class CatalogMigrationService {
+
+	private static final Logger log = LoggerFactory.getLogger(CatalogMigrationService.class);
+
+	@PersistenceContext
+	private EntityManager entityManager;
+
+	private final MenuPageRepository menuPageRepository;
+	private final SaleAreaRepository saleAreaRepository;
+	private final ProductRepository productRepository;
+
+	public CatalogMigrationService(MenuPageRepository menuPageRepository, SaleAreaRepository saleAreaRepository,
+			ProductRepository productRepository) {
+		this.menuPageRepository = menuPageRepository;
+		this.saleAreaRepository = saleAreaRepository;
+		this.productRepository = productRepository;
+	}
+
+	/**
+	 * Eski şemada menü sayfası satış alanına bağlıydı; bağımsız menü + çoktan-çoğa ilişkiye taşır.
+	 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void migrateLegacyMenuAreaLinksIfNeeded() {
+		if (!columnExists("menu_pages", "sale_area_id")) {
+			dropLegacyColumnIfPresent("products", "sale_area_id");
+			return;
+		}
+		log.info("Eski menü–satış alanı bağlantıları taşınıyor…");
+		List<Object[]> rows = legacyMenuAreaRows();
+		if (!rows.isEmpty()) {
+			deduplicateMenuCodes(rows);
+			rows = legacyMenuAreaRows();
+			for (Object[] row : rows) {
+				long menuId = ((Number) row[0]).longValue();
+				long saleAreaId = ((Number) row[1]).longValue();
+				linkMenuToSaleArea(menuId, saleAreaId);
+			}
+			log.info("Menü–satış alanı taşıması tamamlandı ({} satır).", rows.size());
+		}
+		dropLegacyColumnIfPresent("menu_pages", "sale_area_id");
+		dropLegacyColumnIfPresent("products", "sale_area_id");
+	}
+
+	@Transactional
+	public void ensureOrphanProductsHaveMenu() {
+		MenuPage genel = menuPageRepository.findByCode("GENEL").orElseGet(() -> menuPageRepository
+				.save(new MenuPage("GENEL", "Genel", 0)));
+		for (Product p : productRepository.findByMenuPageIsNull()) {
+			p.setMenuPage(genel);
+			productRepository.save(p);
+		}
+	}
+
+	private boolean columnExists(String table, String column) {
+		try {
+			Session session = entityManager.unwrap(Session.class);
+			return Boolean.TRUE.equals(session.doReturningWork(connection -> {
+				DatabaseMetaData meta = connection.getMetaData();
+				String tablePattern = meta.storesUpperCaseIdentifiers() ? table.toUpperCase() : table;
+				String columnPattern = meta.storesUpperCaseIdentifiers() ? column.toUpperCase() : column;
+				try (ResultSet cols = meta.getColumns(null, null, tablePattern, columnPattern)) {
+					return cols.next();
+				}
+			}));
+		} catch (Exception ex) {
+			return false;
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<Object[]> legacyMenuAreaRows() {
+		return entityManager
+				.createNativeQuery("SELECT id, sale_area_id, code FROM menu_pages WHERE sale_area_id IS NOT NULL")
+				.getResultList();
+	}
+
+	private void dropLegacyColumnIfPresent(String table, String column) {
+		if (!columnExists(table, column)) {
+			return;
+		}
+		log.info("Eski {}.{} sütunu kaldırılıyor…", table, column);
+		dropForeignKeysOnColumn(table, column);
+		try {
+			entityManager.createNativeQuery("ALTER TABLE " + table + " DROP COLUMN " + column).executeUpdate();
+			log.info("{}.{} kaldırıldı.", table, column);
+		} catch (Exception ex) {
+			log.warn("DROP COLUMN {}.{} başarısız, IF EXISTS deneniyor: {}", table, column, ex.getMessage());
+			try {
+				entityManager.createNativeQuery("ALTER TABLE " + table + " DROP COLUMN IF EXISTS " + column)
+						.executeUpdate();
+				log.info("{}.{} kaldırıldı (IF EXISTS).", table, column);
+			} catch (Exception ex2) {
+				log.error("Eski sütun kaldırılamadı: {}.{}", table, column, ex2);
+			}
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void dropForeignKeysOnColumn(String table, String column) {
+		List<String> names = entityManager.createNativeQuery("""
+				SELECT DISTINCT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+				WHERE UPPER(TABLE_NAME) = :table AND UPPER(COLUMN_NAME) = :column
+				""")
+				.setParameter("table", table.toUpperCase())
+				.setParameter("column", column.toUpperCase())
+				.getResultList();
+		for (String name : names) {
+			try {
+				entityManager.createNativeQuery("ALTER TABLE " + table + " DROP CONSTRAINT " + name).executeUpdate();
+			} catch (Exception ex) {
+				log.warn("FK {} kaldırılamadı: {}", name, ex.getMessage());
+			}
+		}
+	}
+
+	private void deduplicateMenuCodes(List<Object[]> rows) {
+		Set<String> seen = new HashSet<>();
+		for (Object[] row : rows) {
+			long menuId = ((Number) row[0]).longValue();
+			long saleAreaId = ((Number) row[1]).longValue();
+			String code = String.valueOf(row[2]);
+			if (seen.add(code)) {
+				continue;
+			}
+			String areaCode = saleAreaRepository.findById(saleAreaId).map(SaleArea::getCode).orElse(String.valueOf(saleAreaId));
+			String newCode = code + "_" + areaCode;
+			int n = 2;
+			while (menuPageRepository.existsByCode(newCode)) {
+				newCode = code + "_" + areaCode + "_" + n++;
+			}
+			entityManager.createNativeQuery("UPDATE menu_pages SET code = :code WHERE id = :id")
+					.setParameter("code", newCode)
+					.setParameter("id", menuId)
+					.executeUpdate();
+		}
+	}
+
+	private void linkMenuToSaleArea(long menuId, long saleAreaId) {
+		Number exists = (Number) entityManager.createNativeQuery(
+				"SELECT count(*) FROM sale_area_menu_pages WHERE sale_area_id = :sa AND menu_page_id = :mp")
+				.setParameter("sa", saleAreaId)
+				.setParameter("mp", menuId)
+				.getSingleResult();
+		if (exists.longValue() == 0) {
+			entityManager.createNativeQuery(
+					"INSERT INTO sale_area_menu_pages (sale_area_id, menu_page_id) VALUES (:sa, :mp)")
+					.setParameter("sa", saleAreaId)
+					.setParameter("mp", menuId)
+					.executeUpdate();
+		}
+	}
+}

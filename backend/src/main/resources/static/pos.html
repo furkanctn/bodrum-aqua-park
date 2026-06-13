@@ -6,7 +6,7 @@
 	<title>Satış — Bodrum Aqua Park</title>
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
-	<link rel="stylesheet" href="/css/pos.css?v=18" />
+	<link rel="stylesheet" href="/css/pos.css?v=22" />
 	<script src="/js/pos-perms.js?v=2"></script>
 	<script src="/js/mifare-uid.js?v=1"></script>
 </head>
@@ -85,20 +85,10 @@
 					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-split" title="Böl">
 						<span class="pos-lux-rail-ico" aria-hidden="true">⎘</span><span class="pos-lux-rail-txt">Böl</span>
 					</button>
-					<div class="pos-lux-rail-discount-stack" role="group" aria-label="Sepet iskontosu">
-						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-10" title="Sepete %10 iskonto (tekrar: kaldır)">
-							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">10</span>
-						</button>
-						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-15" title="Sepete %15 iskonto (tekrar: kaldır)">
-							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">15</span>
-						</button>
-						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-20" title="Sepete %20 iskonto (tekrar: kaldır)">
-							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">20</span>
-						</button>
-						<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-25" title="Sepete %25 iskonto (tekrar: kaldır)">
-							<span class="pos-lux-rail-ico" aria-hidden="true">%</span><span class="pos-lux-rail-txt">25</span>
-						</button>
-					</div>
+					<button type="button" class="pos-lux-rail-btn pos-lux-rail-disc" id="pos-lux-rail-discount-set" title="İndirim oranı belirle">
+						<span class="pos-lux-rail-ico" aria-hidden="true">%</span>
+						<span class="pos-lux-rail-txt pos-lux-rail-txt--disc" id="pos-lux-rail-discount-label">İndirim oranı belirle</span>
+					</button>
 					<button type="button" class="pos-lux-rail-btn" id="pos-lux-rail-print" title="Yazdır">
 						<span class="pos-lux-rail-ico" aria-hidden="true">⎙</span><span class="pos-lux-rail-txt">Yazdır</span>
 					</button>
@@ -137,7 +127,14 @@
 						<div class="pay-summary">
 							<h3>Hesap özeti</h3>
 							<div class="summary-rows">
-								<div class="summary-row"><span>Uygulanan indirim</span><span class="amt" id="sum-discount">₺0,00</span></div>
+								<div class="summary-row summary-row--subtotal">
+									<span>Toplam tutar</span>
+									<span class="amt" id="sum-subtotal">₺0,00</span>
+								</div>
+								<div class="summary-row summary-row--discount" id="sum-discount-row">
+									<span id="sum-discount-label">Uygulanan indirim</span>
+									<span class="amt" id="sum-discount">₺0,00</span>
+								</div>
 								<div class="summary-divider" role="presentation"></div>
 								<div class="summary-row highlight"><span>Ödenmesi gereken tutar</span><span class="amt" id="sum-due">₺0,00</span></div>
 								<div class="summary-row summary-row--pay-split"><span>Nakit ödenen tutar</span><span class="amt" id="sum-cash">₺0,00</span></div>
@@ -167,12 +164,6 @@
 						<div class="grid-scroll-wrap">
 							<div class="pos-grid-viewport">
 								<div class="pos-grid" id="pos-grid"></div>
-								<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-left" aria-label="Önceki sayfa" title="Önceki sayfa">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
-								</button>
-								<button type="button" class="grid-scroll grid-scroll--kart" id="scroll-right" aria-label="Sonraki sayfa" title="Sonraki sayfa">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
-								</button>
 							</div>
 						</div>
 					</section>
@@ -206,22 +197,29 @@
 						<div class="bakiye-display bakiye-display--touch" id="bakiye-display" aria-live="polite">0,00&nbsp;₺</div>
 						<button type="button" class="bakiye-key-del bakiye-key-del--touch" id="bakiye-backspace" title="Son haneyi sil" aria-label="Geri sil">⌫</button>
 					</div>
-					<div class="bakiye-quick-label">Hızlı tutar (₺ ekle)</div>
-					<div class="bakiye-quick-grid bakiye-quick-grid--touch" id="bakiye-quick">
-						<button type="button" class="bakiye-quick-btn" data-add-kurus="5000"><span class="bakiye-quick-amt">50</span><span class="bakiye-quick-unit">₺</span></button>
-						<button type="button" class="bakiye-quick-btn" data-add-kurus="10000"><span class="bakiye-quick-amt">100</span><span class="bakiye-quick-unit">₺</span></button>
-						<button type="button" class="bakiye-quick-btn" data-add-kurus="20000"><span class="bakiye-quick-amt">200</span><span class="bakiye-quick-unit">₺</span></button>
-						<button type="button" class="bakiye-quick-btn" data-add-kurus="50000"><span class="bakiye-quick-amt">500</span><span class="bakiye-quick-unit">₺</span></button>
-						<button type="button" class="bakiye-quick-btn" data-add-kurus="75000"><span class="bakiye-quick-amt">750</span><span class="bakiye-quick-unit">₺</span></button>
-						<button type="button" class="bakiye-quick-btn" data-add-kurus="100000"><span class="bakiye-quick-amt">1.000</span><span class="bakiye-quick-unit">₺</span></button>
+					<div class="bakiye-entry-split">
+						<div class="bakiye-entry-col bakiye-entry-col--quick">
+							<div class="bakiye-quick-label">Hızlı tutar (₺ ekle)</div>
+							<div class="bakiye-quick-grid bakiye-quick-grid--touch" id="bakiye-quick">
+								<button type="button" class="bakiye-quick-btn" data-add-kurus="5000"><span class="bakiye-quick-amt">50</span><span class="bakiye-quick-unit">₺</span></button>
+								<button type="button" class="bakiye-quick-btn" data-add-kurus="10000"><span class="bakiye-quick-amt">100</span><span class="bakiye-quick-unit">₺</span></button>
+								<button type="button" class="bakiye-quick-btn" data-add-kurus="20000"><span class="bakiye-quick-amt">200</span><span class="bakiye-quick-unit">₺</span></button>
+								<button type="button" class="bakiye-quick-btn" data-add-kurus="50000"><span class="bakiye-quick-amt">500</span><span class="bakiye-quick-unit">₺</span></button>
+								<button type="button" class="bakiye-quick-btn" data-add-kurus="75000"><span class="bakiye-quick-amt">750</span><span class="bakiye-quick-unit">₺</span></button>
+								<button type="button" class="bakiye-quick-btn" data-add-kurus="100000"><span class="bakiye-quick-amt">1.000</span><span class="bakiye-quick-unit">₺</span></button>
+							</div>
+						</div>
+						<div class="bakiye-entry-col bakiye-entry-col--keypad">
+							<div class="bakiye-keypad-label">Tuş takımı</div>
+							<div class="bakiye-keypad bakiye-keypad--touch" id="bakiye-keypad" aria-label="Sayısal tuş takımı"></div>
+						</div>
 					</div>
-					<div class="bakiye-keypad-label">Tuş takımı</div>
-					<div class="bakiye-keypad bakiye-keypad--touch" id="bakiye-keypad" aria-label="Sayısal tuş takımı"></div>
 				</div>
 
 				<section class="pos-payment pos-payment--lux pos-payment--bakiye" aria-label="Ödeme ve özet">
 					<div class="pay-methods">
 						<h3>Ödeme yöntemi</h3>
+						<p id="bakiye-pay-lock-hint" class="bakiye-pay-lock-hint" hidden></p>
 						<div class="pay-list">
 							<button type="button" class="pay-option" data-bakiye-pay="cash">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75V6h15.75A2.25 2.25 0 0 1 21 8.25v.75m-12.75 0h12.75" /></svg>
@@ -230,10 +228,6 @@
 							<button type="button" class="pay-option" data-bakiye-pay="card">
 								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 15h19.5m-16.5-5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg>
 								Kart ile ödeme
-							</button>
-							<button type="button" class="pay-option" data-bakiye-pay="rate">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182a2.51 2.51 0 0 1 4.004 0 2.25 2.25 0 0 0 3.227 1.318" /></svg>
-								Nakit ödeme kuru
 							</button>
 						</div>
 					</div>
@@ -380,8 +374,8 @@
 				<div class="pos-zoom" id="pos-zoom-wrap" role="group" aria-label="Ekran ölçeği">
 					<span class="pos-zoom-label" title="Üst alan (biletler ve ödeme); alt çubuk sabit">Ölçek</span>
 					<button type="button" class="pos-zoom-btn" id="pos-zoom-out" title="Küçült" aria-label="Ölçeği küçült">−</button>
-					<input type="range" class="pos-zoom-range" id="pos-zoom-range" min="40" max="150" step="1" value="124" aria-valuemin="40" aria-valuemax="150" aria-valuenow="124" />
-					<span class="pos-zoom-value" id="pos-zoom-pct">124%</span>
+					<input type="range" class="pos-zoom-range" id="pos-zoom-range" min="40" max="150" step="1" value="110" aria-valuemin="40" aria-valuemax="150" aria-valuenow="110" />
+					<span class="pos-zoom-value" id="pos-zoom-pct">110%</span>
 					<button type="button" class="pos-zoom-btn" id="pos-zoom-in" title="Büyüt" aria-label="Ölçeği büyüt">+</button>
 				</div>
 				<span class="footer-date" id="footer-date" aria-hidden="true">—</span>
@@ -467,7 +461,7 @@
 
 	<!-- Ürün satış: Kartı yükle → kart okut (HID) -->
 	<div id="urun-card-load-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
-		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="urun-card-load-title">
+		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid pos-rfid-panel--card-read" role="dialog" aria-modal="true" aria-labelledby="urun-card-load-title">
 			<h2 id="urun-card-load-title" class="pos-rfid-overlay__title">Kartı okutunuz</h2>
 			<p class="pos-rfid-overlay__msg">
 				Kart bilgilerini yüklemek için kartı okuyucuya tutun veya UID yazıp Enter’a basın.
@@ -481,9 +475,9 @@
 				spellcheck="false"
 				aria-label="Ürün satış — kart UID (HID)"
 			/>
-			<div class="pos-rfid-overlay__actions">
-				<button type="button" class="footer-btn primary" id="urun-card-load-confirm">Kartı yükle</button>
-				<button type="button" class="footer-btn danger" id="urun-card-load-cancel">İptal</button>
+			<div class="pos-rfid-overlay__actions pos-rfid-overlay__actions--card-read">
+				<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--primary" id="urun-card-load-confirm">Kartı yükle</button>
+				<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--cancel" id="urun-card-load-cancel">İptal</button>
 			</div>
 		</div>
 	</div>
@@ -499,7 +493,7 @@
 			<h2 id="sorgu-card-title" class="pos-rfid-overlay__title">Kart sorgulama</h2>
 
 			<div id="sorgu-card-scan-wrap">
-				<p class="pos-rfid-overlay__msg">Kartı okuyucuya tutun veya UID yazıp Enter’a basın. Yüklemeler ve harcamalar sunucudaki kayıtlardan listelenir.</p>
+				<p class="pos-rfid-overlay__msg sorgu-scan-prompt">Lütfen kartınızı okuyucuya tutun.</p>
 				<input
 					type="text"
 					id="sorgu-card-input"
@@ -510,9 +504,9 @@
 					aria-label="Kart UID — sorgulama"
 				/>
 				<p id="sorgu-card-loading-msg" class="sorgu-modal-loading" hidden>Yükleniyor…</p>
-				<div class="pos-rfid-overlay__actions">
-					<button type="button" class="footer-btn primary" id="sorgu-card-confirm">Sorgula</button>
-					<button type="button" class="footer-btn danger" id="sorgu-card-cancel-scan">İptal</button>
+				<div class="pos-rfid-overlay__actions pos-rfid-overlay__actions--card-read">
+					<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--primary" id="sorgu-card-confirm">Sorgula</button>
+					<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--cancel" id="sorgu-card-cancel-scan">İptal</button>
 				</div>
 			</div>
 
@@ -597,6 +591,31 @@
 		</div>
 	</div>
 
+	<div id="discount-rate-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
+		<div class="pos-rfid-overlay__panel pos-rfid-panel--discount" role="dialog" aria-modal="true" aria-labelledby="discount-rate-title">
+			<h2 id="discount-rate-title" class="pos-rfid-overlay__title">İndirim oranı</h2>
+			<p class="pos-rfid-overlay__msg">Sepet toplamına uygulanacak indirim yüzdesini girin (0–100).</p>
+			<label class="discount-rate-field-label" for="discount-rate-input">Oran (%)</label>
+			<div class="discount-rate-stepper" role="group" aria-label="İndirim oranı adım kontrolü">
+				<button type="button" class="discount-rate-step-btn" id="discount-rate-minus" title="5 azalt" aria-label="İndirim oranını 5 azalt">−</button>
+				<input
+					type="text"
+					inputmode="decimal"
+					id="discount-rate-input"
+					class="pos-rfid-overlay__input discount-rate-input"
+					placeholder="ör. 12"
+					autocomplete="off"
+					aria-label="İndirim yüzdesi"
+				/>
+				<button type="button" class="discount-rate-step-btn" id="discount-rate-plus" title="5 artır" aria-label="İndirim oranını 5 artır">+</button>
+			</div>
+			<div class="pos-rfid-overlay__actions discount-rate-actions">
+				<button type="button" class="discount-rate-btn discount-rate-btn--apply" id="discount-rate-apply">Uygula</button>
+				<button type="button" class="discount-rate-btn discount-rate-btn--cancel" id="discount-rate-cancel">İptal</button>
+			</div>
+		</div>
+	</div>
+
 	<div id="receipt-printer-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
 		<div class="pos-rfid-overlay__panel pos-receipt-panel" role="dialog" aria-modal="true" aria-labelledby="receipt-printer-title">
 			<button type="button" class="pos-receipt-dismiss" id="receipt-printer-dismiss" title="Kapat" aria-label="Fiş yazıcı penceresini kapat">×</button>
@@ -645,6 +664,6 @@
 	</div>
 
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js?v=23" defer></script>
+	<script src="/js/pos.js?v=36" defer></script>
 </body>
 </html>

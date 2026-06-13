@@ -1,6 +1,7 @@
 package com.bodrumaquapark.web;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.bodrumaquapark.entity.MenuPage;
+import com.bodrumaquapark.entity.SaleArea;
 import com.bodrumaquapark.repository.MenuPageRepository;
 import com.bodrumaquapark.repository.ProductRepository;
 import com.bodrumaquapark.repository.SaleAreaRepository;
@@ -43,7 +45,7 @@ public class CatalogController {
 			return List.of();
 		}
 		return saleAreaRepository.findAllByCodeIn(new ArrayList<>(allowedCodes)).stream()
-				.sorted((a, b) -> a.getCode().compareTo(b.getCode()))
+				.sorted(Comparator.comparing(SaleArea::getCode))
 				.map(SaleAreaResponse::from)
 				.toList();
 	}
@@ -54,9 +56,15 @@ public class CatalogController {
 		if (allowedCodes.isEmpty()) {
 			return List.of();
 		}
-		return menuPageRepository.findBySaleArea_CodeInOrderBySaleArea_CodeAscSortOrderAscIdAsc(allowedCodes).stream()
-				.map(MenuPageResponse::from)
-				.toList();
+		List<MenuPageResponse> out = new ArrayList<>();
+		for (SaleArea area : saleAreaRepository.findAllByCodeIn(allowedCodes)) {
+			area.getMenuPages().stream()
+					.sorted(Comparator.comparingInt(MenuPage::getSortOrder).thenComparingLong(MenuPage::getId))
+					.forEach(mp -> out.add(MenuPageResponse.from(mp, area)));
+		}
+		out.sort(Comparator.comparing(MenuPageResponse::saleAreaCode).thenComparingInt(MenuPageResponse::sortOrder)
+				.thenComparingLong(MenuPageResponse::id));
+		return out;
 	}
 
 	@GetMapping("/products")
@@ -70,11 +78,21 @@ public class CatalogController {
 		if (menuPageId != null) {
 			MenuPage mp = menuPageRepository.findById(menuPageId)
 					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Menü sayfası bulunamadı"));
-			if (!allowedCodes.contains(mp.getSaleArea().getCode())) {
-				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu menü sayfasına erişim yetkiniz yok");
+			if (saleAreaCode == null || saleAreaCode.isBlank()) {
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "saleAreaCode gerekli");
+			}
+			String areaCode = saleAreaCode.trim();
+			if (!allowedCodes.contains(areaCode)) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu satış alanına erişim yetkiniz yok");
+			}
+			SaleArea area = saleAreaRepository.findWithMenuPagesByCode(areaCode)
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Geçersiz satış alanı"));
+			boolean linked = area.getMenuPages().stream().anyMatch(m -> m.getId().equals(mp.getId()));
+			if (!linked) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu menü bu satış alanında tanımlı değil");
 			}
 			return productRepository.findByActiveTrueAndMenuPage_IdOrderByNameAsc(menuPageId).stream()
-					.map(ProductResponse::from)
+					.map(p -> ProductResponse.from(p, area.getCode(), area.getName()))
 					.toList();
 		}
 		if (saleAreaCode != null && !saleAreaCode.isBlank()) {
@@ -82,11 +100,27 @@ public class CatalogController {
 			if (!allowedCodes.contains(code)) {
 				throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu satış alanına erişim yetkiniz yok");
 			}
-			return productRepository.findByActiveTrueAndSaleArea_CodeOrderByNameAsc(code).stream()
-					.map(ProductResponse::from)
+			SaleArea area = saleAreaRepository.findWithMenuPagesByCode(code)
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Geçersiz satış alanı"));
+			List<Long> menuIds = area.getMenuPages().stream().map(MenuPage::getId).toList();
+			if (menuIds.isEmpty()) {
+				return List.of();
+			}
+			return productRepository.findByActiveTrueAndMenuPage_IdInOrderByMenuPage_SortOrderAscNameAsc(menuIds)
+					.stream()
+					.map(p -> ProductResponse.from(p, area.getCode(), area.getName()))
 					.toList();
 		}
-		return productRepository.findByActiveTrueAndSaleArea_CodeInOrderBySaleArea_CodeAscNameAsc(allowedCodes).stream()
+		List<Long> allMenuIds = saleAreaRepository.findAllByCodeIn(allowedCodes).stream()
+				.flatMap(sa -> sa.getMenuPages().stream())
+				.map(MenuPage::getId)
+				.distinct()
+				.toList();
+		if (allMenuIds.isEmpty()) {
+			return List.of();
+		}
+		return productRepository.findByActiveTrueAndMenuPage_IdInOrderByMenuPage_SortOrderAscNameAsc(allMenuIds)
+				.stream()
 				.map(ProductResponse::from)
 				.toList();
 	}

@@ -7,19 +7,10 @@ public record MenuPageAdminResponse(
 		String code,
 		String name,
 		int sortOrder,
-		String saleAreaCode,
-		String saleAreaName,
 		long productCount
 ) {
 
 	public static MenuPageAdminResponse from(MenuPage m, long productCount) {
-		return new MenuPageAdminResponse(
-				m.getId(),
-				m.getCode(),
-				m.getName(),
-				m.getSortOrder(),
-				m.getSaleArea().getCode(),
-				m.getSaleArea().getName(),
-				productCount);
+		return new MenuPageAdminResponse(m.getId(), m.getCode(), m.getName(), m.getSortOrder(), productCount);
 	}
 }

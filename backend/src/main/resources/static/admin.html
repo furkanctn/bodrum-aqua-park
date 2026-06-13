@@ -6,7 +6,7 @@
 	<title>Yönetim — Bodrum Aqua Park</title>
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
-	<link rel="stylesheet" href="/css/admin.css?v=4" />
+	<link rel="stylesheet" href="/css/admin.css?v=5" />
 </head>
 <body>
 	<div class="pos-main-scale pos-main-scale--admin" id="pos-main-scale">
@@ -38,8 +38,8 @@
 				</button>
 				<div class="admin-aquapark-menu" id="admin-aquapark-menu" role="menu">
 					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="users" id="aquapark-item-users">Kullanıcılar</button>
-					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="menu-pages" id="aquapark-item-menu-pages">Menü sayfaları</button>
 					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="products" id="aquapark-item-products">Ürün tanımları</button>
+					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="menu-pages" id="aquapark-item-menu-pages">Satış alanları</button>
 					<button type="button" role="menuitem" class="admin-aquapark-item" data-panel="ticket-age-groups" id="aquapark-item-ticket-age-groups">
 						Bilet yaş grupları
 					</button>
@@ -217,70 +217,19 @@
 		<div id="admin-panel-menu-pages" hidden>
 			<section class="admin-card">
 				<div class="admin-mp-card-head">
-					<h2>Yeni menü sayfası</h2>
-					<button type="button" class="btn btn-primary" id="btn-toggle-menu-page-form">+ Menü sayfası ekle</button>
-				</div>
-				<p class="admin-sub admin-sub--inline">
-					Her satış alanı için POS’ta sağ şeritte görünecek sayfalar (ör. <strong>Genel</strong>,
-					<strong>Sıcak içecekler</strong>). Ürün eklerken <strong>Menü sayfası</strong> listesinde burada
-					tanımladıklarınız çıkar; sayfa kodu sistem tarafından addan üretilir.
-				</p>
-				<div id="mp-menu-page-form-wrap" class="admin-mp-collapsible" hidden>
-					<form id="form-new-menu-page" class="admin-form-grid admin-form-grid--menu-pages">
-						<div class="field">
-							<label for="mp-new-sale-area">Satış alanı</label>
-							<select id="mp-new-sale-area" required></select>
-						</div>
-						<div class="field">
-							<label for="mp-new-name">Görünen ad</label>
-							<input id="mp-new-name" maxlength="255" required autocomplete="off" placeholder="Örn. Sıcak içecekler" />
-						</div>
-						<div class="field">
-							<label for="mp-new-sort">Liste sırası</label>
-							<input id="mp-new-sort" type="number" step="1" placeholder="0 (küçük önce)" />
-						</div>
-						<div class="field field-actions">
-							<button type="submit" class="btn btn-primary" id="btn-mp-add">Kaydet</button>
-						</div>
-					</form>
-				</div>
-			</section>
-			<section class="admin-card">
-				<h2>Tanımlı menü sayfaları</h2>
-				<p class="admin-sub admin-sub--inline">
-					<strong>GENEL</strong> sayfası silinemez; ürünleri taşımadan diğer sayfalar da silinemez.
-				</p>
-				<div class="table-wrap">
-					<table class="admin-table">
-						<thead>
-							<tr>
-								<th>Satış alanı</th>
-								<th>Ad</th>
-								<th>Sıra</th>
-								<th>Ürün</th>
-								<th></th>
-							</tr>
-						</thead>
-						<tbody id="admin-menu-pages-tbody"></tbody>
-					</table>
-				</div>
-				<p id="admin-menu-pages-empty" class="admin-catalog-empty-hint" hidden>Henüz menü sayfası yok.</p>
-			</section>
-			<section class="admin-card">
-				<div class="admin-mp-card-head">
-					<h2>Satış alanları (kategoriler)</h2>
+					<h2>Satış alanları</h2>
 					<button type="button" class="btn btn-primary" id="btn-toggle-sale-area-form">+ Satış alanı ekle</button>
 				</div>
 				<p class="admin-sub admin-sub--inline">
-					Satış alanı adı girilir; sistem iç kullanım için otomatik kısa kod üretir. Kasiyerlere bu alanı
-					<strong>Kullanıcılar</strong> sekmesinden atamayı unutmayın. Ürün eklemek için
-					<strong>Ürün tanımları</strong> sekmesini kullanın; ad değişikliği veya (ürün yoksa) silme aşağıdaki tablodan yapılır.
+					Önce <strong>Ürün tanımları</strong> sekmesinde menü başlıklarını (Sıcak içecek, Pide vb.) oluşturun.
+					Burada satış alanı tanımlayıp (ör. Kule1) o alanda görünecek menüleri seçin. Kasiyere alanı
+					<strong>Kullanıcılar</strong> sekmesinden atayın; POS’ta yalnızca seçtiğiniz menüler açılır.
 				</p>
 				<div id="mp-sale-area-form-wrap" class="admin-mp-collapsible" hidden>
 					<form id="form-new-category" class="admin-form-grid admin-form-grid--category">
 						<div class="field">
 							<label for="cat-name">Görünen ad</label>
-							<input id="cat-name" maxlength="255" required autocomplete="off" placeholder="Örn. Atıştırmalık" />
+							<input id="cat-name" maxlength="255" required autocomplete="off" placeholder="Örn. Kule1" />
 						</div>
 						<div class="field field-actions">
 							<button type="submit" class="btn btn-primary" id="btn-cat-add">Kaydet</button>
@@ -292,8 +241,8 @@
 						<thead>
 							<tr>
 								<th>Ad</th>
+								<th>Menüler</th>
 								<th>Aktif ürün</th>
-								<th>Toplam</th>
 								<th></th>
 							</tr>
 						</thead>
@@ -356,14 +305,50 @@
 		</div>
 
 		<div id="admin-panel-products" hidden>
+			<section class="admin-card">
+				<div class="admin-mp-card-head">
+					<h2>Menü başlıkları</h2>
+					<button type="button" class="btn btn-primary" id="btn-toggle-menu-page-form">+ Menü başlığı ekle</button>
+				</div>
+				<p class="admin-sub admin-sub--inline">
+					POS’ta görünecek menü gruplarını burada tanımlayın (ör. <strong>Sıcak içecek</strong>,
+					<strong>Soğuk içecek</strong>, <strong>Pide</strong>). <strong>+ Menü başlığı ekle</strong> ile
+					yeni başlık oluşturun; ürünleri aşağıdaki bölümden ekleyin. Hangi satış alanında görüneceğini
+					ayrıca <strong>Satış alanları</strong> sekmesinden seçersiniz.
+				</p>
+				<div id="mp-menu-page-form-wrap" class="admin-mp-collapsible" hidden>
+					<form id="form-new-menu-page" class="admin-form-grid admin-form-grid--menu-pages">
+						<div class="field">
+							<label for="mp-new-name">Menü adı</label>
+							<input id="mp-new-name" maxlength="255" required autocomplete="off" placeholder="Örn. Sıcak içecek" />
+						</div>
+						<div class="field field-actions">
+							<button type="submit" class="btn btn-primary" id="btn-mp-add">Kaydet</button>
+						</div>
+					</form>
+				</div>
+				<div class="table-wrap">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Ad</th>
+								<th>Ürün</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody id="admin-menu-pages-tbody"></tbody>
+					</table>
+				</div>
+				<p id="admin-menu-pages-empty" class="admin-catalog-empty-hint" hidden>Henüz menü başlığı yok.</p>
+			</section>
 			<section class="admin-card admin-card--products">
-				<h2>Ürün tanımları</h2>
-				<p class="admin-sub admin-sub--inline">Satış alanlarına göre ürün ve fiyatlar. Satış işlemi POS’taki <strong>Ürün satış</strong> ekranından yapılır.</p>
+				<h2>Ürünler</h2>
+				<p class="admin-sub admin-sub--inline">Menü başlıklarına göre ürün ve fiyat tanımları. Satış POS’taki <strong>Ürün satış</strong> ekranından yapılır.</p>
 				<div class="admin-catalog-toolbar">
-					<button type="button" class="btn btn-primary" id="btn-admin-catalog-add">+ Yeni Satış Alanı Ekle</button>
+					<button type="button" class="btn btn-primary" id="btn-admin-catalog-add">+ Ürün ekle</button>
 				</div>
 				<div id="admin-catalog-root" class="admin-catalog-root"></div>
-				<p id="admin-catalog-empty" class="admin-catalog-empty-hint" hidden>Satış alanı bulunamadı.</p>
+				<p id="admin-catalog-empty" class="admin-catalog-empty-hint" hidden>Önce menü başlığı ekleyin.</p>
 			</section>
 		</div>
 
@@ -490,8 +475,8 @@
 			<section class="admin-card">
 				<h2>Gün sonu</h2>
 				<p class="admin-sub admin-sub--inline">
-					Seçilen günün toplam tahsilatı: nakit, kredi kartı ve acenta (bakiye yükleme + bilet). Tarihler
-					<strong>İstanbul</strong> saatine göredir.
+					Seçilen günün toplam tahsilatı: nakit, kredi kartı ve acenta (bakiye yükleme + bilet). Ücretsiz acenta
+					biletleri adet olarak ayrıca gösterilir. Tarihler <strong>İstanbul</strong> saatine göredir.
 				</p>
 				<div class="admin-report-toolbar">
 					<div class="field">
@@ -539,11 +524,7 @@
 			<form id="admin-form-product" class="admin-modal-form">
 				<input type="hidden" id="admin-prod-id" value="" />
 				<div class="field">
-					<label for="admin-prod-sale-area">Satış alanı</label>
-					<select id="admin-prod-sale-area" required></select>
-				</div>
-				<div class="field">
-					<label for="admin-prod-menu-page">Menü sayfası</label>
+					<label for="admin-prod-menu-page">Menü başlığı</label>
 					<select id="admin-prod-menu-page" required></select>
 					<p class="field-hint" id="admin-prod-menu-page-hint" hidden></p>
 				</div>
@@ -581,6 +562,11 @@
 					<label for="modal-sa-name">Ad</label>
 					<input id="modal-sa-name" type="text" required maxlength="255" autocomplete="off" spellcheck="false" />
 				</div>
+				<div class="field">
+					<span class="label-block">Bu alanda görünecek menüler</span>
+					<div id="modal-sa-menu-checks" class="admin-sale-area-checks"></div>
+					<p class="field-hint">Ürün tanımları sekmesinde oluşturduğunuz menü başlıklarından seçin.</p>
+				</div>
 				<div class="admin-modal-actions">
 					<button type="submit" class="btn btn-primary">Kaydet</button>
 					<button type="button" class="btn btn-danger" id="modal-sa-delete">Sil</button>
@@ -601,10 +587,6 @@
 					<label for="modal-mp-name">Ad</label>
 					<input id="modal-mp-name" type="text" required maxlength="255" autocomplete="off" spellcheck="false" />
 				</div>
-				<div class="field">
-					<label for="modal-mp-sort">Liste sırası</label>
-					<input id="modal-mp-sort" type="number" step="1" required />
-				</div>
 				<div class="admin-modal-actions">
 					<button type="submit" class="btn btn-primary">Kaydet</button>
 					<button type="button" class="btn btn-danger" id="modal-mp-delete">Sil</button>
@@ -616,6 +598,6 @@
 	</div>
 
 	<script src="/js/mifare-uid.js?v=1"></script>
-	<script src="/js/admin.js?v=15" defer></script>
+	<script src="/js/admin.js?v=19" defer></script>
 </body>
 </html>

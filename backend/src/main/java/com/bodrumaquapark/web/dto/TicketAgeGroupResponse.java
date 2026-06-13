@@ -4,9 +4,11 @@ import java.math.BigDecimal;
 
 import com.bodrumaquapark.entity.TicketAgeGroup;
 
-public record TicketAgeGroupResponse(Long id, String name, BigDecimal price, int sortOrder, boolean active) {
+public record TicketAgeGroupResponse(
+		Long id, String name, BigDecimal price, int sortOrder, boolean active, boolean agencyComplimentary) {
 
 	public static TicketAgeGroupResponse from(TicketAgeGroup e) {
-		return new TicketAgeGroupResponse(e.getId(), e.getName(), e.getPrice(), e.getSortOrder(), e.isActive());
+		return new TicketAgeGroupResponse(
+				e.getId(), e.getName(), e.getPrice(), e.getSortOrder(), e.isActive(), e.isAgencyComplimentary());
 	}
 }

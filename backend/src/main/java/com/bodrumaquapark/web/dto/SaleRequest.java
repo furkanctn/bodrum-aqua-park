@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record SaleRequest(
 		@NotBlank String cardUid,
-		@NotNull Long productId
+		@NotNull Long productId,
+		@NotBlank String saleAreaCode
 ) {
 }

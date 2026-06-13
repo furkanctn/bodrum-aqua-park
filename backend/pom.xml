@@ -90,6 +90,12 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+			<optional>true</optional>
+		</dependency>
 
 		<!-- Termal fiş (Sewoo vb. ESC/POS) — sanal COM port -->
 		<dependency>
@@ -163,6 +169,8 @@
 					</execution>
 				</executions>
 				<configuration>
+					<!-- src/main/resources doğrudan classpath'te — CSS/JS kaydınca anında sunulur -->
+					<addResources>true</addResources>
 					<!-- JavaFX native kütüphaneleri nested JAR’tan çıkarılsın (yükleyici için) -->
 					<requiresUnpack>
 						<dependency>

@@ -16,13 +16,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.bodrumaquapark.entity.CardLedgerEntry;
 import com.bodrumaquapark.entity.Product;
-import com.bodrumaquapark.entity.SaleArea;
 import com.bodrumaquapark.entity.TransactionType;
 import com.bodrumaquapark.repository.CardLedgerEntryRepository;
 import com.bodrumaquapark.util.Money;
 import com.bodrumaquapark.web.dto.AdminDayCloseReportDto;
 import com.bodrumaquapark.web.dto.AdminDayLedgerLineDto;
 import com.bodrumaquapark.web.dto.AdminSummaryReportDto;
+import com.bodrumaquapark.web.dto.AgencyTicketCountDto;
 import com.bodrumaquapark.web.dto.LedgerTypeAggregateDto;
 import com.bodrumaquapark.web.dto.PaymentSalesReportDto;
 import com.bodrumaquapark.web.dto.ProductRevenueDto;
@@ -109,7 +109,24 @@ public class AdminReportService {
 		card = Money.normalize(card);
 		agency = Money.normalize(agency);
 		BigDecimal grand = Money.normalize(cash.add(card).add(agency));
-		return new PaymentSalesReportDto(r.fromDay(), r.toDay(), REPORT_ZONE.getId(), cash, card, agency, grand);
+		List<AgencyTicketCountDto> agencyTickets = agencyTicketCounts(r.fromInclusive(), r.toExclusive());
+		long agencyTicketTotal = agencyTickets.stream().mapToLong(AgencyTicketCountDto::count).sum();
+		return new PaymentSalesReportDto(
+				r.fromDay(), r.toDay(), REPORT_ZONE.getId(), cash, card, agency, grand, agencyTickets,
+				agencyTicketTotal);
+	}
+
+	private List<AgencyTicketCountDto> agencyTicketCounts(Instant from, Instant to) {
+		List<Object[]> rows = ledgerRepository.aggregateAgencyTicketCounts(from, to);
+		List<AgencyTicketCountDto> out = new ArrayList<>();
+		for (Object[] row : rows) {
+			String name = (String) row[0];
+			long cnt = ((Number) row[1]).longValue();
+			if (cnt > 0) {
+				out.add(new AgencyTicketCountDto(name, cnt));
+			}
+		}
+		return out;
 	}
 
 	public AdminSummaryReportDto summary(LocalDate from, LocalDate to) {
@@ -151,10 +168,9 @@ public class AdminReportService {
 		Product p = e.getProduct();
 		if (p != null) {
 			pname = p.getName();
-			SaleArea sa = p.getSaleArea();
-			if (sa != null) {
-				aname = sa.getName();
-			}
+		}
+		if (e.getSaleArea() != null) {
+			aname = e.getSaleArea().getName();
 		}
 		String uid = e.getCard() != null ? e.getCard().getUid() : "";
 		return new AdminDayLedgerLineDto(

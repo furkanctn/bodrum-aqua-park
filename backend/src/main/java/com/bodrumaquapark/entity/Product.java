@@ -21,11 +21,7 @@ public class Product {
 	private Long id;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "sale_area_id", nullable = false)
-	private SaleArea saleArea;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "menu_page_id")
+	@JoinColumn(name = "menu_page_id", nullable = false)
 	private MenuPage menuPage;
 
 	@Column(nullable = false, length = 255)
@@ -44,8 +40,7 @@ public class Product {
 	protected Product() {
 	}
 
-	public Product(SaleArea saleArea, MenuPage menuPage, String name, BigDecimal price, Integer stockQuantity) {
-		this.saleArea = saleArea;
+	public Product(MenuPage menuPage, String name, BigDecimal price, Integer stockQuantity) {
 		this.menuPage = menuPage;
 		this.name = name;
 		this.price = price;
@@ -54,14 +49,6 @@ public class Product {
 
 	public Long getId() {
 		return id;
-	}
-
-	public SaleArea getSaleArea() {
-		return saleArea;
-	}
-
-	public void setSaleArea(SaleArea saleArea) {
-		this.saleArea = saleArea;
 	}
 
 	public MenuPage getMenuPage() {

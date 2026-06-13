@@ -15,6 +15,7 @@ import com.bodrumaquapark.entity.Card;
 import com.bodrumaquapark.entity.CardLedgerEntry;
 import com.bodrumaquapark.entity.CardStatus;
 import com.bodrumaquapark.entity.Product;
+import com.bodrumaquapark.entity.SaleArea;
 import com.bodrumaquapark.entity.TransactionType;
 import com.bodrumaquapark.exception.CardBlockedException;
 import com.bodrumaquapark.exception.InsufficientBalanceException;
@@ -23,6 +24,7 @@ import com.bodrumaquapark.exception.PrinterNotAvailableException;
 import com.bodrumaquapark.exception.ProductNotFoundException;
 import com.bodrumaquapark.repository.CardLedgerEntryRepository;
 import com.bodrumaquapark.repository.ProductRepository;
+import com.bodrumaquapark.repository.SaleAreaRepository;
 import com.bodrumaquapark.util.Money;
 
 @Service
@@ -31,15 +33,17 @@ public class SaleService {
 	private static final Logger log = LoggerFactory.getLogger(SaleService.class);
 
 	private final ProductRepository productRepository;
+	private final SaleAreaRepository saleAreaRepository;
 	private final CardLedgerEntryRepository ledgerEntryRepository;
 	private final CardService cardService;
 	private final PrinterService printerService;
 	private final PrinterProperties printerProperties;
 
-	public SaleService(ProductRepository productRepository,
+	public SaleService(ProductRepository productRepository, SaleAreaRepository saleAreaRepository,
 			CardLedgerEntryRepository ledgerEntryRepository, CardService cardService,
 			PrinterService printerService, PrinterProperties printerProperties) {
 		this.productRepository = productRepository;
+		this.saleAreaRepository = saleAreaRepository;
 		this.ledgerEntryRepository = ledgerEntryRepository;
 		this.cardService = cardService;
 		this.printerService = printerService;
@@ -47,8 +51,7 @@ public class SaleService {
 	}
 
 	@Transactional
-	public SaleResult sell(String cardUid, Long productId, Set<String> allowedSaleAreaCodes) {
-		// Yazıcı zorunluysa önce kontrol et - bakiye düşmeden hata ver
+	public SaleResult sell(String cardUid, Long productId, String saleAreaCode, Set<String> allowedSaleAreaCodes) {
 		if (printerProperties.isRequiredForSale()) {
 			if (!printerService.isPrinterAvailable()) {
 				String target = printerService.effectivePort(null);
@@ -60,6 +63,18 @@ public class SaleService {
 			}
 		}
 
+		String areaCode = saleAreaCode != null ? saleAreaCode.trim() : "";
+		if (areaCode.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Satış alanı gerekli");
+		}
+		if (allowedSaleAreaCodes == null || allowedSaleAreaCodes.isEmpty()
+				|| !allowedSaleAreaCodes.contains(areaCode)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu satış alanında satış yetkiniz yok");
+		}
+
+		SaleArea saleArea = saleAreaRepository.findWithMenuPagesByCode(areaCode)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Geçersiz satış alanı"));
+
 		String uid = cardUid != null ? cardUid.trim() : "";
 		Card card = cardService.findCardForUpdateByUidFlexible(uid);
 		if (card.getStatus() != CardStatus.ACTIVE) {
@@ -70,10 +85,13 @@ public class SaleService {
 		if (!product.isActive()) {
 			throw new ProductNotFoundException(productId);
 		}
-		String areaCode = product.getSaleArea().getCode();
-		if (allowedSaleAreaCodes == null || allowedSaleAreaCodes.isEmpty()
-				|| !allowedSaleAreaCodes.contains(areaCode)) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu ürünü satma yetkiniz yok");
+		if (product.getMenuPage() == null) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ürün menüsü tanımsız");
+		}
+		long menuId = product.getMenuPage().getId();
+		boolean menuLinked = saleArea.getMenuPages().stream().anyMatch(mp -> mp.getId().equals(menuId));
+		if (!menuLinked) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bu ürünü bu satış alanında satamazsınız");
 		}
 
 		if (product.getStockQuantity() != null && product.getStockQuantity() <= 0) {
@@ -93,7 +111,7 @@ public class SaleService {
 		BigDecimal newBalance = Money.normalize(balance.subtract(price));
 		card.setBalance(newBalance);
 
-		String areaName = product.getSaleArea().getName();
+		String areaName = saleArea.getName();
 		String desc = String.format(
 				"Harcama · İstasyon: %s — %s · Harcanan: %s · Kalan bakiye: %s",
 				areaName,
@@ -101,9 +119,8 @@ public class SaleService {
 				Money.formatTryLabel(price),
 				Money.formatTryLabel(newBalance));
 		ledgerEntryRepository.save(new CardLedgerEntry(card, TransactionType.SALE, price.negate(), newBalance, product,
-				desc));
+				saleArea, desc));
 
-		return new SaleResult(newBalance, product.getName(), product.getSaleArea().getCode(),
-				product.getSaleArea().getName(), price);
+		return new SaleResult(newBalance, product.getName(), saleArea.getCode(), saleArea.getName(), price);
 	}
 }

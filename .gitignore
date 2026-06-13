@@ -23,10 +23,12 @@ backend/.sts4-cache
 
 # USB Windows paketi — usb-paket-olustur.sh ile üretilir (repoda tutulmaz)
 dist/usb-windows-pos/
+dist/*.zip
 # Saha DB şifresi — yalnızca example repoda; gerçek dosyayı kasada oluşturun
 backend/scripts/windows/config/application.properties
 
 # Günlük / geçici
 *.log
+*.log.*.gz
 *.swp
 *~

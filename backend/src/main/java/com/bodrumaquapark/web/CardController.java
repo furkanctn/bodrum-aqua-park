@@ -54,7 +54,8 @@ public class CardController {
 			@Valid @RequestBody TicketGrantRequest request,
 			@RequestAttribute(JwtAuthenticationFilter.ATTR_USER_ID) String operatorUserId) {
 		return ResponseEntity.ok(CardResponse.from(
-				cardService.grantTicketEntry(uid, operatorUserId, request.paymentMethod(), request.amount())));
+				cardService.grantTicketEntry(uid, operatorUserId, request.paymentMethod(), request.amount(),
+						request.lines())));
 	}
 
 	/** POS bakiye yükleme — yetki: balanceLoadAllowed */

@@ -460,25 +460,31 @@
 				if (emptyEl) emptyEl.hidden = true;
 				tbody.innerHTML = "";
 				areas.forEach(function (a) {
+					var menus = Array.isArray(a.menuPageNames) ? a.menuPageNames.join(", ") : "—";
+					if (!menus) {
+						menus = "—";
+					}
 					var tr = document.createElement("tr");
 					tr.innerHTML =
 						"<td>" +
 						escapeHtml(a.name || "") +
 						"</td><td>" +
-						String(a.activeProductCount != null ? a.activeProductCount : 0) +
+						escapeHtml(menus) +
 						"</td><td>" +
-						String(a.totalProductCount != null ? a.totalProductCount : 0) +
+						String(a.activeProductCount != null ? a.activeProductCount : 0) +
 						'</td><td class="actions">' +
 						'<button type="button" class="btn btn-ghost btn-sm" data-sa-edit="' +
 						String(a.id) +
 						'" data-sa-name="' +
 						escapeAttr(a.name || "") +
+						'" data-sa-menus="' +
+						escapeAttr(JSON.stringify(a.menuPageIds || [])) +
 						'">Düzenle</button></td>';
 					tbody.appendChild(tr);
 				});
 			})
 			.catch(function () {
-				showAlert("Kategoriler yüklenemedi.", "err");
+				showAlert("Satış alanları yüklenemedi.", "err");
 			});
 	}
 
@@ -489,37 +495,20 @@
 	function loadMenuPagesPanel() {
 		var tbody = document.getElementById("admin-menu-pages-tbody");
 		var emptyEl = document.getElementById("admin-menu-pages-empty");
-		var saleSel = document.getElementById("mp-new-sale-area");
-		if (!tbody || !saleSel) {
-			return;
+		if (!tbody) {
+			return Promise.resolve();
 		}
 		hideAlert();
-		Promise.all([fetchAdminSaleAreas(), fetchAdminMenuPagesForModal()])
-			.then(function (pair) {
-				var areas = pair[0] || [];
-				var pages = Array.isArray(pair[1]) ? pair[1] : [];
-				mergeSaleAreaNames(areas);
-				saleSel.innerHTML = "";
-				if (!areas.length) {
-					var ph0 = document.createElement("option");
-					ph0.value = "";
-					ph0.textContent = "— Önce Kategoriler’den satış alanı ekleyin —";
-					ph0.disabled = true;
-					saleSel.appendChild(ph0);
-				} else {
-					areas.forEach(function (a) {
-						var o = document.createElement("option");
-						o.value = a.code;
-						o.textContent = a.name || a.code;
-						saleSel.appendChild(o);
-					});
-				}
+		return fetchAdminMenuPagesForModal()
+			.then(function (pages) {
+				pages = Array.isArray(pages) ? pages : [];
+				adminMenuPagesCache = pages;
 				if (!pages.length) {
 					tbody.innerHTML = "";
 					if (emptyEl) {
 						emptyEl.hidden = false;
 					}
-					return;
+					return pages;
 				}
 				if (emptyEl) {
 					emptyEl.hidden = true;
@@ -527,15 +516,9 @@
 				tbody.innerHTML = "";
 				pages.forEach(function (m) {
 					var tr = document.createElement("tr");
-					var areaLabel = saleAreaNameByCode[m.saleAreaCode] || m.saleAreaCode || "";
-					var isGenel = String(m.code || "").toUpperCase() === "GENEL";
 					tr.innerHTML =
 						"<td>" +
-						escapeHtml(areaLabel + " (" + (m.saleAreaCode || "") + ")") +
-						"</td><td>" +
 						escapeHtml(m.name || "") +
-						"</td><td>" +
-						String(m.sortOrder != null ? m.sortOrder : 0) +
 						"</td><td>" +
 						String(m.productCount != null ? m.productCount : 0) +
 						'</td><td class="actions">' +
@@ -543,17 +526,22 @@
 						String(m.id) +
 						'" data-mp-name="' +
 						escapeAttr(m.name || "") +
-						'" data-mp-sort="' +
-						String(m.sortOrder != null ? m.sortOrder : 0) +
-						'" data-mp-genel="' +
-						(isGenel ? "1" : "0") +
+						'" data-mp-code="' +
+						escapeAttr(m.code || "") +
 						'">Düzenle</button></td>';
 					tbody.appendChild(tr);
 				});
+				return pages;
 			})
 			.catch(function () {
-				showAlert("Menü sayfaları yüklenemedi.", "err");
+				showAlert("Menü başlıkları yüklenemedi.", "err");
 			});
+	}
+
+	function refreshProductsPanelData() {
+		return loadMenuPagesPanel().then(function () {
+			loadAdminProductCatalog();
+		});
 	}
 
 	function loadAdminProductCatalog() {
@@ -563,10 +551,7 @@
 			return;
 		}
 		Promise.all([
-			fetchAdminSaleAreas().then(function (areas) {
-				mergeSaleAreaNames(areas);
-				return areas;
-			}),
+			fetchAdminMenuPagesForModal(),
 			fetch("/api/admin/products", { headers: authHeaders() }).then(function (r) {
 				if (r.status === 401) {
 					window.location.replace("/index.html");
@@ -579,43 +564,44 @@
 			}),
 		])
 			.then(function (pair) {
-				var areas = pair[0];
+				var menus = Array.isArray(pair[0]) ? pair[0] : [];
 				var products = pair[1];
-				if (!areas || !products) {
+				adminMenuPagesCache = menus;
+				if (!products) {
 					return;
 				}
-				if (!areas.length) {
+				if (!menus.length) {
 					root.innerHTML = "";
 					emptyEl.hidden = false;
-					emptyEl.textContent = "Satış alanı tanımlı değil.";
+					emptyEl.textContent = "Önce menü başlığı ekleyin.";
 					return;
 				}
 				emptyEl.hidden = true;
-				var byCode = {};
+				var byMenu = {};
 				products.forEach(function (p) {
-					var c = p.saleAreaCode;
-					if (!byCode[c]) {
-						byCode[c] = [];
+					var mid = p.menuPageId != null ? String(p.menuPageId) : "_none";
+					if (!byMenu[mid]) {
+						byMenu[mid] = [];
 					}
-					byCode[c].push(p);
+					byMenu[mid].push(p);
 				});
 				root.innerHTML = "";
-				areas.forEach(function (area) {
-					var list = byCode[area.code] || [];
+				menus.forEach(function (menu) {
+					var list = byMenu[String(menu.id)] || [];
 					var block = document.createElement("section");
 					block.className = "admin-catalog-area";
 
 					var head = document.createElement("div");
 					head.className = "admin-catalog-area-head";
 					var h3 = document.createElement("h3");
-					h3.textContent = area.name || area.code;
+					h3.textContent = menu.name || menu.code || "Menü";
 					head.appendChild(h3);
 					var addInline = document.createElement("button");
 					addInline.type = "button";
 					addInline.className = "btn btn-ghost btn-sm";
-					addInline.textContent = "+ Bu alana ekle";
+					addInline.textContent = "+ Bu menüye ekle";
 					addInline.addEventListener("click", function () {
-						openAdminProductModal(null, area.code);
+						openAdminProductModal(null, menu.id);
 					});
 					head.appendChild(addInline);
 					block.appendChild(head);
@@ -637,7 +623,7 @@
 						var ph = document.createElement("div");
 						ph.className = "admin-prod-empty-placeholder";
 						ph.setAttribute("role", "status");
-						ph.textContent = "Bu alanda henüz ürün yok.";
+						ph.textContent = "Bu menüde henüz ürün yok.";
 						grid.appendChild(ph);
 					}
 					list.forEach(function (p) {
@@ -723,46 +709,35 @@
 	}
 
 	function fillAdminProductMenuPageSelect(preferredMenuPageId) {
-		var selArea = document.getElementById("admin-prod-sale-area");
 		var selMp = document.getElementById("admin-prod-menu-page");
-		if (!selMp || !selArea) {
+		if (!selMp) {
 			return;
 		}
-		var code = selArea.value;
 		selMp.innerHTML = "";
-		var pages = adminMenuPagesCache
-			.filter(function (m) {
-				return m.saleAreaCode === code;
-			})
-			.sort(function (a, b) {
-				var oa = a.sortOrder != null ? a.sortOrder : 0;
-				var ob = b.sortOrder != null ? b.sortOrder : 0;
-				if (oa !== ob) {
-					return oa - ob;
-				}
-				return (a.id || 0) - (b.id || 0);
-			});
+		var pages = adminMenuPagesCache.slice().sort(function (a, b) {
+			var oa = a.sortOrder != null ? a.sortOrder : 0;
+			var ob = b.sortOrder != null ? b.sortOrder : 0;
+			if (oa !== ob) {
+				return oa - ob;
+			}
+			return (a.id || 0) - (b.id || 0);
+		});
 		var hintMp = document.getElementById("admin-prod-menu-page-hint");
 		if (!pages.length) {
 			var ph = document.createElement("option");
 			ph.value = "";
-			ph.textContent = "Önce bu alan için menü sayfası ekleyin";
+			ph.textContent = "Önce menü başlığı ekleyin";
 			selMp.appendChild(ph);
 			selMp.disabled = true;
 			if (hintMp) {
 				hintMp.hidden = false;
-				hintMp.textContent =
-					"Bu satış alanı için menü sayfası yok; Menü sayfaları sekmesinden ekleyin. (Adet sınırı yok — liste yalnızca seçilen alana göre filtrelenir.)";
+				hintMp.textContent = "Ürün tanımları sekmesinden menü başlığı oluşturun.";
 			}
 			return;
 		}
 		selMp.disabled = false;
 		if (hintMp) {
-			hintMp.hidden = false;
-			hintMp.textContent =
-				"Adet sınırı yok. Bu alana tanımlı " +
-				pages.length +
-				" menü sayfası listeleniyor; diğer satış alanlarının sayfaları burada görünmez (önce satış alanını değiştirin). Uzun listelerde açılır kutuyu kaydırın.";
+			hintMp.hidden = true;
 		}
 		pages.forEach(function (m) {
 			var o = document.createElement("option");
@@ -773,43 +748,30 @@
 		var want = preferredMenuPageId != null ? String(preferredMenuPageId) : "";
 		if (want && [].some.call(selMp.options, function (opt) { return opt.value === want; })) {
 			selMp.value = want;
-			return;
+		} else if (pages[0]) {
+			selMp.value = String(pages[0].id);
 		}
-		var gen = pages.find(function (x) {
-			return String(x.code || "").toUpperCase() === "GENEL";
-		});
-		selMp.value = String((gen || pages[0]).id);
 	}
 
-	function openAdminProductModal(product, presetAreaCode) {
+	function openAdminProductModal(product, presetMenuPageId) {
 		var modal = document.getElementById("admin-modal-product");
 		var title = document.getElementById("admin-modal-product-title");
 		var idEl = document.getElementById("admin-prod-id");
-		var sel = document.getElementById("admin-prod-sale-area");
 		var nameEl = document.getElementById("admin-prod-name");
 		var priceEl = document.getElementById("admin-prod-price");
 		var stockEl = document.getElementById("admin-prod-stock");
 		var activeWrap = document.getElementById("admin-prod-active-wrap");
 		var activeCb = document.getElementById("admin-prod-active");
 		var delBtn = document.getElementById("admin-btn-modal-delete");
-		if (!modal || !sel || !nameEl || !priceEl) {
+		if (!modal || !nameEl || !priceEl) {
 			return;
 		}
-		Promise.all([fetchSaleAreasForAdminModal(), fetchAdminMenuPagesForModal()])
-			.then(function (tuple) {
-				var areas = tuple[0];
-				adminMenuPagesCache = Array.isArray(tuple[1]) ? tuple[1] : [];
-				sel.innerHTML = "";
-				areas.forEach(function (a) {
-					var o = document.createElement("option");
-					o.value = a.code;
-					o.textContent = a.name || a.code;
-					sel.appendChild(o);
-				});
+		fetchAdminMenuPagesForModal()
+			.then(function (pages) {
+				adminMenuPagesCache = Array.isArray(pages) ? pages : [];
 				if (product) {
 					title.textContent = "Ürünü düzenle";
 					idEl.value = String(product.id);
-					sel.value = product.saleAreaCode;
 					nameEl.value = product.name || "";
 					priceEl.value = String(product.price);
 					stockEl.value = product.stockQuantity != null ? String(product.stockQuantity) : "";
@@ -820,18 +782,17 @@
 				} else {
 					title.textContent = "Yeni ürün";
 					idEl.value = "";
-					sel.value = presetAreaCode || (areas[0] && areas[0].code) || "";
 					nameEl.value = "";
 					priceEl.value = "";
 					stockEl.value = "";
 					activeWrap.hidden = true;
 					delBtn.hidden = true;
-					fillAdminProductMenuPageSelect(null);
+					fillAdminProductMenuPageSelect(presetMenuPageId);
 				}
 				modal.hidden = false;
 			})
 			.catch(function () {
-				showAlert("Satış alanları veya menü sayfaları yüklenemedi.", "err");
+				showAlert("Menü başlıkları yüklenemedi.", "err");
 			});
 	}
 
@@ -842,18 +803,82 @@
 		}
 	}
 
-	function openSaleAreaEditModal(id, name) {
+	function renderSaleAreaMenuChecks(container, selectedIds) {
+		if (!container) {
+			return;
+		}
+		container.innerHTML = "";
+		var selected = {};
+		(selectedIds || []).forEach(function (id) {
+			selected[String(id)] = true;
+		});
+		var menus = adminMenuPagesCache.slice().sort(function (a, b) {
+			var oa = a.sortOrder != null ? a.sortOrder : 0;
+			var ob = b.sortOrder != null ? b.sortOrder : 0;
+			if (oa !== ob) {
+				return oa - ob;
+			}
+			return (a.id || 0) - (b.id || 0);
+		});
+		if (!menus.length) {
+			var p = document.createElement("p");
+			p.className = "field-hint";
+			p.textContent = "Henüz menü başlığı yok — Ürün tanımları sekmesinden ekleyin.";
+			container.appendChild(p);
+			return;
+		}
+		menus.forEach(function (m) {
+			var lbl = document.createElement("label");
+			lbl.className = "admin-check-card";
+			var cb = document.createElement("input");
+			cb.type = "checkbox";
+			cb.value = String(m.id);
+			cb.checked = !!selected[String(m.id)];
+			var span = document.createElement("span");
+			span.textContent = m.name || m.code || "Menü";
+			lbl.appendChild(cb);
+			lbl.appendChild(span);
+			container.appendChild(lbl);
+		});
+	}
+
+	function collectSaleAreaMenuIds(container) {
+		if (!container) {
+			return [];
+		}
+		return [].filter
+			.call(container.querySelectorAll('input[type="checkbox"]:checked'), function (cb) {
+				return cb.value;
+			})
+			.map(function (cb) {
+				return Number(cb.value);
+			})
+			.filter(function (n) {
+				return !isNaN(n);
+			});
+	}
+
+	function openSaleAreaEditModal(id, name, menuPageIds) {
 		var modal = document.getElementById("admin-modal-sale-area");
 		var idEl = document.getElementById("modal-sa-id");
 		var nameEl = document.getElementById("modal-sa-name");
+		var checks = document.getElementById("modal-sa-menu-checks");
 		if (!modal || !idEl || !nameEl) {
 			return;
 		}
-		idEl.value = String(id);
-		nameEl.value = name || "";
-		modal.hidden = false;
-		nameEl.focus();
-		nameEl.select();
+		fetchAdminMenuPagesForModal()
+			.then(function (pages) {
+				adminMenuPagesCache = Array.isArray(pages) ? pages : [];
+				idEl.value = String(id);
+				nameEl.value = name || "";
+				renderSaleAreaMenuChecks(checks, menuPageIds || []);
+				modal.hidden = false;
+				nameEl.focus();
+				nameEl.select();
+			})
+			.catch(function () {
+				showAlert("Menü listesi yüklenemedi.", "err");
+			});
 	}
 
 	function closeSaleAreaEditModal() {
@@ -863,19 +888,17 @@
 		}
 	}
 
-	function openMenuPageEditModal(id, name, sortStr, isGenel) {
+	function openMenuPageEditModal(id, name, isGenel) {
 		var modal = document.getElementById("admin-modal-menu-page");
 		var idEl = document.getElementById("modal-mp-id");
 		var nameEl = document.getElementById("modal-mp-name");
-		var sortEl = document.getElementById("modal-mp-sort");
 		var delBtn = document.getElementById("modal-mp-delete");
 		var hint = document.getElementById("modal-mp-genel-hint");
-		if (!modal || !idEl || !nameEl || !sortEl) {
+		if (!modal || !idEl || !nameEl) {
 			return;
 		}
 		idEl.value = String(id);
 		nameEl.value = name || "";
-		sortEl.value = String(sortStr != null ? sortStr : "0");
 		if (delBtn) {
 			delBtn.hidden = !!isGenel;
 		}
@@ -912,8 +935,31 @@
 			w.hidden = true;
 		}
 		if (b) {
-			b.textContent = "+ Menü sayfası ekle";
+			b.textContent = "+ Menü başlığı ekle";
 		}
+	}
+
+	function openMenuPageFormForAdd() {
+		var w = document.getElementById("mp-menu-page-form-wrap");
+		var b = document.getElementById("btn-toggle-menu-page-form");
+		if (!w || !b) {
+			return;
+		}
+		closeSaleAreaFormWrap();
+		w.hidden = false;
+		b.textContent = "Formu kapat";
+		requestAnimationFrame(function () {
+			w.scrollIntoView({ behavior: "smooth", block: "nearest" });
+			var nameIn = document.getElementById("mp-new-name");
+			if (nameIn) {
+				nameIn.focus();
+			}
+		});
+	}
+
+	function isMenuPageFormOpen() {
+		var w = document.getElementById("mp-menu-page-form-wrap");
+		return !!(w && !w.hidden);
 	}
 
 	var ADMIN_PANEL_IDS = [
@@ -1072,6 +1118,8 @@
 		}
 		if (id !== "menu-pages") {
 			closeSaleAreaFormWrap();
+		}
+		if (id !== "products") {
 			closeMenuPageFormWrap();
 		}
 		syncAdminNavForPanel(id);
@@ -1085,10 +1133,9 @@
 		setAdminTabPanelVisible("admin-panel-report-general", id === "report-general");
 		if (id === "menu-pages") {
 			loadCategoriesPanel();
-			loadMenuPagesPanel();
 		}
 			if (id === "products") {
-				loadAdminProductCatalog();
+				refreshProductsPanelData();
 			}
 		if (id === "printer") {
 			loadPrinterPorts();
@@ -1208,7 +1255,9 @@
 		}
 		containerEl.innerHTML = "";
 		var grand = data && data.grandTotal != null ? parseFloat(String(data.grandTotal), 10) : 0;
-		var hasData = data && !isNaN(grand) && grand > 0;
+		var agencyTicketTotal =
+			data && data.agencyTicketTotalCount != null ? parseInt(String(data.agencyTicketTotalCount), 10) : 0;
+		var hasData = (data && !isNaN(grand) && grand > 0) || (!isNaN(agencyTicketTotal) && agencyTicketTotal > 0);
 		if (emptyEl) {
 			emptyEl.hidden = hasData;
 		}
@@ -1221,13 +1270,25 @@
 			data.fromInclusive === data.toInclusive
 				? String(data.fromInclusive || "")
 				: (data.fromInclusive || "") + " → " + (data.toInclusive || "");
-		[
+		var cards = [
 			{ k: "Dönem", v: period },
 			{ k: "Nakit", v: formatTryAmount(data.cashTotal) },
 			{ k: "Kredi kartı", v: formatTryAmount(data.cardTotal) },
 			{ k: "Acenta", v: formatTryAmount(data.agencyTotal) },
 			{ k: "Toplam", v: formatTryAmount(data.grandTotal) },
-		].forEach(function (c) {
+		];
+		if (Array.isArray(data.agencyTicketCounts)) {
+			data.agencyTicketCounts.forEach(function (row) {
+				if (!row || !row.name) {
+					return;
+				}
+				cards.push({ k: row.name, v: String(row.count != null ? row.count : 0) + " adet" });
+			});
+		}
+		if (!isNaN(agencyTicketTotal) && agencyTicketTotal > 0) {
+			cards.push({ k: "Acenta bilet toplam", v: String(agencyTicketTotal) + " adet" });
+		}
+		cards.forEach(function (c) {
 			var div = document.createElement("div");
 			div.className = "admin-report-summary-card";
 			div.innerHTML =
@@ -2206,6 +2267,11 @@
 	var btnAdminCatalogAdd = document.getElementById("btn-admin-catalog-add");
 	if (btnAdminCatalogAdd) {
 		btnAdminCatalogAdd.addEventListener("click", function () {
+			if (!adminMenuPagesCache.length) {
+				openMenuPageFormForAdd();
+				showAlert("Önce bir menü başlığı ekleyin (ör. Soğuk içecek), sonra ürün tanımlayın.", "ok");
+				return;
+			}
 			openAdminProductModal(null, null);
 		});
 	}
@@ -2215,7 +2281,6 @@
 		adminFormProduct.addEventListener("submit", function (e) {
 			e.preventDefault();
 			var pid = document.getElementById("admin-prod-id").value.trim();
-			var saleAreaCode = document.getElementById("admin-prod-sale-area").value;
 			var menuPageRaw = document.getElementById("admin-prod-menu-page").value.trim();
 			var menuPageId = parseInt(menuPageRaw, 10);
 			var name = document.getElementById("admin-prod-name").value.trim();
@@ -2243,7 +2308,6 @@
 						price: price,
 						stockQuantity: stock,
 						active: document.getElementById("admin-prod-active").checked,
-						saleAreaCode: saleAreaCode,
 						menuPageId: menuPageId,
 					}),
 				})
@@ -2271,7 +2335,6 @@
 					method: "POST",
 					headers: authHeadersJson(),
 					body: JSON.stringify({
-						saleAreaCode: saleAreaCode,
 						menuPageId: menuPageId,
 						name: name,
 						price: price,
@@ -2301,13 +2364,6 @@
 		});
 	}
 
-	var adminProdSaleArea = document.getElementById("admin-prod-sale-area");
-	if (adminProdSaleArea) {
-		adminProdSaleArea.addEventListener("change", function () {
-			fillAdminProductMenuPageSelect(null);
-		});
-	}
-
 	var adminBtnModalCancel = document.getElementById("admin-btn-modal-cancel");
 	var adminModalBackdrop = document.getElementById("admin-modal-product-backdrop");
 	if (adminBtnModalCancel) {
@@ -2323,20 +2379,31 @@
 			var saBtn = e.target.closest("[data-sa-edit]");
 			if (saBtn) {
 				e.preventDefault();
+				var menuIds = [];
+				try {
+					menuIds = JSON.parse(saBtn.getAttribute("data-sa-menus") || "[]");
+				} catch (err) {
+					menuIds = [];
+				}
 				openSaleAreaEditModal(
 					Number(saBtn.getAttribute("data-sa-edit")),
-					saBtn.getAttribute("data-sa-name") || ""
+					saBtn.getAttribute("data-sa-name") || "",
+					menuIds
 				);
-				return;
 			}
+		});
+	}
+
+	var adminPanelProducts = document.getElementById("admin-panel-products");
+	if (adminPanelProducts) {
+		adminPanelProducts.addEventListener("click", function (e) {
 			var mpBtn = e.target.closest("[data-mp-edit-modal]");
 			if (mpBtn) {
 				e.preventDefault();
 				openMenuPageEditModal(
 					Number(mpBtn.getAttribute("data-mp-edit-modal")),
 					mpBtn.getAttribute("data-mp-name") || "",
-					mpBtn.getAttribute("data-mp-sort") || "0",
-					mpBtn.getAttribute("data-mp-genel") === "1"
+					(mpBtn.getAttribute("data-mp-code") || "").toUpperCase() === "GENEL"
 				);
 			}
 		});
@@ -2361,7 +2428,10 @@
 			fetch("/api/admin/sale-areas/" + encodeURIComponent(id), {
 				method: "PUT",
 				headers: authHeadersJson(),
-				body: JSON.stringify({ name: nn }),
+				body: JSON.stringify({
+					name: nn,
+					menuPageIds: collectSaleAreaMenuIds(document.getElementById("modal-sa-menu-checks")),
+				}),
 			})
 				.then(async function (r) {
 					var data = await r.json().catch(function () {
@@ -2447,16 +2517,10 @@
 			e.preventDefault();
 			var idEl = document.getElementById("modal-mp-id");
 			var nameEl = document.getElementById("modal-mp-name");
-			var sortEl = document.getElementById("modal-mp-sort");
 			var id = idEl ? Number(idEl.value) : NaN;
 			var nn = nameEl ? String(nameEl.value).trim() : "";
-			var sn = sortEl ? parseInt(String(sortEl.value).trim(), 10) : NaN;
 			if (!nn) {
 				showAlert("Ad boş olamaz.", "err");
-				return;
-			}
-			if (isNaN(sn)) {
-				showAlert("Sıra geçerli bir tam sayı olmalı.", "err");
 				return;
 			}
 			if (isNaN(id)) {
@@ -2466,7 +2530,7 @@
 			fetch("/api/admin/menu-pages/" + encodeURIComponent(id), {
 				method: "PUT",
 				headers: authHeadersJson(),
-				body: JSON.stringify({ name: nn, sortOrder: sn }),
+				body: JSON.stringify({ name: nn }),
 			})
 				.then(function (r) {
 					if (r.status === 401) {
@@ -2488,7 +2552,7 @@
 					showAlert("Menü sayfası güncellendi.", "ok");
 					closeMenuPageEditModal();
 					bumpAdminMenuPagesStale();
-					loadMenuPagesPanel();
+					refreshProductsPanelData();
 				})
 				.catch(function () {
 					showAlert("İstek başarısız.", "err");
@@ -2526,7 +2590,7 @@
 					showAlert("Menü sayfası silindi.", "ok");
 					closeMenuPageEditModal();
 					bumpAdminMenuPagesStale();
-					loadMenuPagesPanel();
+					refreshProductsPanelData();
 				})
 				.catch(function () {
 					showAlert("İstek başarısız.", "err");
@@ -2710,20 +2774,12 @@
 	var btnToggleMenuPageForm = document.getElementById("btn-toggle-menu-page-form");
 	var mpMenuPageFormWrap = document.getElementById("mp-menu-page-form-wrap");
 	if (btnToggleMenuPageForm && mpMenuPageFormWrap) {
-		btnToggleMenuPageForm.addEventListener("click", function () {
-			var willOpen = mpMenuPageFormWrap.hidden;
-			if (willOpen) {
-				closeSaleAreaFormWrap();
-			}
-			mpMenuPageFormWrap.hidden = !willOpen;
-			btnToggleMenuPageForm.textContent = willOpen ? "Formu kapat" : "+ Menü sayfası ekle";
-			if (willOpen) {
-				var sel = document.getElementById("mp-new-sale-area");
-				if (sel) {
-					setTimeout(function () {
-						sel.focus();
-					}, 30);
-				}
+		btnToggleMenuPageForm.addEventListener("click", function (e) {
+			e.preventDefault();
+			if (isMenuPageFormOpen()) {
+				closeMenuPageFormWrap();
+			} else {
+				openMenuPageFormForAdd();
 			}
 		});
 	}
@@ -2733,20 +2789,12 @@
 		formNewMenuPage.addEventListener("submit", function (e) {
 			e.preventDefault();
 			hideAlert();
-			var saleAreaCode = document.getElementById("mp-new-sale-area").value.trim();
 			var name = document.getElementById("mp-new-name").value.trim();
-			var sortRaw = document.getElementById("mp-new-sort").value.trim();
-			if (!saleAreaCode || !name) {
-				showAlert("Satış alanı ve ad zorunludur.", "err");
+			if (!name) {
+				showAlert("Menü adı zorunludur.", "err");
 				return;
 			}
-			var body = { saleAreaCode: saleAreaCode, name: name };
-			if (sortRaw !== "") {
-				var so = parseInt(sortRaw, 10);
-				if (!isNaN(so)) {
-					body.sortOrder = so;
-				}
-			}
+			var body = { name: name };
 			fetch("/api/admin/menu-pages", {
 				method: "POST",
 				headers: authHeadersJson(),
@@ -2766,14 +2814,15 @@
 						return;
 					}
 					if (!res.ok) {
-						showAlert((res.data && res.data.detail) || "Eklenemedi", "err");
+						var errMsg = (res.data && (res.data.detail || res.data.message)) || "Eklenemedi";
+						showAlert(errMsg, "err");
 						return;
 					}
-					showAlert("Menü sayfası eklendi.", "ok");
+					showAlert("Menü başlığı eklendi.", "ok");
 					formNewMenuPage.reset();
 					closeMenuPageFormWrap();
 					bumpAdminMenuPagesStale();
-					loadMenuPagesPanel();
+					refreshProductsPanelData();
 				})
 				.catch(function () {
 					showAlert("İstek başarısız.", "err");
@@ -2808,14 +2857,13 @@
 						showAlert(data.detail || "Eklenemedi", "err");
 						return;
 					}
-					showAlert("Kategori eklendi.", "ok");
+					showAlert("Satış alanı eklendi.", "ok");
 					formNewCat.reset();
 					closeSaleAreaFormWrap();
 					bumpAdminMenuPagesStale();
 					loadCategoriesPanel();
-					loadMenuPagesPanel();
 					refreshUserSaleAreaUi().finally(function () {
-	loadUsers();
+						loadUsers();
 					});
 				})
 				.catch(function () {

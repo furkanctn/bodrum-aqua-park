@@ -43,6 +43,18 @@ public class CardLedgerEntry {
 	@JoinColumn(name = "product_id")
 	private Product product;
 
+	/** Ürün satışında kasiyerin o anki satış alanı (raporlama) */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "sale_area_id")
+	private SaleArea saleArea;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "ticket_age_group_id")
+	private TicketAgeGroup ticketAgeGroup;
+
+	@Column(name = "line_quantity")
+	private Integer lineQuantity;
+
 	@Column(length = 512)
 	private String description;
 
@@ -58,12 +70,26 @@ public class CardLedgerEntry {
 	}
 
 	public CardLedgerEntry(Card card, TransactionType type, BigDecimal amountChange, BigDecimal balanceAfter,
-			Product product, String description) {
+			String description) {
+		this(card, type, amountChange, balanceAfter, null, null, description);
+	}
+
+	public CardLedgerEntry(Card card, TransactionType type, BigDecimal amountChange, BigDecimal balanceAfter,
+			Product product, SaleArea saleArea, String description) {
+		this(card, type, amountChange, balanceAfter, product, saleArea, null, null, description);
+	}
+
+	public CardLedgerEntry(Card card, TransactionType type, BigDecimal amountChange, BigDecimal balanceAfter,
+			Product product, SaleArea saleArea, TicketAgeGroup ticketAgeGroup, Integer lineQuantity,
+			String description) {
 		this.card = card;
 		this.type = type;
 		this.amountChange = amountChange;
 		this.balanceAfter = balanceAfter;
 		this.product = product;
+		this.saleArea = saleArea;
+		this.ticketAgeGroup = ticketAgeGroup;
+		this.lineQuantity = lineQuantity;
 		this.description = description;
 	}
 
@@ -89,6 +115,18 @@ public class CardLedgerEntry {
 
 	public Product getProduct() {
 		return product;
+	}
+
+	public SaleArea getSaleArea() {
+		return saleArea;
+	}
+
+	public TicketAgeGroup getTicketAgeGroup() {
+		return ticketAgeGroup;
+	}
+
+	public Integer getLineQuantity() {
+		return lineQuantity;
 	}
 
 	public String getDescription() {

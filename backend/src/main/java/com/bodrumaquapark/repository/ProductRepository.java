@@ -16,7 +16,7 @@ import jakarta.persistence.LockModeType;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
+	@EntityGraph(attributePaths = "menuPage")
 	@Override
 	Optional<Product> findById(Long id);
 
@@ -24,30 +24,30 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 	@Query("SELECT p FROM Product p WHERE p.id = :id")
 	Optional<Product> findByIdForUpdate(@Param("id") Long id);
 
-	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
-	List<Product> findByActiveTrueAndSaleArea_CodeOrderByNameAsc(String saleAreaCode);
-
-	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
+	@EntityGraph(attributePaths = "menuPage")
 	List<Product> findByActiveTrueAndMenuPage_IdOrderByNameAsc(Long menuPageId);
 
-	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
-	List<Product> findByActiveTrueOrderBySaleArea_CodeAscNameAsc();
+	@EntityGraph(attributePaths = "menuPage")
+	List<Product> findByActiveTrueAndMenuPage_IdInOrderByMenuPage_SortOrderAscNameAsc(Collection<Long> menuPageIds);
 
-	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
-	List<Product> findByActiveTrueAndSaleArea_CodeInOrderBySaleArea_CodeAscNameAsc(Collection<String> saleAreaCodes);
+	@EntityGraph(attributePaths = "menuPage")
+	@Query("SELECT p FROM Product p ORDER BY p.menuPage.sortOrder ASC, p.menuPage.id ASC, p.name ASC")
+	List<Product> findAllForAdmin();
 
-	@EntityGraph(attributePaths = { "saleArea", "menuPage" })
-	@Query("SELECT p FROM Product p ORDER BY p.saleArea.code ASC, p.name ASC")
-	List<Product> findAllWithSaleAreaForAdmin();
-
-	@EntityGraph(attributePaths = "saleArea")
+	@EntityGraph(attributePaths = "menuPage")
 	List<Product> findByMenuPageIsNull();
 
-	boolean existsBySaleArea_CodeAndName(String saleAreaCode, String name);
-
-	long countBySaleArea_Id(Long saleAreaId);
-
-	long countBySaleArea_IdAndActiveTrue(Long saleAreaId);
+	boolean existsByMenuPage_IdAndName(Long menuPageId, String name);
 
 	long countByMenuPage_Id(Long menuPageId);
+
+	long countByMenuPage_IdAndActiveTrue(Long menuPageId);
+
+	@Query("SELECT count(p) FROM Product p WHERE p.menuPage.id IN "
+			+ "(SELECT mp.id FROM SaleArea sa JOIN sa.menuPages mp WHERE sa.id = :saleAreaId)")
+	long countBySaleAreaMenus(@Param("saleAreaId") Long saleAreaId);
+
+	@Query("SELECT count(p) FROM Product p WHERE p.active = true AND p.menuPage.id IN "
+			+ "(SELECT mp.id FROM SaleArea sa JOIN sa.menuPages mp WHERE sa.id = :saleAreaId)")
+	long countActiveBySaleAreaMenus(@Param("saleAreaId") Long saleAreaId);
 }

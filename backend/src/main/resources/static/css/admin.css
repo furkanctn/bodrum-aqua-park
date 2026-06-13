@@ -183,6 +183,14 @@ body {
 	color: var(--accent);
 }
 
+.admin-mp-collapsible[hidden] {
+	display: none !important;
+}
+
+.admin-mp-collapsible:not([hidden]) {
+	display: block;
+}
+
 .admin-mp-collapsible {
 	margin-bottom: 1rem;
 	padding-bottom: 0.25rem;

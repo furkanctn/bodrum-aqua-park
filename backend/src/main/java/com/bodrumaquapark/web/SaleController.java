@@ -30,6 +30,7 @@ public class SaleController {
 	public ResponseEntity<SaleResponse> sell(@Valid @RequestBody SaleRequest request,
 			@RequestAttribute(JwtAuthenticationFilter.ATTR_SALE_AREA_CODES) Set<String> allowedCodes) {
 		return ResponseEntity
-				.ok(SaleResponse.from(saleService.sell(request.cardUid(), request.productId(), allowedCodes)));
+				.ok(SaleResponse.from(saleService.sell(request.cardUid(), request.productId(), request.saleAreaCode(),
+						allowedCodes)));
 	}
 }

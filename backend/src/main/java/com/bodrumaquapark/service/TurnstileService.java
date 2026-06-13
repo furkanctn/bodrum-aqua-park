@@ -49,7 +49,7 @@ public class TurnstileService {
 		if (card.getEntryGate() == 1) {
 			card.setEntryGate(0);
 			BigDecimal balance = Money.normalize(card.getBalance());
-			ledgerEntryRepository.save(new CardLedgerEntry(card, TransactionType.ENTRY, BigDecimal.ZERO, balance, null,
+			ledgerEntryRepository.save(new CardLedgerEntry(card, TransactionType.ENTRY, BigDecimal.ZERO, balance,
 					"Turnike — bilet girişi"));
 			return TurnstileScanResult.allowed(balance, BigDecimal.ZERO);
 		}
@@ -60,7 +60,7 @@ public class TurnstileService {
 			if (balance.compareTo(BigDecimal.ZERO) <= 0) {
 				return TurnstileScanResult.insufficient(balance, BigDecimal.ZERO);
 			}
-			ledgerEntryRepository.save(new CardLedgerEntry(card, TransactionType.ENTRY, BigDecimal.ZERO, balance, null,
+			ledgerEntryRepository.save(new CardLedgerEntry(card, TransactionType.ENTRY, BigDecimal.ZERO, balance,
 					"Turnike geçişi (ücretsiz)"));
 			return TurnstileScanResult.allowed(balance, BigDecimal.ZERO);
 		}
@@ -72,7 +72,7 @@ public class TurnstileService {
 		BigDecimal newBalance = Money.normalize(balance.subtract(fee));
 		card.setBalance(newBalance);
 		BigDecimal amountChange = fee.negate();
-		ledgerEntryRepository.save(new CardLedgerEntry(card, TransactionType.ENTRY, amountChange, newBalance, null,
+		ledgerEntryRepository.save(new CardLedgerEntry(card, TransactionType.ENTRY, amountChange, newBalance,
 				"Turnike giriş ücreti"));
 		return TurnstileScanResult.allowed(newBalance, fee);
 	}

@@ -70,7 +70,7 @@ public final class EscPosUtil {
 	}
 
 	/**
-	 * Ürün satışı bilgi fişi — metinler US-ASCII’ye indirgenir (Türkçe karakterler yaklaşık eşlenir).
+	 * Bilgi fişi — ortada BODRUM AQUA PARK başlığı, altında etiket: değer satırları.
 	 *
 	 * @param mode "full" kesimli; "nocut" / "minimal" kesimsiz
 	 */
@@ -84,22 +84,43 @@ public final class EscPosUtil {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		out.write(new byte[] { 0x1B, 0x40 });
 		out.write(new byte[] { 0x1B, 0x61, 0x01 });
-		writeAsciiLine(out, toAsciiReceiptLine(lines.get(0)));
+		out.write(new byte[] { 0x1B, 0x21, 0x30 });
+		writeAsciiLine(out, "BODRUM AQUA PARK");
+		out.write(new byte[] { 0x1B, 0x21, 0x00 });
+		writeBlankLines(out, 2);
 		out.write(new byte[] { 0x1B, 0x61, 0x00 });
-		for (int i = 1; i < lines.size(); i++) {
-			writeAsciiLine(out, toAsciiReceiptLine(lines.get(i)));
+		writeAsciiLine(out, "----------------");
+		writeBlankLine(out);
+		int start = 0;
+		if (!lines.isEmpty() && isReceiptHeaderLine(lines.get(0))) {
+			start = 1;
 		}
-		String when = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
-		writeAsciiLine(out, "");
-		writeAsciiLine(out, toAsciiReceiptLine(when));
-		for (int i = 0; i < 4; i++) {
-			out.write(new byte[] { 0x0D, 0x0A });
+		for (int i = start; i < lines.size(); i++) {
+			String line = lines.get(i);
+			if (line == null || line.isBlank()) {
+				continue;
+			}
+			writeAsciiLine(out, toAsciiReceiptLine(line));
 		}
+		writeAsciiLine(out, "----------------");
+		writeBlankLines(out, 2);
+		out.write(new byte[] { 0x1B, 0x61, 0x01 });
+		writeAsciiLine(out, "Mali degeri yoktur");
+		out.write(new byte[] { 0x1B, 0x61, 0x00 });
+		writeBlankLines(out, 4);
 		if (cut) {
 			out.write(new byte[] { 0x1D, 0x56, 0x00 });
 			out.write(new byte[] { 0x0D, 0x0A });
 		}
 		return out.toByteArray();
+	}
+
+	private static boolean isReceiptHeaderLine(String line) {
+		if (line == null) {
+			return false;
+		}
+		String n = line.trim().toUpperCase(Locale.ROOT).replace('İ', 'I');
+		return n.contains("BODRUM") && n.contains("AQUA");
 	}
 
 	/** Termal genişlik için güvenli ASCII; Türkçe ve ₺ yaklaşık dönüşümü. */
@@ -147,5 +168,15 @@ public final class EscPosUtil {
 		byte[] raw = safe.getBytes(StandardCharsets.US_ASCII);
 		out.write(raw);
 		out.write(new byte[] { 0x0D, 0x0A });
+	}
+
+	private static void writeBlankLine(ByteArrayOutputStream out) throws IOException {
+		out.write(new byte[] { 0x0D, 0x0A });
+	}
+
+	private static void writeBlankLines(ByteArrayOutputStream out, int count) throws IOException {
+		for (int i = 0; i < count; i++) {
+			writeBlankLine(out);
+		}
 	}
 }

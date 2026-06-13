@@ -38,13 +38,18 @@ public record CardDetailResponse(
 		BigDecimal refundTotal,
 		BigDecimal cashRefundableAmount,
 		BigDecimal expectedBalance,
+		String balanceLoadPaymentMethod,
 		List<LedgerEntryResponse> ledger
 ) {
 
 	/**
 	 * Defter satırlarından nakit / k.kartı / nakit kur yüklemeleri ve iade; meta alanlar açıklamalardan (varsa) çıkarılır.
 	 */
-	public static CardDetailResponse build(Card card, List<CardLedgerEntry> entries, List<LedgerEntryResponse> ledger) {
+	public static CardDetailResponse build(
+			Card card,
+			List<CardLedgerEntry> entries,
+			List<LedgerEntryResponse> ledger,
+			String lockedPaymentMethod) {
 		BigDecimal totalLoaded = BigDecimal.ZERO;
 		BigDecimal totalSpent = BigDecimal.ZERO;
 		BigDecimal cash = BigDecimal.ZERO;
@@ -57,11 +62,17 @@ public record CardDetailResponse(
 			if (ac.compareTo(BigDecimal.ZERO) > 0) {
 				totalLoaded = totalLoaded.add(ac);
 				switch (e.getType()) {
-					case LOAD_CASH -> cash = cash.add(ac);
-					case LOAD_CARD -> cardPay = cardPay.add(ac);
-					case LOAD_AGENCY -> agency = agency.add(ac);
-					default -> {
-					}
+					case TransactionType.LOAD_CASH:
+						cash = cash.add(ac);
+						break;
+					case TransactionType.LOAD_CARD:
+						cardPay = cardPay.add(ac);
+						break;
+					case TransactionType.LOAD_AGENCY:
+						agency = agency.add(ac);
+						break;
+					default:
+						break;
 				}
 			} else if (ac.compareTo(BigDecimal.ZERO) < 0) {
 				totalSpent = totalSpent.add(ac.negate());
@@ -83,7 +94,7 @@ public record CardDetailResponse(
 				card.getBalance(), cash, agency, totalSpent, refund);
 
 		List<CardLedgerEntry> asc = new ArrayList<>(entries);
-		asc.sort(Comparator.comparing(CardLedgerEntry::getCreatedAt));
+		asc.sort(Comparator.comparing(CardLedgerEntry::getCreatedAt).thenComparing(CardLedgerEntry::getId));
 
 		return new CardDetailResponse(
 				card.getUid(),
@@ -106,6 +117,7 @@ public record CardDetailResponse(
 				refund,
 				cashRefundable,
 				expected,
+				lockedPaymentMethod,
 				ledger);
 	}
 
