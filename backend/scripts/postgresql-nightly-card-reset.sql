@@ -87,11 +87,6 @@ $$;
 COMMENT ON FUNCTION bodrum_nightly_card_reset() IS
 	'Bodrum Aqua Park: her akşam 22:00 bakiye, entry_gate ve RFID pas sıfırlama';
 
--- -----------------------------------------------------------------------------
--- Zamanlama A — pg_cron (PostgreSQL eklentisi, sunucuda yüklüyse önerilir)
--- Sunucu saat dilimi Europe/Istanbul ise: 0 22 * * *
--- Sunucu UTC ise (Türkiye sabit UTC+3): 0 19 * * *
--- -----------------------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'bodrum-nightly-card-reset';
  SELECT cron.schedule(

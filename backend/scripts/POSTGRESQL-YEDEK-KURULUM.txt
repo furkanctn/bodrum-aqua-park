@@ -1,0 +1,16 @@
+================================================================================
+Bodrum Aqua Park — PostgreSQL yedekleme kurulumu
+================================================================================
+
+Windows DB sunucusu için kurulum adımları:
+
+  backend/scripts/windows/POSTGRESQL-YEDEK-KURULUM.txt
+
+Windows dosyaları:
+  • backend/scripts/windows/BodrumDbBackup.bat
+  • backend/scripts/windows/BodrumDbBackup-Zamanla.ps1
+
+Geri yükleme komutları:
+  • backend/scripts/postgresql-backup-restore.sql
+
+================================================================================

@@ -1230,6 +1230,44 @@
 		}, ms);
 	}
 
+	function modalMissingToast(label) {
+		showToast(
+			(label || "Kart penceresi") +
+				" açılamadı. Sayfayı Ctrl+F5 ile yenileyin; sunucuda güncel POS JAR kurulu olmalı.",
+			{ duration: 6500 }
+		);
+	}
+
+	/** Eski pos.html önbelleğinde overlay .pos-app içinde kalırsa WebView’da görünmez; body’ye taşır. */
+	function ensureOverlayOnBody(overlay) {
+		if (!overlay || !overlay.parentElement) {
+			return;
+		}
+		var p = overlay.parentElement;
+		if (p.classList && p.classList.contains("pos-app")) {
+			document.body.appendChild(overlay);
+		}
+	}
+
+	function showPosOverlay(overlay) {
+		if (!overlay) {
+			return false;
+		}
+		ensureOverlayOnBody(overlay);
+		overlay.hidden = false;
+		overlay.setAttribute("aria-hidden", "false");
+		return true;
+	}
+
+	function hidePosOverlay(overlay) {
+		if (!overlay) {
+			return;
+		}
+		blurFocusInsideOverlay(overlay);
+		overlay.hidden = true;
+		overlay.setAttribute("aria-hidden", "true");
+	}
+
 	function luxThumbHtml(name) {
 		var ch = (name || "?").trim().charAt(0).toUpperCase();
 		return (
@@ -2192,6 +2230,7 @@
 
 	function openTicketCardBindModal() {
 		if (!ticketCardBindOverlay || !ticketCardBindInput) {
+			modalMissingToast("Ödeme / kart tanımlama penceresi");
 			return;
 		}
 		clearTicketCardBindIdle();
@@ -2203,8 +2242,7 @@
 			ticketCardBindCancelBtn.disabled = false;
 		}
 		ticketCardBindInput.value = "";
-		ticketCardBindOverlay.hidden = false;
-		ticketCardBindOverlay.setAttribute("aria-hidden", "false");
+		showPosOverlay(ticketCardBindOverlay);
 		setTimeout(function () {
 			ticketCardBindInput.focus();
 		}, 30);
@@ -2216,11 +2254,7 @@
 	function closeTicketCardBindModal() {
 		clearTicketCardBindIdle();
 		ticketCardBindSubmitting = false;
-		if (ticketCardBindOverlay) {
-			blurFocusInsideOverlay(ticketCardBindOverlay);
-			ticketCardBindOverlay.hidden = true;
-			ticketCardBindOverlay.setAttribute("aria-hidden", "true");
-		}
+		hidePosOverlay(ticketCardBindOverlay);
 		if (ticketCardBindInput) {
 			ticketCardBindInput.value = "";
 			try {
@@ -2692,6 +2726,7 @@
 			return;
 		}
 		if (!bakiyeCardBindOverlay || !bakiyeCardBindInput) {
+			modalMissingToast("Bakiye kart penceresi");
 			return;
 		}
 		clearBakiyeCardBindIdle();
@@ -2706,8 +2741,7 @@
 		bakiyeCardBindInput.value = "";
 		bakiyeCardLockedPayMode = null;
 		syncBakiyePayMethodLockUI();
-		bakiyeCardBindOverlay.hidden = false;
-		bakiyeCardBindOverlay.setAttribute("aria-hidden", "false");
+		showPosOverlay(bakiyeCardBindOverlay);
 		setTimeout(function () {
 			bakiyeCardBindInput.focus();
 		}, 30);
@@ -2721,11 +2755,7 @@
 		clearBakiyeCardBindIdle();
 		clearBakiyeCardPayLockDebounce();
 		bakiyeCardBindSubmitting = false;
-		if (bakiyeCardBindOverlay) {
-			blurFocusInsideOverlay(bakiyeCardBindOverlay);
-			bakiyeCardBindOverlay.hidden = true;
-			bakiyeCardBindOverlay.setAttribute("aria-hidden", "true");
-		}
+		hidePosOverlay(bakiyeCardBindOverlay);
 		if (bakiyeCardBindInput) {
 			bakiyeCardBindInput.value = "";
 			try {
@@ -2943,6 +2973,7 @@
 
 	function openProductSaleCardModal() {
 		if (!productSaleCardOverlay || !productSaleCardInput) {
+			modalMissingToast("Ürün ödeme penceresi");
 			return;
 		}
 		var total = sumProductCartTotal();
@@ -2964,8 +2995,7 @@
 		if (productSaleCardConfirmBtn) {
 			productSaleCardConfirmBtn.disabled = false;
 		}
-		productSaleCardOverlay.hidden = false;
-		productSaleCardOverlay.setAttribute("aria-hidden", "false");
+		showPosOverlay(productSaleCardOverlay);
 		setTimeout(function () {
 			productSaleCardInput.focus();
 		}, 30);
@@ -2980,11 +3010,7 @@
 		productSaleCardSubmitting = false;
 		productSalePendingTotal = 0;
 		resetProductSaleCardModalErrors();
-		if (productSaleCardOverlay) {
-			blurFocusInsideOverlay(productSaleCardOverlay);
-			productSaleCardOverlay.hidden = true;
-			productSaleCardOverlay.setAttribute("aria-hidden", "true");
-		}
+		hidePosOverlay(productSaleCardOverlay);
 		if (productSaleCardInput) {
 			productSaleCardInput.value = "";
 			try {
@@ -3259,6 +3285,19 @@
 		}
 	}
 
+	function apiErrorToast(r, fallback) {
+		return r
+			.json()
+			.catch(function () {
+				return {};
+			})
+			.then(function (data) {
+				var msg =
+					(data && (data.detail || data.error || data.message || data.title)) || fallback || "İstek başarısız";
+				showToast(typeof msg === "string" ? msg : fallback || "İstek başarısız", { duration: 5500 });
+			});
+	}
+
 	function fetchSorguCardDetail(uid) {
 		var uidT = cleanUid(uid);
 		if (!uidT.length) {
@@ -3290,8 +3329,9 @@
 					return null;
 				}
 				if (!r.ok) {
-					showToast("Sorgu yapılamadı");
-					return null;
+					return apiErrorToast(r, "Sorgu yapılamadı").then(function () {
+						return null;
+					});
 				}
 				return r.json();
 			})
@@ -3344,6 +3384,7 @@
 
 	function openSorguInquiryModal() {
 		if (!sorguCardOverlay || !sorguCardInput) {
+			modalMissingToast("Kart sorgulama penceresi");
 			return;
 		}
 		clearSorguCardIdle();
@@ -3351,8 +3392,7 @@
 		resetSorguModalScanUi();
 		var pre = sorguDigits.trim();
 		sorguCardInput.value = pre;
-		sorguCardOverlay.hidden = false;
-		sorguCardOverlay.setAttribute("aria-hidden", "false");
+		showPosOverlay(sorguCardOverlay);
 		setTimeout(function () {
 			sorguCardInput.focus();
 		}, 30);
@@ -3364,11 +3404,7 @@
 	function closeSorguInquiryModal() {
 		clearSorguCardIdle();
 		sorguModalSubmitting = false;
-		if (sorguCardOverlay) {
-			blurFocusInsideOverlay(sorguCardOverlay);
-			sorguCardOverlay.hidden = true;
-			sorguCardOverlay.setAttribute("aria-hidden", "true");
-		}
+		hidePosOverlay(sorguCardOverlay);
 		if (sorguCardInput) {
 			sorguCardInput.value = "";
 			try {
@@ -3459,6 +3495,7 @@
 
 	function openUrunCardLoadModal() {
 		if (!urunCardLoadOverlay || !urunCardLoadInput) {
+			modalMissingToast("Kart okutma penceresi");
 			return;
 		}
 		clearUrunCardLoadIdle();
@@ -3471,8 +3508,7 @@
 		}
 		var foot = document.getElementById("urun-card-input");
 		urunCardLoadInput.value = foot ? cleanUid(foot.value) : "";
-		urunCardLoadOverlay.hidden = false;
-		urunCardLoadOverlay.setAttribute("aria-hidden", "false");
+		showPosOverlay(urunCardLoadOverlay);
 		setTimeout(function () {
 			urunCardLoadInput.focus();
 		}, 30);
@@ -3484,11 +3520,7 @@
 	function closeUrunCardLoadModal() {
 		clearUrunCardLoadIdle();
 		urunCardLoadSubmitting = false;
-		if (urunCardLoadOverlay) {
-			blurFocusInsideOverlay(urunCardLoadOverlay);
-			urunCardLoadOverlay.hidden = true;
-			urunCardLoadOverlay.setAttribute("aria-hidden", "true");
-		}
+		hidePosOverlay(urunCardLoadOverlay);
 		if (urunCardLoadInput) {
 			urunCardLoadInput.value = "";
 			try {
@@ -3654,11 +3686,13 @@
 	}
 
 	function showRfidOverlay(title, mode) {
-		if (!rfidOverlayEl) return;
+		if (!rfidOverlayEl) {
+			modalMissingToast("Kart okuyucu penceresi");
+			return;
+		}
 		var t = document.getElementById("rfid-read-title");
 		if (t && title) t.textContent = title;
-		rfidOverlayEl.hidden = false;
-		rfidOverlayEl.setAttribute("aria-hidden", "false");
+		showPosOverlay(rfidOverlayEl);
 		var panel = rfidOverlayEl.querySelector(".pos-rfid-overlay__panel");
 		if (panel) {
 			panel.classList.toggle("pos-rfid-panel--hid", mode === "hid");
@@ -3676,9 +3710,7 @@
 
 	function hideRfidOverlay() {
 		if (!rfidOverlayEl) return;
-		blurFocusInsideOverlay(rfidOverlayEl);
-		rfidOverlayEl.hidden = true;
-		rfidOverlayEl.setAttribute("aria-hidden", "true");
+		hidePosOverlay(rfidOverlayEl);
 		var panel = rfidOverlayEl.querySelector(".pos-rfid-overlay__panel");
 		if (panel) {
 			panel.classList.remove("pos-rfid-panel--hid");
@@ -4497,9 +4529,12 @@
 		setModule("urun");
 	}
 
-	document.getElementById("btn-urun-load-card").addEventListener("click", function () {
-		openUrunCardLoadModal();
-	});
+	var btnUrunLoadCard = document.getElementById("btn-urun-load-card");
+	if (btnUrunLoadCard) {
+		btnUrunLoadCard.addEventListener("click", function () {
+			openUrunCardLoadModal();
+		});
+	}
 
 	var urunCardInputEl = document.getElementById("urun-card-input");
 	if (urunCardInputEl) {
@@ -4978,18 +5013,29 @@
 		});
 	});
 
-	document.getElementById("bakiye-backspace").addEventListener("click", bakiyeBackspace);
+	var bakiyeBackspaceBtn = document.getElementById("bakiye-backspace");
+	if (bakiyeBackspaceBtn) {
+		bakiyeBackspaceBtn.addEventListener("click", bakiyeBackspace);
+	}
 
-	document.getElementById("sorgu-backspace").addEventListener("click", function () {
-		sorguDigits = sorguDigits.slice(0, -1);
-		updateSorguDisplay();
-	});
+	var sorguBackspaceBtn = document.getElementById("sorgu-backspace");
+	if (sorguBackspaceBtn) {
+		sorguBackspaceBtn.addEventListener("click", function () {
+			sorguDigits = sorguDigits.slice(0, -1);
+			updateSorguDisplay();
+		});
+	}
 
-	document.getElementById("btn-sorgula").addEventListener("click", function () {
-		openSorguInquiryModal();
-	});
+	var btnSorgula = document.getElementById("btn-sorgula");
+	if (btnSorgula) {
+		btnSorgula.addEventListener("click", function () {
+			openSorguInquiryModal();
+		});
+	}
 
-	document.getElementById("btn-clear").addEventListener("click", function () {
+	var btnClear = document.getElementById("btn-clear");
+	if (btnClear) {
+		btnClear.addEventListener("click", function () {
 		if (currentModule === "kart" && kartMode === "products") {
 			cart = [];
 			luxCartSelectedIndex = null;
@@ -5020,7 +5066,8 @@
 		renderGrid();
 		updateSummary();
 		showToast("Sepet temizlendi");
-	});
+		});
+	}
 
 	var btnCodeFooter = document.getElementById("btn-code");
 	if (btnCodeFooter) {
@@ -5032,7 +5079,9 @@
 		});
 	}
 
-	document.getElementById("btn-complete").addEventListener("click", function () {
+	var btnCompleteEl = document.getElementById("btn-complete");
+	if (btnCompleteEl) {
+		btnCompleteEl.addEventListener("click", function () {
 		if (currentModule === "sorgu") {
 			openSorguInquiryModal();
 			return;
@@ -5058,12 +5107,12 @@
 			return;
 		}
 		openTicketCardBindModal();
-	});
+		});
+	}
 
 	var btnOrderPay = document.getElementById("btn-order-pay");
 	var btnOrderPayPos = document.getElementById("btn-order-pay-pos");
 	var btnSendPos = document.getElementById("btn-send-pos");
-	var btnCompleteEl = document.getElementById("btn-complete");
 	var bekoPosSending = false;
 
 	function syncPosSendButtons() {
@@ -5635,6 +5684,7 @@
 			wireReceiptPrinterSetup();
 			wirePosAppWindowClose();
 		}
+		document.querySelectorAll(".pos-rfid-overlay").forEach(ensureOverlayOnBody);
 		buildBakiyeKeypad();
 		buildSorguKeypad();
 		updateSummary();

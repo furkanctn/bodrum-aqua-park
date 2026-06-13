@@ -45,10 +45,32 @@ public class CatalogMigrationService {
 	}
 
 	/**
+	 * POS/PostgreSQL profilinde ddl-auto=none olduğu için join tablosu otomatik oluşmaz; önce garanti edilir.
+	 */
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void ensureCatalogJoinTableExists() {
+		if (tableExists("sale_area_menu_pages")) {
+			return;
+		}
+		log.info("Şema güncelleniyor: sale_area_menu_pages tablosu oluşturuluyor…");
+		entityManager.createNativeQuery("""
+				CREATE TABLE sale_area_menu_pages (
+					sale_area_id BIGINT NOT NULL,
+					menu_page_id BIGINT NOT NULL,
+					PRIMARY KEY (sale_area_id, menu_page_id),
+					CONSTRAINT fk_samp_sale_area FOREIGN KEY (sale_area_id) REFERENCES sale_areas(id),
+					CONSTRAINT fk_samp_menu_page FOREIGN KEY (menu_page_id) REFERENCES menu_pages(id)
+				)
+				""").executeUpdate();
+		log.info("sale_area_menu_pages tablosu oluşturuldu.");
+	}
+
+	/**
 	 * Eski şemada menü sayfası satış alanına bağlıydı; bağımsız menü + çoktan-çoğa ilişkiye taşır.
 	 */
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void migrateLegacyMenuAreaLinksIfNeeded() {
+		ensureCatalogJoinTableExists();
 		if (!columnExists("menu_pages", "sale_area_id")) {
 			dropLegacyColumnIfPresent("products", "sale_area_id");
 			return;
@@ -65,8 +87,24 @@ public class CatalogMigrationService {
 			}
 			log.info("Menü–satış alanı taşıması tamamlandı ({} satır).", rows.size());
 		}
+		relaxLegacyNotNullIfPresent("menu_pages", "sale_area_id");
+		relaxLegacyNotNullIfPresent("products", "sale_area_id");
 		dropLegacyColumnIfPresent("menu_pages", "sale_area_id");
 		dropLegacyColumnIfPresent("products", "sale_area_id");
+	}
+
+	/** Eski sütun kaldırılamasa bile yeni menü eklemeyi engelleyen NOT NULL kısıtını kaldırır. */
+	private void relaxLegacyNotNullIfPresent(String table, String column) {
+		if (!columnExists(table, column)) {
+			return;
+		}
+		try {
+			entityManager.createNativeQuery(
+					"ALTER TABLE " + table + " ALTER COLUMN " + column + " DROP NOT NULL").executeUpdate();
+			log.info("{}.{} NOT NULL kısıtı kaldırıldı.", table, column);
+		} catch (Exception ex) {
+			log.debug("{}.{} NOT NULL kaldırılamadı (zaten nullable olabilir): {}", table, column, ex.getMessage());
+		}
 	}
 
 	@Transactional
@@ -76,6 +114,21 @@ public class CatalogMigrationService {
 		for (Product p : productRepository.findByMenuPageIsNull()) {
 			p.setMenuPage(genel);
 			productRepository.save(p);
+		}
+	}
+
+	private boolean tableExists(String table) {
+		try {
+			Session session = entityManager.unwrap(Session.class);
+			return Boolean.TRUE.equals(session.doReturningWork(connection -> {
+				DatabaseMetaData meta = connection.getMetaData();
+				String tablePattern = meta.storesUpperCaseIdentifiers() ? table.toUpperCase() : table;
+				try (ResultSet tables = meta.getTables(null, null, tablePattern, new String[] { "TABLE" })) {
+					return tables.next();
+				}
+			}));
+		} catch (Exception ex) {
+			return false;
 		}
 	}
 

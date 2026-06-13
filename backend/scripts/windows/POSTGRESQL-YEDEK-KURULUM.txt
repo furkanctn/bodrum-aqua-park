@@ -1,0 +1,188 @@
+================================================================================
+Bodrum Aqua Park — PostgreSQL otomatik yedekleme (Windows sunucu)
+================================================================================
+
+Ne yapar?
+  • bodrum_aqua_park veritabanının yedeğini alır
+  • Ayın 1'i ve 15'i gece 03:00'te otomatik çalışır (≈15 günde bir)
+  • Yedekler: C:\Backups\bodrum-aqua-park\
+  • Son 12 yedek saklanır, eskiler silinir (~6 ay)
+
+Proje dosyaları:
+  • backend/scripts/windows/BodrumDbBackup.bat           → yedek script
+  • backend/scripts/windows/BodrumDbBackup-Zamanla.ps1   → otomatik zamanlama
+  • backend/scripts/postgresql-backup-restore.sql        → geri yükleme komutları
+  • backend/scripts/windows/POSTGRESQL-YEDEK-KURULUM.txt → bu dosya
+
+Sunucu bilgileri (varsayılan — BodrumDbBackup.bat içinde düzenleyin):
+  • Host:     127.0.0.1  (DB aynı makinedeyse) veya 192.168.0.15
+  • Port:     5432
+  • Database: bodrum_aqua_park
+  • User:     postgres
+  • Şifre:    POS config ile aynı (application.properties)
+
+================================================================================
+1) ÖN HAZIRLIK
+================================================================================
+
+  • Windows DB sunucusunda PostgreSQL kurulu olmalı
+  • pg_dump genelde şurada:
+      C:\Program Files\PostgreSQL\16\bin\pg_dump.exe
+  • Komut İstemi'nde kontrol:
+      "C:\Program Files\PostgreSQL\16\bin\pg_dump.exe" --version
+    (16 yerine kendi sürüm numaranız)
+
+  Script pg_dump'ı otomatik arar (PostgreSQL 12–17). Bulamazsa PATH'e
+  PostgreSQL\bin klasörünü ekleyin:
+    Denetim Masası → Sistem → Gelişmiş → Ortam değişkenleri → Path
+
+================================================================================
+2) DOSYALARI SUNUCUYA KOPYALA
+================================================================================
+
+  Windows DB sunucusuna şu klasörü kopyalayın (USB veya ağ paylaşımı):
+
+      C:\BodrumAquaPark\backup\
+          BodrumDbBackup.bat
+          BodrumDbBackup-Zamanla.ps1
+          POSTGRESQL-YEDEK-KURULUM.txt
+
+  (Proje yolundan: backend\scripts\windows\ içindeki dosyalar)
+
+================================================================================
+3) AYARLARI DÜZENLE
+================================================================================
+
+  Not Defteri ile BodrumDbBackup.bat dosyasını açın, üst kısımdaki değerleri
+  kendi sunucunuza göre değiştirin:
+
+      set "PGHOST=127.0.0.1"
+      set "PGPORT=5432"
+      set "PGUSER=postgres"
+      set "PGDATABASE=bodrum_aqua_park"
+      set "PGPASSWORD=123123"
+
+      set "BACKUP_DIR=C:\Backups\bodrum-aqua-park"
+
+  Yedek klasörü otomatik oluşturulur.
+
+================================================================================
+4) MANUEL TEST (zamanlamadan önce mutlaka yapın)
+================================================================================
+
+  BodrumDbBackup.bat dosyasına çift tıklayın
+  veya Komut İstemi:
+
+      cd C:\BodrumAquaPark\backup
+      BodrumDbBackup.bat
+
+  Başarılıysa:
+      C:\Backups\bodrum-aqua-park\bodrum_aqua_park_2026-06-13_030000.backup
+
+  Log:
+      C:\Backups\bodrum-aqua-park\bodrum-db-backup.log
+
+================================================================================
+5) OTOMATİK ZAMANLAMA
+================================================================================
+
+  --- Yöntem A — PowerShell (önerilir, tek seferde) ---
+
+  Yönetici olarak PowerShell açın:
+
+      cd C:\BodrumAquaPark\backup
+      Set-ExecutionPolicy -Scope Process Bypass
+      .\BodrumDbBackup-Zamanla.ps1
+
+  Bu komut Windows Görev Zamanlayıcı'da şu görevi oluşturur:
+    • Ad: BodrumAquaPark-DbBackup
+    • Zaman: ayın 1'i ve 15'i, 03:00
+    • Kullanıcı: SYSTEM
+
+  Test:
+      Start-ScheduledTask -TaskName 'BodrumAquaPark-DbBackup'
+
+  --- Yöntem B — Görev Zamanlayıcı (elle) ---
+
+  1. Win+R → taskschd.msc → Enter
+  2. Sağ tık → Görev Oluştur...
+  3. Genel sekmesi:
+       Ad: BodrumAquaPark-DbBackup
+       "Kullanıcı oturum açmış olsun ya da olmasın çalıştır" işaretle
+       "En yüksek ayrıcalıklarla çalıştır" işaretle
+  4. Tetikleyiciler → Yeni → Aylık → Günler: 1 → Saat: 03:00
+     (İkinci tetikleyici ekleyin: Aylık → Günler: 15 → Saat: 03:00)
+  5. Eylemler → Yeni → Program başlat:
+       Program: C:\BodrumAquaPark\backup\BodrumDbBackup.bat
+       Başlangıç konumu: C:\BodrumAquaPark\backup
+  6. Tamam
+
+================================================================================
+6) KONTROL VE İZLEME
+================================================================================
+
+  Yedekleri listele (Komut İstemi):
+
+      dir C:\Backups\bodrum-aqua-park\*.backup
+
+  Log dosyası:
+
+      notepad C:\Backups\bodrum-aqua-park\bodrum-db-backup.log
+
+  Görev durumu (PowerShell):
+
+      Get-ScheduledTask -TaskName 'BodrumAquaPark-DbBackup' | Get-ScheduledTaskInfo
+
+================================================================================
+7) ACİL DURUM — GERİ YÜKLEME
+================================================================================
+
+  ÖNEMLİ: Geri yüklemeden önce POS uygulamalarını durdurun.
+
+  1) En son yedeği bulun:
+
+      dir /o-d C:\Backups\bodrum-aqua-park\*.backup
+
+  2) Komut İstemi (pg_restore yolunu kendi sürümünüze göre düzenleyin):
+
+      set PGPASSWORD=123123
+      "C:\Program Files\PostgreSQL\16\bin\pg_restore.exe" ^
+        -h 127.0.0.1 -U postgres -d bodrum_aqua_park ^
+        --clean --if-exists ^
+        C:\Backups\bodrum-aqua-park\bodrum_aqua_park_2026-06-13_030001.backup
+
+  3) pgAdmin: bodrum_aqua_park → sağ tık → Restore... → .backup dosyasını seç
+
+  4) POS uygulamalarını tekrar başlatın
+
+================================================================================
+8) SIK SORULAN
+================================================================================
+
+  S: Yedek kaç ay saklanır?
+  C: Son 12 dosya (ayda 2 ≈ 6 ay). BodrumDbBackup.bat içinde KEEP_COUNT=12
+
+  S: Yedek klasörünü değiştirebilir miyim?
+  C: Evet, BodrumDbBackup.bat içinde BACKUP_DIR satırını düzenleyin.
+     Örnek: D:\Yedekler\bodrum-aqua-park
+
+  S: DB başka makinedeyse?
+  C: PGHOST=192.168.0.15 yapın; Windows güvenlik duvarında 5432 açık olmalı.
+
+  S: Yedekleri USB / harici diske almalı mıyım?
+  C: Evet, mümkünse ayda bir en son .backup dosyasını kopyalayın.
+
+  S: Kart sıfırlama scripti?
+  C: backend/scripts/postgresql-nightly-card-reset.sql (pgAdmin'de çalıştırılır)
+
+================================================================================
+9) KURULUM ÖZET
+================================================================================
+
+  1. backend\scripts\windows\ → C:\BodrumAquaPark\backup\ kopyala
+  2. BodrumDbBackup.bat → PGHOST, PGPASSWORD, BACKUP_DIR düzenle
+  3. BodrumDbBackup.bat çift tık → test
+  4. Yönetici PowerShell → .\BodrumDbBackup-Zamanla.ps1
+  5. C:\Backups\bodrum-aqua-park\ klasörünü periyodik kontrol et
+
+================================================================================

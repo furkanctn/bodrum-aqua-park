@@ -6,7 +6,7 @@
 	<title>Satış — Bodrum Aqua Park</title>
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
-	<link rel="stylesheet" href="/css/pos.css?v=24" />
+	<link rel="stylesheet" href="/css/pos.css?v=26" />
 	<script src="/js/pos-perms.js?v=2"></script>
 	<script src="/js/mifare-uid.js?v=1"></script>
 </head>
@@ -383,6 +383,7 @@
 			</div>
 		</footer>
 	</div>
+	</div>
 
 	<div id="rfid-read-overlay" class="pos-rfid-overlay" hidden aria-hidden="true">
 		<div class="pos-rfid-overlay__panel" role="dialog" aria-modal="true" aria-labelledby="rfid-read-title">
@@ -537,9 +538,9 @@
 						</table>
 					</div>
 				</div>
-				<div class="pos-rfid-overlay__actions">
-					<button type="button" class="footer-btn" id="sorgu-card-another">Başka kart</button>
-					<button type="button" class="footer-btn primary" id="sorgu-card-close-detail">Kapat</button>
+				<div class="pos-rfid-overlay__actions pos-rfid-overlay__actions--sorgu-detail">
+					<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--secondary" id="sorgu-card-another">Başka kart</button>
+					<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--primary" id="sorgu-card-close-detail">Kapat</button>
 				</div>
 			</div>
 		</div>
@@ -664,6 +665,6 @@
 	</div>
 
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js?v=39" defer></script>
+	<script src="/js/pos.js?v=40" defer></script>
 </body>
 </html>

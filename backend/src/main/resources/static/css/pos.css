@@ -3419,6 +3419,10 @@ body.module-sorgu .pos-nav .nav-item.active svg {
 	display: none !important;
 }
 
+body > .pos-rfid-overlay {
+	z-index: 99999;
+}
+
 .pos-rfid-overlay__panel {
 	position: relative;
 	max-width: 26rem;
@@ -3594,6 +3598,32 @@ body.module-sorgu .pos-nav .nav-item.active svg {
 	filter: brightness(1.08);
 	background: linear-gradient(180deg, #f87171 0%, #ef4444 55%, #dc2626 100%);
 	color: #ffffff;
+}
+
+.pos-rfid-modal-btn--secondary {
+	background: #ffffff;
+	color: #334155;
+	border-color: rgba(148, 163, 184, 0.55);
+	box-shadow: 0 2px 10px -4px rgba(15, 23, 42, 0.12);
+}
+
+.pos-rfid-modal-btn--secondary:hover {
+	background: #f8fafc;
+	border-color: rgba(100, 116, 139, 0.65);
+}
+
+.pos-rfid-overlay__actions--sorgu-detail {
+	justify-content: flex-end;
+	gap: 0.85rem;
+	margin-top: 1.1rem;
+	padding-top: 0.35rem;
+}
+
+.pos-rfid-overlay__actions--sorgu-detail .pos-rfid-modal-btn {
+	min-height: 3.1rem;
+	min-width: 8.75rem;
+	padding: 0.65rem 1.65rem;
+	font-size: clamp(1rem, 2.2vw, 1.08rem);
 }
 
 /* Kart sorgulama modal — geniş panel + hareket tablosu */

@@ -111,8 +111,9 @@ public class GlobalExceptionHandler {
 		String detail = "Veritabanı kısıtı ihlali. Kayıt zaten var olabilir veya şema güncellemesi gerekebilir.";
 		String msg = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
 		if (msg != null && !msg.isBlank()) {
-			if (msg.contains("SALE_AREA_ID")) {
-				detail = "Eski veritabanı şeması algılandı. Uygulamayı yeniden başlatın; sorun devam ederse yöneticiye bildirin.";
+			if (msg.contains("sale_area_id") || msg.contains("SALE_AREA_ID")) {
+				detail = "Eski veritabanı şeması: menu_pages tablosunda sale_area_id sütunu kalmış. "
+						+ "postgresql-catalog-v2-migration.sql scriptini çalıştırın veya uygulamayı yeniden başlatın.";
 			} else if (msg.contains("unique") || msg.contains("UNIQUE") || msg.contains("Duplicate")) {
 				detail = "Bu kayıt zaten mevcut (benzersiz kod veya ad çakışması).";
 			}
