@@ -4926,9 +4926,9 @@ body.module-kart #view-kart .pos-main--lux .pos-grid-viewport.pos-grid-viewport-
 	cursor: grabbing;
 }
 
-body.module-kart #view-kart .pos-main--lux .pos-grid-viewport .tile[role="button"] {
+body.module-kart #view-kart .pos-main--lux .pos-grid-viewport .tile {
 	cursor: pointer;
-	touch-action: pan-y;
+	touch-action: manipulation;
 	-webkit-user-select: none;
 	user-select: none;
 }

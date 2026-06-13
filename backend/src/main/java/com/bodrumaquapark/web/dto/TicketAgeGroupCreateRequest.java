@@ -11,5 +11,6 @@ public record TicketAgeGroupCreateRequest(
 		@NotBlank @Size(max = 160) String name,
 		@NotNull @DecimalMin(value = "0.0", inclusive = true) BigDecimal price,
 		Integer sortOrder,
-		Boolean active) {
+		Boolean active,
+		Boolean agencyComplimentary) {
 }

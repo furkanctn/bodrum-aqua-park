@@ -30,7 +30,9 @@ public class AdminTicketAgeGroupService {
 	public TicketAgeGroupResponse create(TicketAgeGroupCreateRequest req) {
 		int sort = req.sortOrder() != null ? req.sortOrder() : nextSortOrder();
 		boolean active = req.active() == null || Boolean.TRUE.equals(req.active());
+		boolean agency = Boolean.TRUE.equals(req.agencyComplimentary());
 		TicketAgeGroup e = new TicketAgeGroup(req.name().trim(), req.price(), sort, active);
+		e.setAgencyComplimentary(agency);
 		return TicketAgeGroupResponse.from(repository.save(e));
 	}
 
@@ -42,6 +44,9 @@ public class AdminTicketAgeGroupService {
 		e.setPrice(req.price());
 		e.setSortOrder(req.sortOrder());
 		e.setActive(req.active());
+		if (req.agencyComplimentary() != null) {
+			e.setAgencyComplimentary(req.agencyComplimentary());
+		}
 		return TicketAgeGroupResponse.from(repository.save(e));
 	}
 

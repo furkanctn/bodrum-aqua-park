@@ -1266,39 +1266,126 @@
 			return;
 		}
 		containerEl.hidden = false;
+
 		var period =
 			data.fromInclusive === data.toInclusive
 				? String(data.fromInclusive || "")
-				: (data.fromInclusive || "") + " → " + (data.toInclusive || "");
-		var cards = [
-			{ k: "Dönem", v: period },
-			{ k: "Nakit", v: formatTryAmount(data.cashTotal) },
-			{ k: "Kredi kartı", v: formatTryAmount(data.cardTotal) },
-			{ k: "Acenta", v: formatTryAmount(data.agencyTotal) },
-			{ k: "Toplam", v: formatTryAmount(data.grandTotal) },
-		];
-		if (Array.isArray(data.agencyTicketCounts)) {
+				: (data.fromInclusive || "") + " – " + (data.toInclusive || "");
+		var isSingleDay = data.fromInclusive === data.toInclusive;
+
+		var periodBar = document.createElement("div");
+		periodBar.className = "admin-report-period";
+		periodBar.innerHTML =
+			'<span class="admin-report-period-label">' +
+			(isSingleDay ? "Rapor tarihi" : "Rapor dönemi") +
+			"</span><strong>" +
+			escapeHtml(period) +
+			"</strong>" +
+			(data.timeZone
+				? '<span class="admin-report-period-tz">Saat dilimi: ' + escapeHtml(data.timeZone) + "</span>"
+				: "");
+		containerEl.appendChild(periodBar);
+
+		var payBlock = document.createElement("section");
+		payBlock.className = "admin-report-block";
+		payBlock.innerHTML =
+			'<h3 class="admin-report-block-title">Tahsilat özeti</h3>' +
+			'<p class="admin-report-block-desc">POS bakiye yükleme ve ücretli bilet tahsilatı. Aşağıdaki tutarlar ödeme kanalına göre gruplanmıştır; ücretsiz acenta biletleri buraya dahil değildir.</p>';
+		var payGrid = document.createElement("div");
+		payGrid.className = "admin-report-stat-grid";
+		[
+			{
+				key: "cash",
+				label: "Nakit",
+				hint: "Nakit bakiye yükleme + nakit bilet",
+				value: formatTryAmount(data.cashTotal),
+			},
+			{
+				key: "card",
+				label: "Kredi kartı",
+				hint: "Kart ile bakiye yükleme + kart ile bilet",
+				value: formatTryAmount(data.cardTotal),
+			},
+			{
+				key: "agency",
+				label: "Acenta (kredili)",
+				hint: "Acenta bakiye yükleme + kredili tahsilat",
+				value: formatTryAmount(data.agencyTotal),
+			},
+		].forEach(function (item) {
+			var card = document.createElement("div");
+			card.className = "admin-report-stat admin-report-stat--" + item.key;
+			card.innerHTML =
+				'<span class="admin-report-stat-label">' +
+				escapeHtml(item.label) +
+				"</span>" +
+				'<span class="admin-report-stat-value">' +
+				escapeHtml(item.value) +
+				"</span>" +
+				'<span class="admin-report-stat-hint">' +
+				escapeHtml(item.hint) +
+				"</span>";
+			payGrid.appendChild(card);
+		});
+		payBlock.appendChild(payGrid);
+
+		var grandRow = document.createElement("div");
+		grandRow.className = "admin-report-grand";
+		grandRow.innerHTML =
+			'<span class="admin-report-grand-label">Genel toplam tahsilat</span>' +
+			'<strong class="admin-report-grand-value">' +
+			escapeHtml(formatTryAmount(data.grandTotal)) +
+			"</strong>" +
+			'<span class="admin-report-grand-hint">Nakit + kredi kartı + acenta (TL)</span>';
+		payBlock.appendChild(grandRow);
+		containerEl.appendChild(payBlock);
+
+		var agencyBlock = document.createElement("section");
+		agencyBlock.className = "admin-report-block admin-report-block--agency";
+		agencyBlock.innerHTML =
+			'<h3 class="admin-report-block-title">Acenta biletleri (ücretsiz)</h3>' +
+			'<p class="admin-report-block-desc">POS’tan satılan ücretsiz acenta biletleri. Tahsilat tutarına yansımaz; yalnızca adet olarak raporlanır.</p>';
+
+		if (Array.isArray(data.agencyTicketCounts) && data.agencyTicketCounts.length > 0) {
+			var tableWrap = document.createElement("div");
+			tableWrap.className = "table-wrap";
+			var table = document.createElement("table");
+			table.className = "admin-table admin-report-agency-table";
+			table.innerHTML =
+				"<thead><tr><th>Bilet türü</th><th>Satış adedi</th></tr></thead>";
+			var tbody = document.createElement("tbody");
 			data.agencyTicketCounts.forEach(function (row) {
 				if (!row || !row.name) {
 					return;
 				}
-				cards.push({ k: row.name, v: String(row.count != null ? row.count : 0) + " adet" });
+				var tr = document.createElement("tr");
+				tr.innerHTML =
+					"<td>" +
+					escapeHtml(row.name) +
+					"</td><td><strong>" +
+					escapeHtml(String(row.count != null ? row.count : 0)) +
+					" adet</strong></td>";
+				tbody.appendChild(tr);
 			});
+			if (!isNaN(agencyTicketTotal) && agencyTicketTotal > 0) {
+				var trTot = document.createElement("tr");
+				trTot.className = "admin-report-agency-total-row";
+				trTot.innerHTML =
+					"<td><strong>Toplam</strong></td><td><strong>" +
+					escapeHtml(String(agencyTicketTotal)) +
+					" adet</strong></td>";
+				tbody.appendChild(trTot);
+			}
+			table.appendChild(tbody);
+			tableWrap.appendChild(table);
+			agencyBlock.appendChild(tableWrap);
+		} else {
+			var noAgency = document.createElement("p");
+			noAgency.className = "admin-report-empty-note";
+			noAgency.textContent = "Bu dönemde ücretsiz acenta bilet satışı yok.";
+			agencyBlock.appendChild(noAgency);
 		}
-		if (!isNaN(agencyTicketTotal) && agencyTicketTotal > 0) {
-			cards.push({ k: "Acenta bilet toplam", v: String(agencyTicketTotal) + " adet" });
-		}
-		cards.forEach(function (c) {
-			var div = document.createElement("div");
-			div.className = "admin-report-summary-card";
-			div.innerHTML =
-				"<span class=\"admin-report-summary-label\">" +
-				escapeHtml(c.k) +
-				"</span><strong>" +
-				escapeHtml(c.v) +
-				"</strong>";
-			containerEl.appendChild(div);
-		});
+		containerEl.appendChild(agencyBlock);
 	}
 
 	function fetchPaymentSalesReport(fromDate, toDate) {
@@ -1827,12 +1914,14 @@
 		var pr = document.getElementById("tag-price");
 		var so = document.getElementById("tag-sort");
 		var ac = document.getElementById("tag-active");
+		var ag = document.getElementById("tag-agency");
 		var saveBtn = document.getElementById("btn-tag-save");
 		if (hid) hid.value = "";
 		if (nm) nm.value = "";
 		if (pr) pr.value = "";
 		if (so) so.value = "";
 		if (ac) ac.checked = true;
+		if (ag) ag.checked = false;
 		if (saveBtn) saveBtn.textContent = "Kaydet";
 	}
 
@@ -1842,6 +1931,7 @@
 		var pr = document.getElementById("tag-price");
 		var so = document.getElementById("tag-sort");
 		var ac = document.getElementById("tag-active");
+		var ag = document.getElementById("tag-agency");
 		var saveBtn = document.getElementById("btn-tag-save");
 		if (hid) hid.value = String(row.id);
 		if (nm) {
@@ -1851,6 +1941,7 @@
 		if (pr) pr.value = row.price != null ? String(row.price) : "";
 		if (so) so.value = row.sortOrder != null ? String(row.sortOrder) : "";
 		if (ac) ac.checked = !!row.active;
+		if (ag) ag.checked = !!row.agencyComplimentary;
 		if (saveBtn) saveBtn.textContent = "Güncelle";
 	}
 
@@ -1877,7 +1968,9 @@
 			var tdN = document.createElement("td");
 			tdN.textContent = row.name || "";
 			var tdP = document.createElement("td");
-			tdP.textContent = formatTagPrice(row.price);
+			tdP.textContent = row.agencyComplimentary ? "Ücretsiz" : formatTagPrice(row.price);
+			var tdAg = document.createElement("td");
+			tdAg.textContent = row.agencyComplimentary ? "Evet" : "—";
 			var tdA = document.createElement("td");
 			tdA.textContent = row.active ? "Evet" : "Hayır";
 			var tdX = document.createElement("td");
@@ -1902,6 +1995,7 @@
 			tr.appendChild(tdS);
 			tr.appendChild(tdN);
 			tr.appendChild(tdP);
+			tr.appendChild(tdAg);
 			tr.appendChild(tdA);
 			tr.appendChild(tdX);
 			tbody.appendChild(tr);
@@ -2000,11 +2094,13 @@
 			var priceEl = document.getElementById("tag-price");
 			var sortEl = document.getElementById("tag-sort");
 			var actEl = document.getElementById("tag-active");
+			var agencyEl = document.getElementById("tag-agency");
 			var name = nameEl ? nameEl.value.trim() : "";
 			var price = priceEl ? parseFloat(String(priceEl.value).replace(",", "."), 10) : NaN;
 			var sortStr = sortEl ? sortEl.value.trim() : "";
 			var sortOrder = sortStr === "" ? null : parseInt(sortStr, 10);
 			var active = actEl ? !!actEl.checked : true;
+			var agencyComplimentary = agencyEl ? !!agencyEl.checked : false;
 			if (!name) {
 				showAlert("Yaş grubu adı gerekli.", "err");
 				return;
@@ -2034,6 +2130,7 @@
 					price: price,
 					sortOrder: sortOrder,
 					active: active,
+					agencyComplimentary: agencyComplimentary,
 				});
 			} else {
 				body = JSON.stringify({
@@ -2041,6 +2138,7 @@
 					price: price,
 					sortOrder: sortOrder,
 					active: active,
+					agencyComplimentary: agencyComplimentary,
 				});
 			}
 			fetch(url, { method: method, headers: authHeadersJson(), body: body })

@@ -10,6 +10,7 @@ import org.springframework.core.annotation.Order;
 
 import com.bodrumaquapark.entity.TicketAgeGroup;
 import com.bodrumaquapark.repository.TicketAgeGroupRepository;
+import com.bodrumaquapark.service.TicketSchemaMigrationService;
 
 @Configuration
 public class TicketAgeGroupBootstrap {
@@ -19,8 +20,10 @@ public class TicketAgeGroupBootstrap {
 
 	@Bean
 	@Order(3)
-	ApplicationRunner seedTicketAgeGroups(TicketAgeGroupRepository repo) {
+	ApplicationRunner seedTicketAgeGroups(TicketAgeGroupRepository repo,
+			TicketSchemaMigrationService ticketSchemaMigrationService) {
 		return BootstrapResilience.safely("seedTicketAgeGroups", args -> {
+			ticketSchemaMigrationService.migrateAgencyTicketSchemaIfNeeded();
 			if (repo.count() == 0) {
 				int o = 10;
 				repo.save(new TicketAgeGroup("0–6 Yaş", new BigDecimal("0.00"), o, true));

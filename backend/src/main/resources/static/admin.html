@@ -6,7 +6,7 @@
 	<title>Yönetim — Bodrum Aqua Park</title>
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
-	<link rel="stylesheet" href="/css/admin.css?v=5" />
+	<link rel="stylesheet" href="/css/admin.css?v=6" />
 </head>
 <body>
 	<div class="pos-main-scale pos-main-scale--admin" id="pos-main-scale">
@@ -278,6 +278,9 @@
 					<div class="field field-check">
 						<label><input type="checkbox" id="tag-active" checked /> <span>POS’ta göster (aktif)</span></label>
 					</div>
+					<div class="field field-check">
+						<label><input type="checkbox" id="tag-agency" /> <span>Acenta bileti (ücretsiz, raporda adet sayılır)</span></label>
+					</div>
 					<div class="field field-actions">
 						<button type="submit" class="btn btn-primary" id="btn-tag-save">Kaydet</button>
 						<button type="button" class="btn btn-ghost" id="btn-tag-reset">Formu temizle</button>
@@ -293,6 +296,7 @@
 								<th>Sıra</th>
 								<th>Ad</th>
 								<th>Fiyat (₺)</th>
+								<th>Acenta</th>
 								<th>Aktif</th>
 								<th></th>
 							</tr>
@@ -487,7 +491,7 @@
 						<button type="button" class="btn btn-primary" id="btn-report-day-refresh">Yenile</button>
 					</div>
 				</div>
-				<div id="report-day-summary" class="admin-report-summary" hidden></div>
+				<div id="report-day-summary" class="admin-report-dashboard" hidden></div>
 				<p id="report-day-empty" class="admin-catalog-empty-hint" hidden>Bu günde tahsilat yok.</p>
 			</section>
 		</div>
@@ -511,7 +515,7 @@
 						<button type="button" class="btn btn-primary" id="btn-report-gen-refresh">Yenile</button>
 					</div>
 				</div>
-				<div id="report-gen-summary-cards" class="admin-report-summary" hidden></div>
+				<div id="report-gen-summary-cards" class="admin-report-dashboard" hidden></div>
 				<p id="report-gen-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta tahsilat yok.</p>
 			</section>
 		</div>
@@ -598,6 +602,6 @@
 	</div>
 
 	<script src="/js/mifare-uid.js?v=1"></script>
-	<script src="/js/admin.js?v=19" defer></script>
+	<script src="/js/admin.js?v=21" defer></script>
 </body>
 </html>

@@ -768,8 +768,7 @@
 
 	var kartProductGridClickWired = false;
 	var kartGridTouchMoved = false;
-	var kartGridTouchStartY = 0;
-	var kartGridTouchStartX = 0;
+	var kartGridDragScrollMoved = false;
 	var KART_GRID_TOUCH_SLOP = 8;
 	/** Sürükleme kaydırma hız çarpanı (parmak/fare hareketine göre) */
 	var KART_GRID_DRAG_GAIN = 2.05;
@@ -836,8 +835,12 @@
 			if (e.pointerType === "mouse" && e.button !== 0) {
 				return;
 			}
+			if (e.target.closest(".tile")) {
+				return;
+			}
 			dragPointerId = e.pointerId;
 			dragMoved = false;
+			kartGridDragScrollMoved = false;
 			dragStartY = e.clientY;
 			dragStartScroll = viewport.scrollTop;
 			try {
@@ -860,6 +863,7 @@
 					}
 					dragMoved = true;
 					kartGridTouchMoved = true;
+					kartGridDragScrollMoved = true;
 					viewport.classList.add("pos-grid-viewport--dragging");
 				}
 				viewport.scrollTop = dragStartScroll - dy * kartGridDragGain();
@@ -877,34 +881,9 @@
 			return;
 		}
 		kartProductGridClickWired = true;
-		gridEl.addEventListener(
-			"touchstart",
-			function (e) {
-				if (e.touches.length !== 1) {
-					return;
-				}
-				kartGridTouchMoved = false;
-				kartGridTouchStartY = e.touches[0].clientY;
-				kartGridTouchStartX = e.touches[0].clientX;
-			},
-			{ passive: true }
-		);
-		gridEl.addEventListener(
-			"touchmove",
-			function (e) {
-				if (e.touches.length !== 1) {
-					return;
-				}
-				var dy = Math.abs(e.touches[0].clientY - kartGridTouchStartY);
-				var dx = Math.abs(e.touches[0].clientX - kartGridTouchStartX);
-				if (dy > KART_GRID_TOUCH_SLOP || dx > KART_GRID_TOUCH_SLOP) {
-					kartGridTouchMoved = true;
-				}
-			},
-			{ passive: true }
-		);
 		gridEl.addEventListener("click", function (e) {
-			if (kartGridTouchMoved) {
+			if (kartGridDragScrollMoved || kartGridTouchMoved) {
+				kartGridDragScrollMoved = false;
 				kartGridTouchMoved = false;
 				return;
 			}
@@ -4690,12 +4669,13 @@
 				btn.type = "button";
 				btn.className = "tile" + (selectedTileId === t.id ? " selected" : "");
 				btn.dataset.id = t.id;
+				var priceLabel = t.agencyComplimentary ? "Ücretsiz" : money(t.price);
 				btn.innerHTML =
 					luxThumbHtml(t.label) +
 					'<span class="tile-title">' +
 					escapeHtml(t.label) +
 					'</span><span class="tile-price">' +
-					money(t.price) +
+					priceLabel +
 					'</span><span class="tile-meta"></span>';
 				btn.addEventListener("click", function () {
 					selectedTileId = t.id;

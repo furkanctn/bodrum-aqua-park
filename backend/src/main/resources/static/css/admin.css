@@ -610,6 +610,165 @@ body {
 	margin-bottom: 1rem;
 }
 
+.admin-report-dashboard {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+	margin-top: 0.5rem;
+	margin-bottom: 1rem;
+}
+
+.admin-report-period {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.35rem 1rem;
+	padding: 0.85rem 1rem;
+	border-radius: 0.6rem;
+	border: 1px solid var(--border-muted);
+	background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+}
+
+.admin-report-period-label {
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.admin-report-period strong {
+	font-size: 1.15rem;
+	color: var(--text);
+}
+
+.admin-report-period-tz {
+	font-size: 0.78rem;
+	color: var(--muted);
+	margin-left: auto;
+}
+
+.admin-report-block {
+	border: 1px solid var(--border-muted);
+	border-radius: 0.65rem;
+	padding: 1rem 1.1rem 1.15rem;
+	background: #fff;
+}
+
+.admin-report-block--agency {
+	background: #fafafa;
+}
+
+.admin-report-block-title {
+	margin: 0 0 0.35rem;
+	font-size: 1rem;
+	font-weight: 700;
+	color: var(--text);
+}
+
+.admin-report-block-desc {
+	margin: 0 0 1rem;
+	font-size: 0.88rem;
+	line-height: 1.45;
+	color: var(--muted);
+	max-width: 52rem;
+}
+
+.admin-report-stat-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+	gap: 0.75rem 1rem;
+	margin-bottom: 1rem;
+}
+
+.admin-report-stat {
+	border-radius: 0.55rem;
+	border: 1px solid var(--border-muted);
+	padding: 0.75rem 0.85rem;
+	background: #fafafa;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-height: 5.5rem;
+}
+
+.admin-report-stat-label {
+	font-size: 0.82rem;
+	font-weight: 700;
+	color: var(--text);
+}
+
+.admin-report-stat-value {
+	font-size: 1.35rem;
+	font-weight: 700;
+	color: var(--text);
+	line-height: 1.2;
+}
+
+.admin-report-stat-hint {
+	font-size: 0.76rem;
+	line-height: 1.35;
+	color: var(--muted);
+	margin-top: auto;
+}
+
+.admin-report-stat--cash {
+	border-left: 3px solid #16a34a;
+}
+
+.admin-report-stat--card {
+	border-left: 3px solid #2563eb;
+}
+
+.admin-report-stat--agency {
+	border-left: 3px solid #9333ea;
+}
+
+.admin-report-grand {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.35rem 1rem;
+	padding: 0.85rem 1rem;
+	border-radius: 0.55rem;
+	background: rgba(251, 146, 60, 0.1);
+	border: 1px solid rgba(234, 88, 12, 0.25);
+}
+
+.admin-report-grand-label {
+	font-size: 0.88rem;
+	font-weight: 700;
+	color: var(--text);
+}
+
+.admin-report-grand-value {
+	font-size: 1.5rem;
+	font-weight: 800;
+	color: #c2410c;
+}
+
+.admin-report-grand-hint {
+	font-size: 0.78rem;
+	color: var(--muted);
+	margin-left: auto;
+}
+
+.admin-report-agency-table {
+	margin-top: 0.25rem;
+}
+
+.admin-report-agency-total-row td {
+	border-top: 2px solid var(--border-muted);
+	background: rgba(0, 0, 0, 0.03);
+}
+
+.admin-report-empty-note {
+	margin: 0;
+	font-size: 0.88rem;
+	color: var(--muted);
+	font-style: italic;
+}
+
 .admin-report-summary-card {
 	border-radius: 0.55rem;
 	border: 1px solid var(--border-muted);
