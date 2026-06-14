@@ -4,39 +4,18 @@
 -- pgAdmin / DBeaver / psql: bu dosyanın tamamını seçip çalıştır.
 --
 --   psql -h 192.168.0.15 -U postgres -d bodrum_aqua_park -f run-nightly-card-reset-now.sql
+--
+-- Yapılanlar:
+--   • card_ledger: tüm hareket geçmişi silinir
+--   • cards.balance → 0
+--   • cards.entry_gate → 0
+--   • rfid_card_passes.active → false (aktif günlük paslar)
 -- =============================================================================
 
 BEGIN;
 
--- DAILY_RESET defter kaydı için (zaten varsa sorun çıkarmaz)
-ALTER TABLE card_ledger DROP CONSTRAINT IF EXISTS card_ledger_type_check;
-
-ALTER TABLE card_ledger ADD CONSTRAINT card_ledger_type_check CHECK (
-	type IN (
-		'ENTRY',
-		'SALE',
-		'LOAD_CASH',
-		'LOAD_CARD',
-		'LOAD_AGENCY',
-		'TICKET_CASH',
-		'TICKET_CARD',
-		'TICKET_CREDIT',
-		'REFUND_CASH',
-		'DAILY_RESET'
-	)
-);
-
--- 1) Kalan bakiyeler için defter kaydı
-INSERT INTO card_ledger (card_id, type, amount_change, balance_after, description, created_at)
-SELECT
-	c.id,
-	'DAILY_RESET',
-	-c.balance,
-	0,
-	'Manuel günlük sıfırlama — bakiye ve turnike hakları',
-	NOW()
-FROM cards c
-WHERE c.balance > 0;
+-- 1) Tüm kart hareket geçmişini sil
+DELETE FROM card_ledger;
 
 -- 2) Bakiyeleri sıfırla
 UPDATE cards
@@ -64,4 +43,5 @@ COMMIT;
 SELECT
 	(SELECT COUNT(*) FROM cards WHERE balance = 0) AS sifir_bakiye_kart,
 	(SELECT COUNT(*) FROM cards WHERE entry_gate = 0) AS sifir_turnike_kart,
-	(SELECT COUNT(*) FROM rfid_card_passes WHERE active = false) AS pasif_pas;
+	(SELECT COUNT(*) FROM rfid_card_passes WHERE active = false) AS pasif_pas,
+	(SELECT COUNT(*) FROM card_ledger) AS kalan_hareket;

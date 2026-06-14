@@ -173,7 +173,10 @@ Sunucu bilgileri (varsayılan — BodrumDbBackup.bat içinde düzenleyin):
   C: Evet, mümkünse ayda bir en son .backup dosyasını kopyalayın.
 
   S: Kart sıfırlama scripti?
-  C: backend/scripts/postgresql-nightly-card-reset.sql (pgAdmin'de çalıştırılır)
+  C: 1) pgAdmin'de postgresql-nightly-card-reset.sql (fonksiyon kurulumu)
+     2) Yönetici PowerShell: .\BodrumNightlyCardReset-Zamanla.ps1 (her gece 23:00)
+     Not: Windows'ta pg_cron yoktur; pg_cron hatasi alirsaniz pgcron dosyasini calistirmayin.
+     Anlik sifirlama: run-nightly-card-reset-now.sql
 
 ================================================================================
 9) KURULUM ÖZET

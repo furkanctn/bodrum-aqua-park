@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +33,11 @@ import com.bodrumaquapark.web.dto.SaleAreaRevenueDto;
 public class AdminReportService {
 
 	public static final ZoneId REPORT_ZONE = ZoneId.of("Europe/Istanbul");
+
+	private static final EnumSet<TransactionType> TICKET_ENTRY_TYPES = EnumSet.of(
+			TransactionType.TICKET_CASH,
+			TransactionType.TICKET_CARD,
+			TransactionType.TICKET_CREDIT);
 
 	private final CardLedgerEntryRepository ledgerRepository;
 
@@ -111,9 +117,11 @@ public class AdminReportService {
 		BigDecimal grand = Money.normalize(cash.add(card).add(agency));
 		List<AgencyTicketCountDto> agencyTickets = agencyTicketCounts(r.fromInclusive(), r.toExclusive());
 		long agencyTicketTotal = agencyTickets.stream().mapToLong(AgencyTicketCountDto::count).sum();
+		long ticketEntryTotal = ledgerRepository.aggregateTicketEntryCount(
+				TICKET_ENTRY_TYPES, r.fromInclusive(), r.toExclusive());
 		return new PaymentSalesReportDto(
 				r.fromDay(), r.toDay(), REPORT_ZONE.getId(), cash, card, agency, grand, agencyTickets,
-				agencyTicketTotal);
+				agencyTicketTotal, ticketEntryTotal);
 	}
 
 	private List<AgencyTicketCountDto> agencyTicketCounts(Instant from, Instant to) {

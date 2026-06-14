@@ -720,7 +720,8 @@ body {
 	border-left: 3px solid #2563eb;
 }
 
-.admin-report-stat--agency {
+.admin-report-stat--agency,
+.admin-report-stat--visitors {
 	border-left: 3px solid #9333ea;
 }
 
@@ -1088,7 +1089,7 @@ body {
 	margin-bottom: 0.85rem;
 }
 
-.admin-modal-form label {
+.admin-modal-form .field > label {
 	display: block;
 	font-size: 0.72rem;
 	font-weight: 600;
@@ -1098,7 +1099,7 @@ body {
 	text-transform: uppercase;
 }
 
-.admin-modal-form input,
+.admin-modal-form input:not([type="checkbox"]),
 .admin-modal-form select {
 	width: 100%;
 	padding: 0.6rem 0.75rem;
@@ -1110,7 +1111,7 @@ body {
 	font-size: 0.95rem;
 }
 
-.admin-modal-form input:focus,
+.admin-modal-form input:not([type="checkbox"]):focus,
 .admin-modal-form select:focus {
 	outline: none;
 	border-color: rgba(234, 88, 12, 0.45);
@@ -1122,6 +1123,50 @@ body {
 	font-size: 0.9rem;
 	color: var(--text);
 	cursor: pointer;
+}
+
+.admin-sale-area-checks {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+	margin-top: 0.35rem;
+}
+
+.admin-modal-form label.admin-check-card {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin: 0;
+	padding: 0.45rem 0.15rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--text);
+	text-transform: none;
+	letter-spacing: normal;
+	cursor: pointer;
+	border-radius: 0.45rem;
+}
+
+.admin-modal-form label.admin-check-card:hover {
+	background: var(--accent-soft);
+}
+
+.admin-modal-form label.admin-check-card span {
+	flex: 1;
+	min-width: 0;
+	line-height: 1.35;
+	order: 1;
+}
+
+.admin-modal-form label.admin-check-card input[type="checkbox"] {
+	width: 1.05rem;
+	height: 1.05rem;
+	margin: 0;
+	flex-shrink: 0;
+	accent-color: var(--accent);
+	cursor: pointer;
+	order: 2;
 }
 
 .admin-modal-actions {

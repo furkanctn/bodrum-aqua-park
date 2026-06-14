@@ -1257,7 +1257,12 @@
 		var grand = data && data.grandTotal != null ? parseFloat(String(data.grandTotal), 10) : 0;
 		var agencyTicketTotal =
 			data && data.agencyTicketTotalCount != null ? parseInt(String(data.agencyTicketTotalCount), 10) : 0;
-		var hasData = (data && !isNaN(grand) && grand > 0) || (!isNaN(agencyTicketTotal) && agencyTicketTotal > 0);
+		var ticketEntryTotal =
+			data && data.ticketEntryTotalCount != null ? parseInt(String(data.ticketEntryTotalCount), 10) : 0;
+		var hasData =
+			(data && !isNaN(grand) && grand > 0) ||
+			(!isNaN(agencyTicketTotal) && agencyTicketTotal > 0) ||
+			(!isNaN(ticketEntryTotal) && ticketEntryTotal > 0);
 		if (emptyEl) {
 			emptyEl.hidden = hasData;
 		}
@@ -1307,10 +1312,10 @@
 				value: formatTryAmount(data.cardTotal),
 			},
 			{
-				key: "agency",
-				label: "Acenta (kredili)",
-				hint: "Acenta bakiye yükleme + kredili tahsilat",
-				value: formatTryAmount(data.agencyTotal),
+				key: "visitors",
+				label: "Giriş yapan kullanıcı",
+				hint: "Nakit, kart ve acenta dahil toplam bilet satışı",
+				value: String(isNaN(ticketEntryTotal) ? 0 : ticketEntryTotal) + " kişi",
 			},
 		].forEach(function (item) {
 			var card = document.createElement("div");

@@ -46,6 +46,11 @@ public interface CardLedgerEntryRepository extends JpaRepository<CardLedgerEntry
 			+ "group by tag.id, tag.name, tag.sortOrder order by tag.sortOrder asc, tag.id asc")
 	List<Object[]> aggregateAgencyTicketCounts(@Param("from") Instant from, @Param("to") Instant to);
 
+	@Query("select coalesce(sum(case when e.lineQuantity is not null then e.lineQuantity else 1 end), 0) "
+			+ "from CardLedgerEntry e where e.type in :types and e.createdAt >= :from and e.createdAt < :to")
+	long aggregateTicketEntryCount(@Param("types") Collection<TransactionType> types, @Param("from") Instant from,
+			@Param("to") Instant to);
+
 	@EntityGraph(attributePaths = { "product", "product.menuPage", "saleArea", "card" })
 	@Query("select e from CardLedgerEntry e where e.createdAt >= :from and e.createdAt < :to")
 	Page<CardLedgerEntry> findLedgerPageForRange(@Param("from") Instant from, @Param("to") Instant to, Pageable pageable);

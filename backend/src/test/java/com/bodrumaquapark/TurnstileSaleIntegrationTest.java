@@ -1,5 +1,6 @@
 package com.bodrumaquapark;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -121,6 +122,7 @@ class TurnstileSaleIntegrationTest {
 				.header(HttpHeaders.AUTHORIZATION, bearerAuth()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.agencyTicketTotalCount").value(3))
+				.andExpect(jsonPath("$.ticketEntryTotalCount").value(greaterThanOrEqualTo(3)))
 				.andExpect(jsonPath("$.agencyTicketCounts[0].name").value("Acenta Yetişkin"))
 				.andExpect(jsonPath("$.agencyTicketCounts[0].count").value(2))
 				.andExpect(jsonPath("$.agencyTicketCounts[1].name").value("Acenta Çocuk"))

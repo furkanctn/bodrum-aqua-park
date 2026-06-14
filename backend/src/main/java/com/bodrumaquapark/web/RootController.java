@@ -7,22 +7,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.bodrumaquapark.AppVersion;
+
 @RestController
 public class RootController {
 
 	@Value("${spring.application.name:bodrum-aqua-park-api}")
 	private String applicationName;
 
-	@Value("${app.version:}")
-	private String appVersion;
-
 	@GetMapping("/api/info")
 	public Map<String, Object> apiInfo() {
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("name", applicationName);
-		if (appVersion != null && !appVersion.isBlank()) {
-			body.put("version", appVersion);
-		}
+		body.put("version", AppVersion.VERSION);
 		body.put("status", "UP");
 		body.put("message", "API çalışıyor. Aşağıdaki uç noktaları deneyin.");
 		Map<String, String> endpoints = new LinkedHashMap<>();

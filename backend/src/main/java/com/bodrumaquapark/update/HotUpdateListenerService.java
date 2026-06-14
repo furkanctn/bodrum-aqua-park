@@ -7,12 +7,12 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.bodrumaquapark.AppVersion;
 import com.bodrumaquapark.config.AquaparkUpdateProperties;
 import com.bodrumaquapark.repository.AppSettingRepository;
 import com.bodrumaquapark.util.AquaparkDiagnosticLog;
@@ -32,16 +32,12 @@ public class HotUpdateListenerService {
 	private final DesktopHotUpdatePrompt desktopHotUpdatePrompt;
 	private final ConfigurableApplicationContext applicationContext;
 
-	private final String appVersionFromBuild;
-
 	public HotUpdateListenerService(AquaparkUpdateProperties props, AppSettingRepository appSettingRepository,
-			DesktopHotUpdatePrompt desktopHotUpdatePrompt, ConfigurableApplicationContext applicationContext,
-			@Value("${app.version:}") String appVersionFromBuild) {
+			DesktopHotUpdatePrompt desktopHotUpdatePrompt, ConfigurableApplicationContext applicationContext) {
 		this.props = props;
 		this.appSettingRepository = appSettingRepository;
 		this.desktopHotUpdatePrompt = desktopHotUpdatePrompt;
 		this.applicationContext = applicationContext;
-		this.appVersionFromBuild = appVersionFromBuild != null ? appVersionFromBuild : "";
 	}
 
 	@Scheduled(fixedDelayString = "${aquapark.update.check-interval-ms:900000}")
@@ -62,7 +58,7 @@ public class HotUpdateListenerService {
 			if (remote.isEmpty()) {
 				return;
 			}
-			String current = readLocalPinnedVersion().orElse(trimOrEmpty(appVersionFromBuild));
+			String current = readLocalPinnedVersion().orElse(AppVersion.VERSION);
 			if (current.equals(remote)) {
 				return;
 			}
