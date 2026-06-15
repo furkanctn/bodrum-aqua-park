@@ -6,6 +6,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
+INCLUDE_STATIC=false
+if [[ "${1:-}" == "--with-static" ]]; then
+	INCLUDE_STATIC=true
+elif [[ -n "${1:-}" ]]; then
+	echo "Kullanim: bash backend/scripts/usb-paket-olustur.sh [--with-static]" >&2
+	exit 1
+fi
+
 MVN="mvn"
 if ! command -v mvn >/dev/null 2>&1; then
 	chmod +x backend/mvnw 2>/dev/null || true
@@ -43,6 +51,11 @@ LAUNCHER_JAR="bodrum-aqua-park-api-${VERSION}-launcher.jar"
 OUT="$ROOT/dist/usb-windows-pos"
 mkdir -p "$OUT"
 rm -f "$OUT"/bodrum-aqua-park-api-*.jar
+# Sadece runtime paket kalsin; onceki calistirmalardan kalan ekstra statik dosyalari temizle.
+rm -f "$OUT"/POS-USB-KURULUM.txt
+rm -f "$OUT"/AquaparkGuncellemeCek.bat
+rm -f "$OUT"/AquaparkGuncellemeCek-Zamanla.ps1
+rm -f "$OUT"/AquaparkIlkKurulum.ps1
 
 if [[ ! -f "backend/target/$JAR_NAME" ]]; then
 	echo "[HATA] backend/target/$JAR_NAME bulunamadı." >&2
@@ -67,10 +80,23 @@ mkdir -p "$OUT/config"
 cp backend/scripts/windows/config/application.properties.example "$OUT/config/"
 cp backend/scripts/windows/javafx-logging.properties "$OUT/"
 cp backend/scripts/windows/Olustur-Masaustu-Kisayolu.ps1 "$OUT/"
-cp backend/scripts/windows/POS-USB-KURULUM.txt "$OUT/" 2>/dev/null || true
-cp backend/scripts/windows/AquaparkGuncellemeCek.bat "$OUT/"
-cp backend/scripts/windows/AquaparkGuncellemeCek-Zamanla.ps1 "$OUT/"
-cp backend/scripts/windows/AquaparkIlkKurulum.ps1 "$OUT/"
+if [[ -f "backend/scripts/windows/app.ico" ]]; then
+	cp "backend/scripts/windows/app.ico" "$OUT/app.ico"
+elif [[ -f "backend/packaging/windows/app.ico" ]]; then
+	cp "backend/packaging/windows/app.ico" "$OUT/app.ico"
+else
+	rm -f "$OUT/app.ico"
+fi
+
+STATIC_OUT="$ROOT/dist/usb-windows-pos-static"
+if [[ "$INCLUDE_STATIC" == "true" ]]; then
+	mkdir -p "$STATIC_OUT"
+	cp backend/scripts/windows/Olustur-Masaustu-Kisayolu.ps1 "$STATIC_OUT/"
+	cp backend/scripts/windows/POS-USB-KURULUM.txt "$STATIC_OUT/" 2>/dev/null || true
+	cp backend/scripts/windows/AquaparkGuncellemeCek.bat "$STATIC_OUT/"
+	cp backend/scripts/windows/AquaparkGuncellemeCek-Zamanla.ps1 "$STATIC_OUT/"
+	cp backend/scripts/windows/AquaparkIlkKurulum.ps1 "$STATIC_OUT/"
+fi
 
 ZIP="$ROOT/dist/usb-windows-pos-${VERSION}-$(date +%Y%m%d).zip"
 rm -f "$ZIP"
@@ -83,8 +109,7 @@ fi
 # Sunucudaki Aquapark_Update klasör yapısı:
 #   Aquapark_Update/latest.txt          -> sadece sürüm metni
 #   Aquapark_Update/{VERSION}/app.jar   -> HotUpdateListenerService / SmartLauncher bunu okur (sadece JAR güncellemesi)
-#   Aquapark_Update/{VERSION}/...       -> usb-windows-pos ile aynı tam paket (AquaparkIlkKurulum.ps1
-#                                           ilk kurulumda veya altyapı dosyalarını tazelemek için bunu indirir)
+#   Aquapark_Update/{VERSION}/...       -> runtime paketi (JAR + launcher + BAT + config ornegi)
 UPDATE_OUT="$ROOT/dist/aquapark-update"
 rm -rf "$UPDATE_OUT"
 mkdir -p "$UPDATE_OUT/$VERSION"
@@ -103,9 +128,18 @@ echo "==> Sunucuya (FileZilla ile) yüklenecek otomatik güncelleme klasörü:"
 echo "    $UPDATE_OUT"
 echo "    İçeriğini sunucudaki Aquapark_Update klasörünün üzerine yükleyin"
 echo "    (latest.txt'nin üzerine yazılmalı; $VERSION klasörü eklenmeli)."
-echo "    Bu klasör tam paketi içerir (JAR + launcher + BAT + scriptler + config örneği)."
+echo "    Bu klasör runtime paketini içerir (JAR + launcher + BAT + config örneği)."
+if [[ "$INCLUDE_STATIC" == "true" ]]; then
+	echo ""
+	echo "==> Statik kurulum/dokuman dosyalari (ayri):"
+	echo "    $STATIC_OUT"
+else
+	echo ""
+	echo "==> Statik kurulum/dokuman dosyalari pakete eklenmedi."
+	echo "    Gerektiginde uretilir: bash backend/scripts/usb-paket-olustur.sh --with-static"
+fi
 echo ""
 echo "    - Çalışan POS'lar: app.jar'ı (~15 dk'da bir) görüp kendini günceller, devam eder."
-echo "    - Yeni POS / tam tazeleme: AquaparkIlkKurulum.ps1'i (USB ile) Yönetici PowerShell'de"
-echo "      çalıştırın -> her şeyi FTP'den indirir, oto-güncelleme görevini kurar, uygulamayı başlatır."
+echo "    - Yeni POS / tam tazeleme: gerekli oldugunda static klasorden AquaparkIlkKurulum.ps1"
+echo "      alin, Yonetici PowerShell'de calistirin."
 echo ""

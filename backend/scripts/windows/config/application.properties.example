@@ -2,12 +2,12 @@
 # Ilk calistirmada BAT bu dosyayi example'dan olusturabilir; sizin dosyaniz varsa dokunmaz.
 
 # PostgreSQL — DATA-SERVER (kasa PC: uygulama 127.0.0.1:8081, veri sunucuda)
-spring.datasource.url=jdbc:postgresql://10.100.172.9:5433/bodrum_aqua_park
+spring.datasource.url=jdbc:postgresql://10.100.172.145:5433/bodrum_aqua_park
 spring.datasource.username=postgres
-spring.datasource.password=DEGISTIR
+spring.datasource.password=123123
 
 # Tum kasalarda ayni olmali (en az 32 karakter)
-app.jwt.secret=DEGISTIR-en-az-32-karakter-gizli-anahtar
+app.jwt.secret=d8f3a1c7e2b6094f5d1a8e3c7b2f6094a
 
 # Uygulama surumu: AppVersion.java (JAR icinde sabit; properties ile degistirilmez)
 
