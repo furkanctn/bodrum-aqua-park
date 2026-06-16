@@ -38,10 +38,18 @@ if errorlevel 1 (
 	exit /b 1
 )
 
+echo Acik sunucu kontrolu yapiliyor...
+powershell -NoProfile -Command ^
+	"try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 'http://127.0.0.1:8081/api/health'; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if not errorlevel 1 (
+	echo Sunucu zaten calisiyor, yeniden baslatilmadi.
+	goto :server_ready
+)
+
 echo Sunucu baslatiliyor (ayri pencere)...
 echo [%date% %time%] Sunucu gunlugu: %SERVER_LOG%>> "%LOG%"
 echo [%date% %time%] Profil: %SPRING_PROFILES_ACTIVE% config: %HERE%\config>> "%LOG%"
-start "BodrumAquaPark Sunucu" /min cmd /k "cd /d ""%HERE%"" && set ""SPRING_PROFILES_ACTIVE=%SPRING_PROFILES_ACTIVE%"" && set ""LOG_FILE=%LOG_FILE%"" && set ""APP_PRINTER_WINDOWS_QUEUE=%APP_PRINTER_WINDOWS_QUEUE%"" && set ""AQUAPARK_LAUNCHER_JAR=%HERE%\%LAUNCHER_JAR%"" && java %JAVA_OPTS_SERVER% -jar ""%HERE%\%JAR%"""
+start "BodrumAquaPark Sunucu" /min cmd /c "cd /d ""%HERE%"" && set ""SPRING_PROFILES_ACTIVE=%SPRING_PROFILES_ACTIVE%"" && set ""LOG_FILE=%LOG_FILE%"" && set ""APP_PRINTER_WINDOWS_QUEUE=%APP_PRINTER_WINDOWS_QUEUE%"" && set ""AQUAPARK_LAUNCHER_JAR=%HERE%\%LAUNCHER_JAR%"" && java %JAVA_OPTS_SERVER% -jar ""%HERE%\%JAR%"" >> ""%SERVER_LOG%"" 2>&1"
 
 set "WAIT_MAX=60"
 echo Edge icin bekleniyor (sunucu hazir olunca acilir; max %WAIT_MAX% sn)...
@@ -99,10 +107,10 @@ if exist "%CFG_EXAMPLE%" (
 	copy /Y "%CFG_EXAMPLE%" "%CFG_FILE%" >nul
 ) else (
 	echo # PostgreSQL - bu dosyayi duzenleyin> "%CFG_FILE%"
-	echo spring.datasource.url=jdbc:postgresql://DATA-SERVER.aqua.local:5433/bodrum_aqua_park>> "%CFG_FILE%"
+	echo spring.datasource.url=jdbc:postgresql://10.100.172.145:5433/bodrum_aqua_park>> "%CFG_FILE%"
 	echo spring.datasource.username=postgres>> "%CFG_FILE%"
-	echo spring.datasource.password=DEGISTIR>> "%CFG_FILE%"
-	echo app.jwt.secret=DEGISTIR-en-az-32-karakter-gizli-anahtar>> "%CFG_FILE%"
+	echo spring.datasource.password=123123>> "%CFG_FILE%"
+	echo app.jwt.secret=d8f3a1c7e2b6094f5d1a8e3c7b2f6094a>> "%CFG_FILE%"
 )
 echo.
 echo [BILGI] Ilk kurulum: %CFG_FILE%

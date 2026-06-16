@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.bodrumaquapark</groupId>
 	<artifactId>bodrum-aqua-park-api</artifactId>
-	<version>1.2.0.6</version>
+	<version>1.2.0.17</version>
 	<name>bodrum-aqua-park-api</name>
 	<description>Bodrum Aqua Park Backend API</description>
 	<url/>
@@ -166,6 +166,15 @@
 							<classifier>launcher</classifier>
 							<mainClass>com.bodrumaquapark.launcher.SmartLauncher</mainClass>
 						</configuration>
+					</execution>
+					<execution>
+						<!-- pom.xml sürümünü target/classes/META-INF/build-info.properties'e yazar;
+						     AppVersion bunu okuyarak UI ve güncelleme kontrolü için tek kaynaktan sürüm sağlar. -->
+						<id>build-info</id>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+						<phase>prepare-package</phase>
 					</execution>
 				</executions>
 				<configuration>

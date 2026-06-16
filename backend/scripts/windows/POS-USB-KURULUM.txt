@@ -17,6 +17,7 @@ Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
    - javafx-logging.properties  ← JavaFX konsol uyarilarini susturur (usb-paket-olustur.sh ile gelir)
    - Olustur-Masaustu-Kisayolu.ps1  ← masaüstü kısayolu + simge (isteğe bağlı)
    - app.ico  ← kısayol simgesi için bu klasöre koyun (yoksa varsayılan simge)
+   - AquaparkIlkKurulum.ps1  ← yeni POS kurulumu / tam tazeleme (bkz. bölüm 8)
    - Bu dosya: POS-USB-KURULUM.txt (isteğe bağlı)
 
    Mac'te tek seferde klasör oluşturmak için (BAT + JAR birlikte):
@@ -86,5 +87,35 @@ Bodrum Aqua Park — Mac'te derleme, Windows POS'ta USB ile test
    - "java bulunamadı" → PATH veya JAVA_HOME
    - Uygulama açılmıyor → BAT'ı sağ tık > düzenle, hata mesajı için pencereyi kapatmayın
    - 8081 kullanımda → başka program kapatın veya server.port değiştirin
+
+8) İLK KURULUM (yeni POS — tek script, sunucudan otomatik)
+   - Sunucu: backend/scripts/usb-paket-olustur.sh her çalıştığında dist/aquapark-update/
+     klasörünü üretir: latest.txt + {sürüm}/ klasörü (JAR + launcher + BAT + scriptler +
+     config örneği — usb-windows-pos ile aynı içerik, ayrıca app.jar). Bu klasörün içeriğini
+     FileZilla ile sunucudaki Aquapark_Update klasörünün üzerine yükleyin
+     (latest.txt'nin üzerine yazılır; her sürüm için yeni bir {sürüm}/ klasörü eklenir).
+   - Yeni POS'a SADECE şu dosyayı USB ile taşıyın: AquaparkIlkKurulum.ps1
+   - Dosyayı düzenleyip FTP_HOST / FTP_USER / FTP_PASS / FTP_REMOTE_DIR alanlarını
+     sunucu bilgilerinizle doldurun, sonra Yönetici PowerShell'de:
+       Set-ExecutionPolicy -Scope Process Bypass
+       .\AquaparkIlkKurulum.ps1
+   - Bu script otomatik olarak:
+       * Güncel sürümü ve tüm dosyaları (JAR, launcher, BAT, config örneği, yardımcı
+         scriptler) FTP'den C:\Aquapark altına indirir,
+       * AquaparkGuncellemeCek.bat'a aynı FTP bilgilerini yazar,
+       * Otomatik güncelleme görevini (Görev Zamanlayıcı, 10 dk'da bir) kurar,
+       * BodrumAquaPark.bat'ı başlatır.
+   - Var olan bir POS'ta tekrar çalıştırılırsa: BAT/launcher/config-örneği gibi altyapı
+     dosyalarını en güncel sürüme tazeler (config\application.properties'e dokunmaz).
+
+9) OTOMATİK GÜNCELLEME (sürekli işleyiş)
+   - AquaparkIlkKurulum.ps1 ile kurulan görev (BodrumAquaPark-GuncellemeKontrol) her
+     10 dakikada bir AquaparkGuncellemeCek.bat'ı çalıştırır:
+     FTP'den C:\Aquapark_Update'e yeni latest.txt + {sürüm}/app.jar indirilir.
+   - Uygulama (içeride ~15 dk'da bir) latest.txt'i görür → kullanıcıya sorar →
+     onaylanırsa kendini günceller (app.jar) ve yeniden başlar. Bu döngü sürekli devam eder.
+   - BAT/launcher/config-örneği gibi dosyalarda değişiklik olduysa (altyapı güncellemesi):
+     AquaparkIlkKurulum.ps1'i POS'ta tekrar çalıştırmanız yeterli (tam tazeleme).
+   - Log: C:\Aquapark_Update\guncelleme-kontrol.log
 
 ================================================================================
