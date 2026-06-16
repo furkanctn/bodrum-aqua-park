@@ -28,6 +28,7 @@ import com.bodrumaquapark.repository.TicketAgeGroupRepository;
 import com.bodrumaquapark.util.MifareUid;
 import com.bodrumaquapark.util.Money;
 import com.bodrumaquapark.web.dto.CardDetailResponse;
+import com.bodrumaquapark.web.dto.CashRefundResponse;
 import com.bodrumaquapark.web.dto.LedgerEntryResponse;
 import com.bodrumaquapark.web.dto.TicketGrantLineRequest;
 
@@ -177,6 +178,67 @@ public class CardService {
 		return CardDetailResponse.build(card, entries, ledger, lockedPaymentMethod);
 	}
 
+	public static final String INQUIRY_REFUND_DESC_PREFIX = "POS sorgulama — nakit iade";
+	public static final String INQUIRY_FORFEIT_DESC_PREFIX = "POS sorgulama — bakiye sifirlama";
+
+	@Transactional
+	public CashRefundResponse cashRefundAtInquiry(String uid, String operatorUserId, BigDecimal requestedAmount) {
+		MifareUid.Parsed parsed = requireParsedUid(uid);
+		Card card = cardRepository.findFirstByUidInForUpdate(parsed.lookupKeys())
+				.orElseThrow(() -> new CardNotFoundException(parsed.canonical()));
+		if (card.getStatus() != CardStatus.ACTIVE) {
+			throw new CardBlockedException(parsed.canonical());
+		}
+		BigDecimal balance = Money.normalize(card.getBalance());
+		if (balance.compareTo(BigDecimal.ZERO) <= 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Kart bakiyesi zaten sıfır");
+		}
+		BigDecimal req = Money.normalize(requestedAmount != null ? requestedAmount : BigDecimal.ZERO);
+		if (req.compareTo(BigDecimal.ZERO) < 0) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "İade tutarı negatif olamaz");
+		}
+		List<CardLedgerEntry> entries = ledgerEntryRepository.findByCard_UidOrderByCreatedAtDesc(card.getUid());
+		BigDecimal cashRefundableMax = CardDetailResponse.build(card, entries, List.of(), null).cashRefundableAmount();
+		if (cashRefundableMax.compareTo(balance) > 0) {
+			cashRefundableMax = balance;
+		}
+		BigDecimal refundCash = req.min(cashRefundableMax);
+		BigDecimal forfeit = Money.normalize(balance.subtract(refundCash));
+		BigDecimal running = balance;
+		String kasiyer = operatorUserId != null && !operatorUserId.isBlank() ? operatorUserId.trim() : "—";
+		if (refundCash.compareTo(BigDecimal.ZERO) > 0) {
+			running = Money.normalize(running.subtract(refundCash));
+			String desc = String.format(
+					"%s · Kasiyer: %s · Odenen: %s · Kalan bakiye: %s",
+					INQUIRY_REFUND_DESC_PREFIX,
+					kasiyer,
+					Money.formatTryLabel(refundCash),
+					Money.formatTryLabel(running));
+			ledgerEntryRepository.save(new CardLedgerEntry(
+					card, TransactionType.REFUND_CASH, refundCash.negate(), running, desc));
+		}
+		if (forfeit.compareTo(BigDecimal.ZERO) > 0) {
+			running = BigDecimal.ZERO;
+			String desc = String.format(
+					"%s · Kasiyer: %s · Iade edilemez tutar: %s",
+					INQUIRY_FORFEIT_DESC_PREFIX,
+					kasiyer,
+					Money.formatTryLabel(forfeit));
+			ledgerEntryRepository.save(new CardLedgerEntry(
+					card, TransactionType.DAILY_RESET, forfeit.negate(), running, desc));
+		}
+		card.setBalance(BigDecimal.ZERO);
+		Card saved = cardRepository.save(card);
+		log.info(
+				"Kart sorgulama iadesi: uidHint={}, kasiyer={}, nakitIade={}, sifirlanan={}, bakiyeSonra={}",
+				MifareUid.mask(parsed.canonical()),
+				kasiyer,
+				refundCash,
+				forfeit,
+				saved.getBalance());
+		return new CashRefundResponse(saved.getUid(), saved.getBalance(), refundCash, forfeit);
+	}
+
 	@Transactional
 	public Card grantTicketEntry(String uid, String operatorUserId, String paymentMethod, BigDecimal saleAmount,
 			List<TicketGrantLineRequest> lines) {
@@ -236,16 +298,28 @@ public class CardService {
 					continue;
 				}
 				TicketAgeGroup tag = ticketAgeGroupRepository.findById(line.ticketAgeGroupId()).orElse(null);
-				if (tag == null || !tag.isAgencyComplimentary()) {
+				if (tag == null) {
 					continue;
 				}
 				int qty = Math.max(1, line.quantity());
-				String agencyDesc = String.format(
-						"POS acenta bilet — %s × %d · Turnike giris hakki (entryGate=1)",
+				if (tag.isAgencyComplimentary()) {
+					String agencyDesc = String.format(
+							"POS acenta bilet — %s × %d · Turnike giris hakki (entryGate=1)",
+							tag.getName(),
+							qty);
+					ledgerEntryRepository.save(new CardLedgerEntry(
+							saved, TransactionType.TICKET_CREDIT, BigDecimal.ZERO, bal, null, null, tag, qty, agencyDesc));
+					continue;
+				}
+				if (txType == TransactionType.TICKET_CREDIT) {
+					continue;
+				}
+				String lineDesc = String.format(
+						"POS bilet — %s × %d · Turnike giris hakki (entryGate=1)",
 						tag.getName(),
 						qty);
 				ledgerEntryRepository.save(new CardLedgerEntry(
-						saved, TransactionType.TICKET_CREDIT, BigDecimal.ZERO, bal, null, null, tag, qty, agencyDesc));
+						saved, txType, BigDecimal.ZERO, bal, null, null, tag, qty, lineDesc));
 			}
 		}
 		String kasiyer = operatorUserId != null && !operatorUserId.isBlank() ? operatorUserId.trim() : "—";

@@ -14,5 +14,8 @@ public record PaymentSalesReportDto(
 		BigDecimal grandTotal,
 		List<AgencyTicketCountDto> agencyTicketCounts,
 		long agencyTicketTotalCount,
-		long ticketEntryTotalCount) {
+		long ticketEntryTotalCount,
+		TicketSalesReportSectionDto ticketSales,
+		BalanceLoadReportSectionDto balanceLoad,
+		CardInquiryRefundReportSectionDto cardInquiryRefund) {
 }

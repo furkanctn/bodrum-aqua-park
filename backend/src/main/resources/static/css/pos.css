@@ -921,7 +921,8 @@ button.footer-rfid-test--btn {
 	opacity: 0;
 	pointer-events: none;
 	transition: opacity 0.25s, transform 0.25s;
-	z-index: 100;
+	/* POS overlay panelleri çok yüksek z-index (999xx) kullanıyor; toast her zaman onların üstünde görünmeli. */
+	z-index: 1000000;
 	box-shadow: var(--pos-shadow);
 }
 

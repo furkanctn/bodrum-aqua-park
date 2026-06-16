@@ -1249,6 +1249,27 @@
 		});
 	}
 
+	function appendReportStatGrid(parent, items) {
+		var grid = document.createElement("div");
+		grid.className = "admin-report-stat-grid";
+		items.forEach(function (item) {
+			var card = document.createElement("div");
+			card.className = "admin-report-stat admin-report-stat--" + item.key;
+			card.innerHTML =
+				'<span class="admin-report-stat-label">' +
+				escapeHtml(item.label) +
+				"</span>" +
+				'<span class="admin-report-stat-value">' +
+				escapeHtml(item.value) +
+				"</span>" +
+				(item.hint
+					? '<span class="admin-report-stat-hint">' + escapeHtml(item.hint) + "</span>"
+					: "");
+			grid.appendChild(card);
+		});
+		parent.appendChild(grid);
+	}
+
 	function renderPaymentSalesSummary(containerEl, emptyEl, data) {
 		if (!containerEl) {
 			return;
@@ -1257,12 +1278,39 @@
 		var grand = data && data.grandTotal != null ? parseFloat(String(data.grandTotal), 10) : 0;
 		var agencyTicketTotal =
 			data && data.agencyTicketTotalCount != null ? parseInt(String(data.agencyTicketTotalCount), 10) : 0;
-		var ticketEntryTotal =
-			data && data.ticketEntryTotalCount != null ? parseInt(String(data.ticketEntryTotalCount), 10) : 0;
+		var ticketSales = data && data.ticketSales ? data.ticketSales : null;
+		var balanceLoad = data && data.balanceLoad ? data.balanceLoad : null;
+		var ticketTotal =
+			ticketSales && ticketSales.totalTicketCount != null
+				? parseInt(String(ticketSales.totalTicketCount), 10)
+				: data && data.ticketEntryTotalCount != null
+					? parseInt(String(data.ticketEntryTotalCount), 10)
+					: 0;
+		var visitorsTotal =
+			(isNaN(ticketTotal) ? 0 : ticketTotal) + (isNaN(agencyTicketTotal) ? 0 : agencyTicketTotal);
+		var ticketCash =
+			ticketSales && ticketSales.cashTotal != null ? parseFloat(String(ticketSales.cashTotal), 10) : 0;
+		var ticketCard =
+			ticketSales && ticketSales.cardTotal != null ? parseFloat(String(ticketSales.cardTotal), 10) : 0;
+		var loadCash =
+			balanceLoad && balanceLoad.cashTotal != null ? parseFloat(String(balanceLoad.cashTotal), 10) : 0;
+		var loadCard =
+			balanceLoad && balanceLoad.cardTotal != null ? parseFloat(String(balanceLoad.cardTotal), 10) : 0;
+		var cardInquiryRefund =
+			data && data.cardInquiryRefund ? data.cardInquiryRefund : null;
+		var refundCash =
+			cardInquiryRefund && cardInquiryRefund.cashRefundTotal != null
+				? parseFloat(String(cardInquiryRefund.cashRefundTotal), 10)
+				: 0;
 		var hasData =
 			(data && !isNaN(grand) && grand > 0) ||
 			(!isNaN(agencyTicketTotal) && agencyTicketTotal > 0) ||
-			(!isNaN(ticketEntryTotal) && ticketEntryTotal > 0);
+			(!isNaN(ticketTotal) && ticketTotal > 0) ||
+			(!isNaN(ticketCash) && ticketCash > 0) ||
+			(!isNaN(ticketCard) && ticketCard > 0) ||
+			(!isNaN(loadCash) && loadCash > 0) ||
+			(!isNaN(loadCard) && loadCard > 0) ||
+			(!isNaN(refundCash) && refundCash > 0);
 		if (emptyEl) {
 			emptyEl.hidden = hasData;
 		}
@@ -1291,11 +1339,81 @@
 				: "");
 		containerEl.appendChild(periodBar);
 
+		var ticketBlock = document.createElement("section");
+		ticketBlock.className = "admin-report-block admin-report-block--ticket";
+		ticketBlock.innerHTML =
+			'<h3 class="admin-report-block-title">Bilet satış (Kule)</h3>' +
+			'<p class="admin-report-block-desc">POS kart satış ekranından kesilen ücretli biletler. Ücretsiz acenta biletleri bu sayıya dahil değildir; acenta adetleri aşağıdaki bölümde gösterilir.</p>';
+		appendReportStatGrid(ticketBlock, [
+			{
+				key: "visitors",
+				label: "Toplam bilet",
+				value: String(isNaN(ticketTotal) ? 0 : ticketTotal) + " kişi",
+				hint: "Ücretli biletler — acenta hariç",
+			},
+			{
+				key: "ticket-child",
+				label: "Çocuk",
+				value:
+					String(
+						ticketSales && ticketSales.childTicketCount != null
+							? parseInt(String(ticketSales.childTicketCount), 10)
+							: 0
+					) + " kişi",
+				hint: "Çocuk tarifeleri",
+			},
+			{
+				key: "ticket-adult",
+				label: "Yetişkin",
+				value:
+					String(
+						ticketSales && ticketSales.adultTicketCount != null
+							? parseInt(String(ticketSales.adultTicketCount), 10)
+							: 0
+					) + " kişi",
+				hint: "Yetişkin ve diğer ücretli tarifeler",
+			},
+			{
+				key: "cash",
+				label: "Nakit tahsilat",
+				value: formatTryAmount(ticketSales ? ticketSales.cashTotal : 0),
+				hint: "Ücretli bilet — nakit",
+			},
+			{
+				key: "card",
+				label: "Kredi kartı tahsilat",
+				value: formatTryAmount(ticketSales ? ticketSales.cardTotal : 0),
+				hint: "Ücretli bilet — kart",
+			},
+		]);
+		containerEl.appendChild(ticketBlock);
+
+		var balanceBlock = document.createElement("section");
+		balanceBlock.className = "admin-report-block admin-report-block--balance";
+		balanceBlock.innerHTML =
+			'<h3 class="admin-report-block-title">Bakiye yükleme (Resepsiyon)</h3>' +
+			"<p class=\"admin-report-block-desc\">POS bakiye yükleme ekranından toplanan tutarlar. Kart sorgulama iadesi nakit kasa toplamına düşülmüştür.</p>";
+		appendReportStatGrid(balanceBlock, [
+			{
+				key: "cash",
+				label: "Nakit tahsilat",
+				value: formatTryAmount(balanceLoad ? balanceLoad.cashTotal : 0),
+				hint: "Resepsiyon — nakit",
+			},
+			{
+				key: "card",
+				label: "Kredi kartı tahsilat",
+				value: formatTryAmount(balanceLoad ? balanceLoad.cardTotal : 0),
+				hint: "Resepsiyon — kart",
+			},
+		]);
+		containerEl.appendChild(balanceBlock);
+
 		var payBlock = document.createElement("section");
 		payBlock.className = "admin-report-block";
 		payBlock.innerHTML =
-			'<h3 class="admin-report-block-title">Tahsilat özeti</h3>' +
-			'<p class="admin-report-block-desc">POS bakiye yükleme ve ücretli bilet tahsilatı. Aşağıdaki tutarlar ödeme kanalına göre gruplanmıştır; ücretsiz acenta biletleri buraya dahil değildir.</p>';
+			'<h3 class="admin-report-block-title">Genel tahsilat özeti</h3>' +
+			'<p class="admin-report-block-desc">Bakiye yükleme ve ücretli bilet tahsilatının toplamı. Ücretsiz acenta biletleri tutara dahil değildir.</p>';
 		var payGrid = document.createElement("div");
 		payGrid.className = "admin-report-stat-grid";
 		[
@@ -1314,8 +1432,8 @@
 			{
 				key: "visitors",
 				label: "Giriş yapan kullanıcı",
-				hint: "Nakit, kart ve acenta dahil toplam bilet satışı",
-				value: String(isNaN(ticketEntryTotal) ? 0 : ticketEntryTotal) + " kişi",
+				hint: "Ücretli bilet + acenta (toplam giriş)",
+				value: String(isNaN(visitorsTotal) ? 0 : visitorsTotal) + " kişi",
 			},
 		].forEach(function (item) {
 			var card = document.createElement("div");

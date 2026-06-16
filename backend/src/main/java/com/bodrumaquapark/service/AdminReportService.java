@@ -20,13 +20,17 @@ import com.bodrumaquapark.entity.Product;
 import com.bodrumaquapark.entity.TransactionType;
 import com.bodrumaquapark.repository.CardLedgerEntryRepository;
 import com.bodrumaquapark.util.Money;
+import com.bodrumaquapark.util.TicketAgeGroupLabels;
 import com.bodrumaquapark.web.dto.AdminDayCloseReportDto;
+import com.bodrumaquapark.web.dto.BalanceLoadReportSectionDto;
+import com.bodrumaquapark.web.dto.CardInquiryRefundReportSectionDto;
 import com.bodrumaquapark.web.dto.AdminDayLedgerLineDto;
 import com.bodrumaquapark.web.dto.AdminSummaryReportDto;
 import com.bodrumaquapark.web.dto.AgencyTicketCountDto;
 import com.bodrumaquapark.web.dto.LedgerTypeAggregateDto;
 import com.bodrumaquapark.web.dto.PaymentSalesReportDto;
 import com.bodrumaquapark.web.dto.ProductRevenueDto;
+import com.bodrumaquapark.web.dto.TicketSalesReportSectionDto;
 import com.bodrumaquapark.web.dto.SaleAreaRevenueDto;
 
 @Service
@@ -34,10 +38,9 @@ public class AdminReportService {
 
 	public static final ZoneId REPORT_ZONE = ZoneId.of("Europe/Istanbul");
 
-	private static final EnumSet<TransactionType> TICKET_ENTRY_TYPES = EnumSet.of(
+	private static final EnumSet<TransactionType> PAID_TICKET_TYPES = EnumSet.of(
 			TransactionType.TICKET_CASH,
-			TransactionType.TICKET_CARD,
-			TransactionType.TICKET_CREDIT);
+			TransactionType.TICKET_CARD);
 
 	private final CardLedgerEntryRepository ledgerRepository;
 
@@ -114,14 +117,104 @@ public class AdminReportService {
 		cash = Money.normalize(cash);
 		card = Money.normalize(card);
 		agency = Money.normalize(agency);
-		BigDecimal grand = Money.normalize(cash.add(card).add(agency));
 		List<AgencyTicketCountDto> agencyTickets = agencyTicketCounts(r.fromInclusive(), r.toExclusive());
 		long agencyTicketTotal = agencyTickets.stream().mapToLong(AgencyTicketCountDto::count).sum();
-		long ticketEntryTotal = ledgerRepository.aggregateTicketEntryCount(
-				TICKET_ENTRY_TYPES, r.fromInclusive(), r.toExclusive());
+		TicketSalesReportSectionDto ticketSales = buildTicketSalesSection(r.fromInclusive(), r.toExclusive());
+		CardInquiryRefundReportSectionDto cardInquiryRefund = buildCardInquiryRefundSection(r.fromInclusive(),
+				r.toExclusive());
+		BalanceLoadReportSectionDto balanceLoad = buildBalanceLoadSection(r.fromInclusive(), r.toExclusive());
+
+		// Kart sorgulama iade (nakit) yapıldığında kasa nakit tutarı düşmeli.
+		BigDecimal cashRefundTotal = cardInquiryRefund != null && cardInquiryRefund.cashRefundTotal() != null
+				? Money.normalize(cardInquiryRefund.cashRefundTotal())
+				: BigDecimal.ZERO;
+		BigDecimal netCash = Money.normalize(cash.subtract(cashRefundTotal));
+		BigDecimal netLoadCash = Money.normalize(balanceLoad.cashTotal().subtract(cashRefundTotal));
+		BigDecimal netGrand = Money.normalize(netCash.add(card).add(agency));
+
+		BalanceLoadReportSectionDto netBalanceLoad = new BalanceLoadReportSectionDto(
+				netLoadCash,
+				balanceLoad.cardTotal(),
+				balanceLoad.agencyTotal());
+
+		long ticketEntryTotal = ticketSales.totalTicketCount() + agencyTicketTotal;
 		return new PaymentSalesReportDto(
-				r.fromDay(), r.toDay(), REPORT_ZONE.getId(), cash, card, agency, grand, agencyTickets,
-				agencyTicketTotal, ticketEntryTotal);
+				r.fromDay(), r.toDay(),
+				REPORT_ZONE.getId(),
+				netCash,
+				card,
+				agency,
+				netGrand,
+				agencyTickets,
+				agencyTicketTotal,
+				ticketEntryTotal,
+				ticketSales,
+				netBalanceLoad,
+				cardInquiryRefund);
+	}
+
+	private TicketSalesReportSectionDto buildTicketSalesSection(Instant from, Instant to) {
+		BigDecimal ticketCash = Money.normalize(ledgerRepository.sumAmountByType(TransactionType.TICKET_CASH, from, to));
+		BigDecimal ticketCard = Money.normalize(ledgerRepository.sumAmountByType(TransactionType.TICKET_CARD, from, to));
+		long lineQty = ledgerRepository.aggregateTicketLineQuantity(PAID_TICKET_TYPES, from, to);
+		long legacyPaid = countLegacyPaidTicketsWithoutDetailLines(from, to);
+		long child = 0;
+		long adult = 0;
+		for (Object[] row : ledgerRepository.aggregateTicketQuantitiesByAgeGroupName(PAID_TICKET_TYPES, from, to)) {
+			String name = (String) row[0];
+			long qty = ((Number) row[1]).longValue();
+			if (qty <= 0 || TicketAgeGroupLabels.isAgencyTariff(name)) {
+				continue;
+			}
+			if (TicketAgeGroupLabels.isChildTariff(name)) {
+				child += qty;
+			} else {
+				adult += qty;
+			}
+		}
+		long total = lineQty + legacyPaid;
+		long classified = child + adult;
+		if (classified < lineQty) {
+			adult += lineQty - classified;
+		}
+		adult += legacyPaid;
+		return new TicketSalesReportSectionDto(ticketCash, ticketCard, total, child, adult);
+	}
+
+	private long countLegacyPaidTicketsWithoutDetailLines(Instant from, Instant to) {
+		List<CardLedgerEntry> payments = ledgerRepository.findLegacyPaidTicketPaymentEntries(PAID_TICKET_TYPES, from, to);
+		long count = 0;
+		for (CardLedgerEntry payment : payments) {
+			Instant lineWindowEnd = payment.getCreatedAt().plusSeconds(30);
+			long detailLines = ledgerRepository.countPaidNonAgencyTicketLinesOnCard(
+					payment.getCard().getId(),
+					PAID_TICKET_TYPES,
+					payment.getCreatedAt(),
+					lineWindowEnd);
+			if (detailLines == 0) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	private BalanceLoadReportSectionDto buildBalanceLoadSection(Instant from, Instant to) {
+		BigDecimal loadCash = Money.normalize(ledgerRepository.sumAmountByType(TransactionType.LOAD_CASH, from, to));
+		BigDecimal loadCard = Money.normalize(ledgerRepository.sumAmountByType(TransactionType.LOAD_CARD, from, to));
+		BigDecimal loadAgency = Money.normalize(ledgerRepository.sumAmountByType(TransactionType.LOAD_AGENCY, from, to));
+		return new BalanceLoadReportSectionDto(loadCash, loadCard, loadAgency);
+	}
+
+	private CardInquiryRefundReportSectionDto buildCardInquiryRefundSection(Instant from, Instant to) {
+		BigDecimal cashRefund = Money.normalize(ledgerRepository.sumNegativeAmountByType(TransactionType.REFUND_CASH,
+				from, to));
+		long refundCount = ledgerRepository.countNegativeAmountByType(TransactionType.REFUND_CASH, from, to);
+		long clearCount = ledgerRepository.countByTypeAndDescriptionPrefix(
+				TransactionType.DAILY_RESET,
+				CardService.INQUIRY_FORFEIT_DESC_PREFIX + "%",
+				from,
+				to);
+		return new CardInquiryRefundReportSectionDto(cashRefund, refundCount + clearCount);
 	}
 
 	private List<AgencyTicketCountDto> agencyTicketCounts(Instant from, Instant to) {

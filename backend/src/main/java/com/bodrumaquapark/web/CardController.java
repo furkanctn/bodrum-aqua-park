@@ -14,6 +14,8 @@ import org.springframework.web.server.ResponseStatusException;
 import com.bodrumaquapark.security.JwtAuthenticationFilter;
 import com.bodrumaquapark.service.CardService;
 import com.bodrumaquapark.web.dto.BalanceLoadRequest;
+import com.bodrumaquapark.web.dto.CashRefundRequest;
+import com.bodrumaquapark.web.dto.CashRefundResponse;
 import com.bodrumaquapark.web.dto.CardDetailResponse;
 import com.bodrumaquapark.web.dto.CardResponse;
 import com.bodrumaquapark.web.dto.IssueCardRequest;
@@ -70,5 +72,14 @@ public class CardController {
 		}
 		return ResponseEntity.ok(
 				CardResponse.from(cardService.loadBalance(uid, request.amount(), request.paymentMethod(), operatorUserId)));
+	}
+
+	/** Kart sorgulama — nakit iade + kart bakiyesini sıfırlama */
+	@PostMapping("/{uid}/cash-refund")
+	public CashRefundResponse cashRefundAtInquiry(
+			@PathVariable("uid") String uid,
+			@Valid @RequestBody CashRefundRequest request,
+			@RequestAttribute(JwtAuthenticationFilter.ATTR_USER_ID) String operatorUserId) {
+		return cardService.cashRefundAtInquiry(uid, operatorUserId, request.amount());
 	}
 }

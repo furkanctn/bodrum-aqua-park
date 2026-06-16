@@ -46,10 +46,48 @@ public interface CardLedgerEntryRepository extends JpaRepository<CardLedgerEntry
 			+ "group by tag.id, tag.name, tag.sortOrder order by tag.sortOrder asc, tag.id asc")
 	List<Object[]> aggregateAgencyTicketCounts(@Param("from") Instant from, @Param("to") Instant to);
 
-	@Query("select coalesce(sum(case when e.lineQuantity is not null then e.lineQuantity else 1 end), 0) "
-			+ "from CardLedgerEntry e where e.type in :types and e.createdAt >= :from and e.createdAt < :to")
-	long aggregateTicketEntryCount(@Param("types") Collection<TransactionType> types, @Param("from") Instant from,
+	@Query("select coalesce(sum(e.lineQuantity), 0) from CardLedgerEntry e join e.ticketAgeGroup tag "
+			+ "where e.ticketAgeGroup is not null and tag.agencyComplimentary = false and e.type in :types "
+			+ "and e.createdAt >= :from and e.createdAt < :to")
+	long aggregateTicketLineQuantity(@Param("types") Collection<TransactionType> types, @Param("from") Instant from,
 			@Param("to") Instant to);
+
+	@Query("select e from CardLedgerEntry e join fetch e.card where e.type in :types and e.ticketAgeGroup is null "
+			+ "and e.amountChange > 0 and e.createdAt >= :from and e.createdAt < :to")
+	List<CardLedgerEntry> findLegacyPaidTicketPaymentEntries(@Param("types") Collection<TransactionType> types,
+			@Param("from") Instant from, @Param("to") Instant to);
+
+	@Query("select count(e) from CardLedgerEntry e join e.ticketAgeGroup tag "
+			+ "where e.card.id = :cardId and e.ticketAgeGroup is not null and tag.agencyComplimentary = false "
+			+ "and e.type in :types and e.createdAt >= :from and e.createdAt < :to")
+	long countPaidNonAgencyTicketLinesOnCard(@Param("cardId") Long cardId, @Param("types") Collection<TransactionType> types,
+			@Param("from") Instant from, @Param("to") Instant to);
+
+	@Query("select tag.name, coalesce(sum(e.lineQuantity), 0) from CardLedgerEntry e join e.ticketAgeGroup tag "
+			+ "where e.type in :types and tag.agencyComplimentary = false and e.createdAt >= :from and e.createdAt < :to "
+			+ "group by tag.id, tag.name, tag.sortOrder order by tag.sortOrder asc, tag.id asc")
+	List<Object[]> aggregateTicketQuantitiesByAgeGroupName(@Param("types") Collection<TransactionType> types,
+			@Param("from") Instant from, @Param("to") Instant to);
+
+	@Query("select coalesce(sum(e.amountChange), 0) from CardLedgerEntry e "
+			+ "where e.type = :type and e.createdAt >= :from and e.createdAt < :to")
+	java.math.BigDecimal sumAmountByType(@Param("type") TransactionType type, @Param("from") Instant from,
+			@Param("to") Instant to);
+
+	@Query("select coalesce(sum(-e.amountChange), 0) from CardLedgerEntry e "
+			+ "where e.type = :refundType and e.amountChange < 0 and e.createdAt >= :from and e.createdAt < :to")
+	java.math.BigDecimal sumNegativeAmountByType(@Param("refundType") TransactionType refundType,
+			@Param("from") Instant from, @Param("to") Instant to);
+
+	@Query("select count(e) from CardLedgerEntry e where e.type = :refundType and e.amountChange < 0 "
+			+ "and e.createdAt >= :from and e.createdAt < :to")
+	long countNegativeAmountByType(@Param("refundType") TransactionType refundType, @Param("from") Instant from,
+			@Param("to") Instant to);
+
+	@Query("select count(e) from CardLedgerEntry e where e.type = :resetType "
+			+ "and e.description like :descriptionPrefix and e.createdAt >= :from and e.createdAt < :to")
+	long countByTypeAndDescriptionPrefix(@Param("resetType") TransactionType resetType,
+			@Param("descriptionPrefix") String descriptionPrefix, @Param("from") Instant from, @Param("to") Instant to);
 
 	@EntityGraph(attributePaths = { "product", "product.menuPage", "saleArea", "card" })
 	@Query("select e from CardLedgerEntry e where e.createdAt >= :from and e.createdAt < :to")

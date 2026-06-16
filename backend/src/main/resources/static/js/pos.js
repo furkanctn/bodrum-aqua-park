@@ -505,7 +505,6 @@
 			if (isKartAllAreasMode()) return;
 			kartProductAreaCode = KART_ALL_AREAS;
 			kartMenuPageId = KART_ALL_MENU_PAGES;
-			cart = [];
 			luxCartSelectedIndex = null;
 			selectedTileId = null;
 			loadKartProducts(function () {
@@ -527,7 +526,6 @@
 				if (code === kartProductAreaCode) return;
 				kartProductAreaCode = code;
 				kartMenuPageId = KART_ALL_MENU_PAGES;
-				cart = [];
 				luxCartSelectedIndex = null;
 				selectedTileId = null;
 				loadKartProducts(function () {
@@ -555,7 +553,6 @@
 		allBtn.addEventListener("click", function () {
 			if (isKartAllMenuPagesMode()) return;
 			kartMenuPageId = KART_ALL_MENU_PAGES;
-			cart = [];
 			luxCartSelectedIndex = null;
 			selectedTileId = null;
 			loadKartProducts(function () {
@@ -576,7 +573,6 @@
 			b.addEventListener("click", function () {
 				if (pg.id === kartMenuPageId) return;
 				kartMenuPageId = pg.id;
-				cart = [];
 				luxCartSelectedIndex = null;
 				selectedTileId = null;
 				loadKartProducts(function () {
@@ -1711,8 +1707,8 @@
 			"İşlem Saati: " + (opts.transactionTime || formatReceiptDateTime()),
 			"İşlemi Yapan Kişi: " + (opts.operator || currentReceiptOperatorLabel()),
 			"Satış Alanı: " + (opts.saleArea || currentReceiptSaleAreaLabel()),
-			"Toplam Tutar: " + (opts.totalAmount || "—"),
-			"Kalan Tutar: " + (opts.remainingBalance || "—"),
+			"Toplam Tutar(Total Amount): " + (opts.totalAmount || "—"),
+			"Kalan Tutar(Remaining Money): " + (opts.remainingBalance || "—"),
 		];
 		return (
 			"BODRUM AQUA PARK\n\n----------------\n\n" +
@@ -3211,12 +3207,21 @@
 	var sorguCardCancelScanBtn = document.getElementById("sorgu-card-cancel-scan");
 	var sorguCardAnotherBtn = document.getElementById("sorgu-card-another");
 	var sorguCardCloseDetailBtn = document.getElementById("sorgu-card-close-detail");
+	var sorguCardCashRefundOpenBtn = document.getElementById("sorgu-card-cash-refund-open");
 	var sorguCardLoadingMsg = document.getElementById("sorgu-card-loading-msg");
 	var sorguModalLedgerBody = document.getElementById("sorgu-modal-ledger-body");
+
 	var sorguModalSubmitting = false;
 	var sorguCardIdleTimer = null;
 	var SORGU_CARD_IDLE_MS = 150;
 	var SORGU_CARD_IDLE_MIN_LEN = MIN_MIFARE_UID_LEN;
+
+	var sorguCashRefundableMax = null;
+	var sorguCurrentBalance = null;
+	var sorguCashRefundPending = false;
+	var sorguCashRefundRequestedAmount = null;
+	var SORGU_SCAN_PROMPT_DEFAULT = "Lütfen kartınızı okuyucuya tutun.";
+	var SORGU_SCAN_PROMPT_REFUND = "Kartı okutun (nakit iade)…";
 
 	function clearSorguCardIdle() {
 		if (sorguCardIdleTimer) {
@@ -3245,10 +3250,19 @@
 		}, SORGU_CARD_IDLE_MS);
 	}
 
+	function resetSorguScanPrompt() {
+		if (!sorguCardScanWrap) return;
+		var prompt = sorguCardScanWrap.querySelector(".sorgu-scan-prompt");
+		if (prompt) {
+			prompt.textContent = SORGU_SCAN_PROMPT_DEFAULT;
+		}
+	}
+
 	function resetSorguModalScanUi() {
 		setElHidden(sorguCardDetailWrap, true);
 		setElHidden(sorguCardScanWrap, false);
 		setElHidden(sorguCardLoadingMsg, true);
+		resetSorguScanPrompt();
 		if (sorguModalLedgerBody) {
 			renderUrunLedgerRows(sorguModalLedgerBody, []);
 		}
@@ -3258,36 +3272,153 @@
 		var uidEl = document.getElementById("sorgu-modal-uid");
 		var balEl = document.getElementById("sorgu-modal-balance");
 		var stEl = document.getElementById("sorgu-modal-status");
-		var loadEl = document.getElementById("sorgu-modal-loaded");
 		var spentEl = document.getElementById("sorgu-modal-spent");
 		var refundEl = document.getElementById("sorgu-modal-refundable");
+		var refundedLblEl = document.getElementById("sorgu-modal-refunded-lbl");
+		var refundedEl = document.getElementById("sorgu-modal-refunded");
 		if (uidEl) {
 			uidEl.textContent = d.uid != null ? String(d.uid) : "—";
 		}
 		var bal = Number(d.balance);
+		sorguCurrentBalance = typeof bal === "number" && !isNaN(bal) ? bal : null;
 		if (balEl) {
-			balEl.textContent = typeof bal === "number" && !isNaN(bal) ? money(bal) : "—";
+			balEl.textContent = sorguCurrentBalance != null ? money(sorguCurrentBalance) : "—";
 		}
 		if (stEl) {
 			stEl.textContent = statusTr(d.status);
 		}
-		var tl = d.totalLoaded != null ? Number(d.totalLoaded) : null;
 		var ts = d.totalSpent != null ? Number(d.totalSpent) : null;
-		if (loadEl) {
-			loadEl.textContent = tl != null && !isNaN(tl) ? money(tl) : "—";
-		}
 		if (spentEl) {
 			spentEl.textContent = ts != null && !isNaN(ts) ? money(ts) : "—";
 		}
 		var ref = d.cashRefundableAmount != null ? Number(d.cashRefundableAmount) : null;
+		sorguCashRefundableMax = ref;
 		if (refundEl) {
 			refundEl.textContent = ref != null && !isNaN(ref) ? money(ref) : "—";
+		}
+		var refunded = d.refundTotal != null ? Number(d.refundTotal) : null;
+		var hasRefunded = refunded != null && !isNaN(refunded) && refunded > 0;
+		if (refundedLblEl) {
+			refundedLblEl.hidden = !hasRefunded;
+		}
+		if (refundedEl) {
+			refundedEl.hidden = !hasRefunded;
+			refundedEl.textContent = hasRefunded ? money(refunded) : "—";
 		}
 		var led = Array.isArray(d.ledger) ? d.ledger : [];
 		renderUrunLedgerRows(sorguModalLedgerBody, led);
 		setElHidden(sorguCardScanWrap, true);
 		setElHidden(sorguCardLoadingMsg, true);
 		setElHidden(sorguCardDetailWrap, false);
+	}
+
+	function parseMoneyInputToNumber(raw) {
+		if (raw == null) return NaN;
+		var s = String(raw).trim();
+		if (!s.length) return NaN;
+		// "1.333,50" → 1333.50
+		s = s.replace(/[^\d.,-]/g, "");
+		s = s.replace(/\./g, "").replace(",", ".");
+		var n = Number(s);
+		return n;
+	}
+
+	function beginSorguCashRefundScan() {
+		if (sorguCashRefundPending) return;
+		if (sorguCashRefundableMax == null || isNaN(sorguCashRefundableMax)) {
+			showToast("Bu kartta iade tutarı yok");
+			return;
+		}
+		if (sorguCurrentBalance != null && !isNaN(sorguCurrentBalance) && sorguCurrentBalance <= 0) {
+			showToast("Kart bakiyesi zaten sıfır");
+			return;
+		}
+		var n = Math.max(0, Number(sorguCashRefundableMax));
+		sorguCashRefundRequestedAmount = n;
+		sorguCashRefundPending = true;
+
+		setElHidden(sorguCardDetailWrap, true);
+		setElHidden(sorguCardScanWrap, false);
+		setElHidden(sorguCardLoadingMsg, true);
+
+		if (sorguCardScanWrap) {
+			var prompt = sorguCardScanWrap.querySelector(".sorgu-scan-prompt");
+			if (prompt) {
+				prompt.textContent = SORGU_SCAN_PROMPT_REFUND;
+			}
+		}
+		if (sorguCardInput) {
+			sorguCardInput.value = "";
+			sorguCardInput.focus();
+		}
+		showToast("İade edilebilir: " + money(n) + " · Kartı okutun", { duration: 4000 });
+	}
+
+	function cashRefundAtInquiry(uid) {
+		var uidT = cleanUid(uid);
+		if (!uidT.length) {
+			showToast("Kart UID gerekli");
+			return Promise.resolve(false);
+		}
+		if (sorguModalSubmitting) {
+			return Promise.resolve(false);
+		}
+		sorguModalSubmitting = true;
+		clearSorguCardIdle();
+		if (sorguCardConfirmBtn) {
+			sorguCardConfirmBtn.disabled = true;
+		}
+		if (sorguCardCancelScanBtn) {
+			sorguCardCancelScanBtn.disabled = true;
+		}
+		setElHidden(sorguCardLoadingMsg, false);
+		var amt = sorguCashRefundRequestedAmount;
+		return fetch("/api/cards/" + encodeURIComponent(uidT) + "/cash-refund", {
+			method: "POST",
+			headers: authHeadersJson(),
+			body: JSON.stringify({ amount: amt }),
+		})
+			.then(function (r) {
+				if (r.status === 401) {
+					window.location.replace("/index.html");
+					return null;
+				}
+				if (!r.ok) {
+					return apiErrorToast(r, "İade başarısız").then(function () {
+						return null;
+					});
+				}
+				return r.json().then(function (data) {
+					return data;
+				});
+			})
+			.then(function (data) {
+				if (!data) {
+					return false;
+				}
+				var refunded = data.refundedCash != null ? Number(data.refundedCash) : null;
+				var refundMsg =
+					refunded != null && !isNaN(refunded)
+						? "İade tamamlandı, iade edilen ücret: " + money(refunded)
+						: "İade tamamlandı";
+				showToast(refundMsg);
+				closeSorguInquiryModal();
+				return true;
+			})
+			.catch(function () {
+				showToast("İade başarısız");
+				return false;
+			})
+			.finally(function () {
+				sorguModalSubmitting = false;
+				if (sorguCardConfirmBtn) {
+					sorguCardConfirmBtn.disabled = false;
+				}
+				if (sorguCardCancelScanBtn) {
+					sorguCardCancelScanBtn.disabled = false;
+				}
+				setElHidden(sorguCardLoadingMsg, true);
+			});
 	}
 
 	function apiErrorToast(r, fallback) {
@@ -3385,7 +3516,11 @@
 			return;
 		}
 		clearSorguCardIdle();
-		fetchSorguCardDetail(uid);
+		if (sorguCashRefundPending) {
+			cashRefundAtInquiry(uid);
+		} else {
+			fetchSorguCardDetail(uid);
+		}
 	}
 
 	function openSorguInquiryModal() {
@@ -3410,6 +3545,9 @@
 	function closeSorguInquiryModal() {
 		clearSorguCardIdle();
 		sorguModalSubmitting = false;
+		sorguCashRefundPending = false;
+		sorguCashRefundRequestedAmount = null;
+		sorguCurrentBalance = null;
 		hidePosOverlay(sorguCardOverlay);
 		if (sorguCardInput) {
 			sorguCardInput.value = "";
@@ -3452,6 +3590,11 @@
 	if (sorguCardCloseDetailBtn) {
 		sorguCardCloseDetailBtn.addEventListener("click", function () {
 			closeSorguInquiryModal();
+		});
+	}
+	if (sorguCardCashRefundOpenBtn) {
+		sorguCardCashRefundOpenBtn.addEventListener("click", function () {
+			beginSorguCashRefundScan();
 		});
 	}
 	if (sorguCardInput) {
@@ -5175,9 +5318,6 @@
 	function buildTicketGrantLines() {
 		var lines = [];
 		cart.forEach(function (c) {
-			if (!isAgencyComplimentaryCartLine(c)) {
-				return;
-			}
 			var gid = ticketCartLineAgeGroupId(c);
 			if (gid == null) {
 				return;

@@ -74,7 +74,7 @@ public record CardDetailResponse(
 					default:
 						break;
 				}
-			} else if (ac.compareTo(BigDecimal.ZERO) < 0) {
+			} else if (ac.compareTo(BigDecimal.ZERO) < 0 && isCustomerSpendType(e.getType())) {
 				totalSpent = totalSpent.add(ac.negate());
 			}
 			if (e.getType() == TransactionType.REFUND_CASH) {
@@ -124,6 +124,10 @@ public record CardDetailResponse(
 	private static final Pattern TARIFF_IN_PARENS = Pattern.compile("\\(([^)]+)\\)");
 	private static final Pattern BOOTH = Pattern.compile("GİŞE[-\\s]*[A-Za-z0-9]+", Pattern.CASE_INSENSITIVE);
 	private static final Pattern DEFINED_BY = Pattern.compile("([0-9]{3,6})\\s*[—\\-]\\s*([^·…]+)");
+
+	private static boolean isCustomerSpendType(TransactionType type) {
+		return type != TransactionType.REFUND_CASH && type != TransactionType.DAILY_RESET;
+	}
 
 	private static String extractTariff(List<CardLedgerEntry> asc) {
 		for (CardLedgerEntry e : asc) {

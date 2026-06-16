@@ -517,9 +517,9 @@
 						<span class="lbl">Kart UID</span><span class="val" id="sorgu-modal-uid">—</span>
 						<span class="lbl">Bakiye</span><span class="val amt" id="sorgu-modal-balance">—</span>
 						<span class="lbl">Durum</span><span class="val" id="sorgu-modal-status">—</span>
-						<span class="lbl">Toplam yükleme</span><span class="val amt" id="sorgu-modal-loaded">—</span>
 						<span class="lbl">Toplam harcama</span><span class="val amt" id="sorgu-modal-spent">—</span>
 						<span class="lbl sorgu-refund-lbl">İade edilebilir</span><span class="val amt sorgu-refund-val" id="sorgu-modal-refundable">—</span>
+						<span class="lbl sorgu-refund-lbl" id="sorgu-modal-refunded-lbl" hidden>İade edilen</span><span class="val amt sorgu-refund-val" id="sorgu-modal-refunded" hidden>—</span>
 					</div>
 				</div>
 				<h3 class="sorgu-modal-ledger-title">Hareketler</h3>
@@ -538,8 +538,12 @@
 						</table>
 					</div>
 				</div>
-				<div class="pos-rfid-overlay__actions pos-rfid-overlay__actions--sorgu-detail">
+				<div
+					id="sorgu-card-detail-actions"
+					class="pos-rfid-overlay__actions pos-rfid-overlay__actions--sorgu-detail"
+				>
 					<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--secondary" id="sorgu-card-another">Başka kart</button>
+					<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--secondary" id="sorgu-card-cash-refund-open">İade et</button>
 					<button type="button" class="pos-rfid-modal-btn pos-rfid-modal-btn--primary" id="sorgu-card-close-detail">Kapat</button>
 				</div>
 			</div>
@@ -665,6 +669,6 @@
 	</div>
 
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js?v=41" defer></script>
+	<script src="/js/pos.js?v=51" defer></script>
 </body>
 </html>
