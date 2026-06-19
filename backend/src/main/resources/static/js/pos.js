@@ -63,10 +63,23 @@
 		minimumFractionDigits: 2,
 	});
 
+	const fmtWholeTry = new Intl.NumberFormat("tr-TR", {
+		style: "currency",
+		currency: "TRY",
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 0,
+	});
+
 	const MAX_KURUS = 999999999999;
+	const MAX_BAKIYE_LIRA = Math.floor(MAX_KURUS / 100);
 
 	function money(n) {
 		return fmt.format(n);
+	}
+
+	/** Bakiye girişi ekranı — kuruş gösterme (₺550,00 → ₺550) */
+	function moneyWholeTry(n) {
+		return fmtWholeTry.format(Math.round(n));
 	}
 
 	function escapeHtml(s) {
@@ -88,8 +101,16 @@
 	/** Lux sepet: İptal / İade / Böl / Taşı için seçili satır indeksi (cart dizisi) */
 	let luxCartSelectedIndex = null;
 
-	/** Bakiye: tutar (kuruş, tamsayı) */
+	/** Bakiye: tutar (kuruş, tamsayı) — hızlı tutar + tuş takımı toplamı */
 	let keypadValue = 0;
+	/** Hızlı tutar butonlarından eklenen kısım (kuruş) */
+	let bakiyeQuickKurus = 0;
+	/** Tuş takımından girilen tam lira tutarı (5 → 0 → 0 = 500 ₺) */
+	let bakiyeKeypadLira = 0;
+	/** Kart modalı açılırken kilitlenen yükleme tutarı (kuruş); okutma sırasında değişmez */
+	let bakiyePendingLoadKurus = 0;
+	/** Yalnızca «Yüklemeyi tamamla» + sunucu onayı sonrası dolu */
+	let bakiyeLoadToken = null;
 	let bakiyePayMode = "";
 
 	const gridEl = document.getElementById("pos-grid");
@@ -716,6 +737,30 @@
 			line.qty = addQty;
 			cart.push(line);
 		}
+	}
+
+	/** Bilet sepeti: yalnızca tek satır / tek adet */
+	function cartAddSingleTicket(line) {
+		cart = [];
+		luxCartSelectedIndex = null;
+		line.qty = 1;
+		cart.push(line);
+	}
+
+	function ticketCartTotalQty() {
+		var total = 0;
+		cart.forEach(function (c) {
+			total += cartLineQty(c);
+		});
+		return total;
+	}
+
+	function assertSingleTicketCart() {
+		if (cart.length > 1 || ticketCartTotalQty() > 1) {
+			showToast("Bir karta yalnızca tek bilet yüklenebilir");
+			return false;
+		}
+		return true;
 	}
 
 	function findKartProductById(productId) {
@@ -2283,6 +2328,9 @@
 			showToast("Kart UID gerekli");
 			return Promise.resolve(false);
 		}
+		if (!assertSingleTicketCart()) {
+			return Promise.resolve(false);
+		}
 		var sub = subtotal();
 		var disc = sub * effectiveDiscount();
 		var due = Math.max(0, sub - disc);
@@ -2572,9 +2620,32 @@
 	var bakiyeCardBindIdleTimer = null;
 	var bakiyeCardPayLockDebounce = null;
 	var BAKIYE_BIND_IDLE_MS = 150;
-	var BAKIYE_BIND_IDLE_MIN_LEN = 4;
+	var BAKIYE_UID_MIN_LEN = 4;
 	var bakiyeCardLockedPayMode = null;
 	var bakiyePayLockHint = document.getElementById("bakiye-pay-lock-hint");
+	var bakiyeCardBindAmountEl = document.getElementById("bakiye-card-bind-amount");
+
+	function setBakiyeFooterLocked(locked) {
+		var btn = document.getElementById("btn-complete");
+		if (btn) {
+			btn.disabled = !!locked;
+		}
+	}
+
+	function syncBakiyeCardBindAmountHint() {
+		if (!bakiyeCardBindAmountEl) {
+			return;
+		}
+		var kurus = bakiyePendingLoadKurus > 0 ? bakiyePendingLoadKurus : keypadValue;
+		if (kurus > 0) {
+			bakiyeCardBindAmountEl.textContent =
+				"Yüklenecek tutar: " + moneyWholeTry(kurus / 100) + " — kartı okutun, yükleme otomatik tamamlanır.";
+			bakiyeCardBindAmountEl.hidden = false;
+		} else {
+			bakiyeCardBindAmountEl.textContent = "";
+			bakiyeCardBindAmountEl.hidden = true;
+		}
+	}
 
 	function bakiyePayMethodLabel(pm) {
 		return pm === "card" ? "kart ile ödeme" : "nakit ödeme";
@@ -2610,7 +2681,6 @@
 					"Bu kart yalnızca " + bakiyePayMethodLabel(bakiyeCardLockedPayMode) + " ile yüklenebilir",
 					{ duration: 5500 }
 				);
-				clearBakiyeCardBindIdle();
 				if (bakiyeCardBindOverlay && !bakiyeCardBindOverlay.hidden) {
 					closeBakiyeCardBindModal({ keepPayLock: true });
 				}
@@ -2681,6 +2751,30 @@
 		}
 	}
 
+	function clearBakiyeCardBindIdle() {
+		if (bakiyeCardBindIdleTimer) {
+			clearTimeout(bakiyeCardBindIdleTimer);
+			bakiyeCardBindIdleTimer = null;
+		}
+	}
+
+	function scheduleBakiyeCardBindIdle() {
+		if (!bakiyeCardBindOverlay || bakiyeCardBindOverlay.hidden || !bakiyeCardBindInput || !bakiyeLoadToken) {
+			return;
+		}
+		clearBakiyeCardBindIdle();
+		bakiyeCardBindIdleTimer = setTimeout(function () {
+			bakiyeCardBindIdleTimer = null;
+			if (!bakiyeCardBindOverlay || bakiyeCardBindOverlay.hidden || bakiyeCardBindSubmitting || !bakiyeLoadToken) {
+				return;
+			}
+			var v = cleanUid(bakiyeCardBindInput.value);
+			if (v.length >= BAKIYE_UID_MIN_LEN) {
+				confirmBakiyeCardBind();
+			}
+		}, BAKIYE_BIND_IDLE_MS);
+	}
+
 	function scheduleBakiyeCardPayLockFetch() {
 		if (!bakiyeCardBindOverlay || bakiyeCardBindOverlay.hidden || !bakiyeCardBindInput) {
 			return;
@@ -2692,34 +2786,10 @@
 				return;
 			}
 			var v = cleanUid(bakiyeCardBindInput.value);
-			if (v.length >= BAKIYE_BIND_IDLE_MIN_LEN) {
+			if (v.length >= BAKIYE_UID_MIN_LEN) {
 				fetchBakiyeCardPayLock(v);
 			}
 		}, 180);
-	}
-
-	function clearBakiyeCardBindIdle() {
-		if (bakiyeCardBindIdleTimer) {
-			clearTimeout(bakiyeCardBindIdleTimer);
-			bakiyeCardBindIdleTimer = null;
-		}
-	}
-
-	function scheduleBakiyeCardBindIdle() {
-		if (!bakiyeCardBindOverlay || bakiyeCardBindOverlay.hidden || !bakiyeCardBindInput) {
-			return;
-		}
-		clearBakiyeCardBindIdle();
-		bakiyeCardBindIdleTimer = setTimeout(function () {
-			bakiyeCardBindIdleTimer = null;
-			if (!bakiyeCardBindOverlay || bakiyeCardBindOverlay.hidden || bakiyeCardBindSubmitting) {
-				return;
-			}
-			var v = cleanUid(bakiyeCardBindInput.value);
-			if (v.length >= BAKIYE_BIND_IDLE_MIN_LEN) {
-				confirmBakiyeCardBind();
-			}
-		}, BAKIYE_BIND_IDLE_MS);
 	}
 
 	function openBakiyeCardBindModal() {
@@ -2739,31 +2809,80 @@
 			modalMissingToast("Bakiye kart penceresi");
 			return;
 		}
-		clearBakiyeCardBindIdle();
-		clearBakiyeCardPayLockDebounce();
-		bakiyeCardBindSubmitting = false;
+		if (bakiyeCardBindSubmitting) {
+			return;
+		}
+		var amount = Math.round(keypadValue) / 100;
+		bakiyeCardBindSubmitting = true;
 		if (bakiyeCardBindConfirmBtn) {
-			bakiyeCardBindConfirmBtn.disabled = false;
+			bakiyeCardBindConfirmBtn.disabled = true;
 		}
-		if (bakiyeCardBindCancelBtn) {
-			bakiyeCardBindCancelBtn.disabled = false;
-		}
-		bakiyeCardBindInput.value = "";
-		bakiyeCardLockedPayMode = null;
-		syncBakiyePayMethodLockUI();
-		showPosOverlay(bakiyeCardBindOverlay);
-		setTimeout(function () {
-			bakiyeCardBindInput.focus();
-		}, 30);
-		setTimeout(function () {
-			bakiyeCardBindInput.focus();
-		}, 120);
+		fetch("/api/cards/balance-load/prepare", {
+			method: "POST",
+			headers: authHeadersJson(),
+			body: JSON.stringify({
+				amount: amount,
+				paymentMethod: bakiyePayMode,
+			}),
+		})
+			.then(function (r) {
+				if (r.status === 401) {
+					window.location.replace("/index.html");
+					return null;
+				}
+				return r.json()
+					.catch(function () {
+						return {};
+					})
+					.then(function (data) {
+						return { ok: r.ok, data: data };
+					});
+			})
+			.then(function (res) {
+				bakiyeCardBindSubmitting = false;
+				if (bakiyeCardBindConfirmBtn) {
+					bakiyeCardBindConfirmBtn.disabled = false;
+				}
+				if (!res || !res.ok) {
+					var d = (res && res.data) || {};
+					var msg = d.detail || d.message || d.title || "Yükleme onayı alınamadı";
+					showToast(typeof msg === "string" ? msg : "Yükleme onayı alınamadı", { duration: 5500 });
+					return;
+				}
+				bakiyeLoadToken = res.data && res.data.token ? String(res.data.token) : null;
+				if (!bakiyeLoadToken) {
+					showToast("Yükleme onayı alınamadı");
+					return;
+				}
+				clearBakiyeCardPayLockDebounce();
+				clearBakiyeCardBindIdle();
+				bakiyeCardBindInput.value = "";
+				bakiyeCardLockedPayMode = null;
+				bakiyePendingLoadKurus = keypadValue;
+				syncBakiyePayMethodLockUI();
+				syncBakiyeCardBindAmountHint();
+				setBakiyeFooterLocked(true);
+				showPosOverlay(bakiyeCardBindOverlay);
+				setTimeout(function () {
+					bakiyeCardBindInput.focus();
+				}, 30);
+				setTimeout(function () {
+					bakiyeCardBindInput.focus();
+				}, 120);
+			})
+			.catch(function () {
+				bakiyeCardBindSubmitting = false;
+				if (bakiyeCardBindConfirmBtn) {
+					bakiyeCardBindConfirmBtn.disabled = false;
+				}
+				showToast("Sunucuya bağlanılamadı");
+			});
 	}
 
 	function closeBakiyeCardBindModal(options) {
 		var keepPayLock = options && options.keepPayLock;
-		clearBakiyeCardBindIdle();
 		clearBakiyeCardPayLockDebounce();
+		clearBakiyeCardBindIdle();
 		bakiyeCardBindSubmitting = false;
 		hidePosOverlay(bakiyeCardBindOverlay);
 		if (bakiyeCardBindInput) {
@@ -2775,7 +2894,11 @@
 		if (!keepPayLock) {
 			bakiyeCardLockedPayMode = null;
 		}
+		bakiyePendingLoadKurus = 0;
+		bakiyeLoadToken = null;
 		syncBakiyePayMethodLockUI();
+		syncBakiyeCardBindAmountHint();
+		setBakiyeFooterLocked(false);
 	}
 
 	/**
@@ -2788,11 +2911,15 @@
 			showToast("Kartı okutun veya UID girin");
 			return Promise.resolve(false);
 		}
+		if (!bakiyeCardBindOverlay || bakiyeCardBindOverlay.hidden) {
+			return Promise.resolve(false);
+		}
 		if (!balanceLoad) {
 			showToast("Bakiye yükleme yetkiniz yok");
 			return Promise.resolve(false);
 		}
-		if (keypadValue <= 0) {
+		var loadKurus = bakiyePendingLoadKurus > 0 ? bakiyePendingLoadKurus : keypadValue;
+		if (loadKurus <= 0) {
 			showToast("Yüklenecek tutarı girin");
 			return Promise.resolve(false);
 		}
@@ -2800,7 +2927,12 @@
 			showToast("Önce ödeme yöntemi seçin");
 			return Promise.resolve(false);
 		}
-		var amount = Math.round(keypadValue) / 100;
+		if (!bakiyeLoadToken) {
+			showToast("Önce «Yüklemeyi tamamla» adımını tamamlayın", { duration: 5500 });
+			return Promise.resolve(false);
+		}
+		var amount = Math.round(loadKurus) / 100;
+		var loadToken = bakiyeLoadToken;
 		return validateBakiyePayForCard(uidT).then(function (allowed) {
 			if (!allowed) {
 				return false;
@@ -2811,6 +2943,7 @@
 				body: JSON.stringify({
 					amount: amount,
 					paymentMethod: bakiyePayMode,
+					confirmationToken: loadToken,
 				}),
 			})
 				.then(function (r) {
@@ -2837,6 +2970,7 @@
 						return false;
 					}
 					var bal = res.data && res.data.balance != null ? Number(res.data.balance) : null;
+					bakiyeLoadToken = null;
 					bakiyeClear();
 					var t = "Bakiye yüklendi · " + money(amount);
 					if (bal != null && !isNaN(bal)) {
@@ -2861,12 +2995,16 @@
 		if (!bakiyeCardBindOverlay || bakiyeCardBindOverlay.hidden || !bakiyeCardBindInput || bakiyeCardBindSubmitting) {
 			return;
 		}
+		if (!bakiyeLoadToken) {
+			return;
+		}
 		var uid = bakiyeCardBindInput.value;
 		if (!cleanUid(uid).length) {
 			showToast("Kartı okutun veya UID girin");
 			bakiyeCardBindInput.focus();
 			return;
 		}
+		clearBakiyeCardPayLockDebounce();
 		clearBakiyeCardBindIdle();
 		bakiyeCardBindSubmitting = true;
 		if (bakiyeCardBindConfirmBtn) {
@@ -2899,7 +3037,6 @@
 
 	if (bakiyeCardBindConfirmBtn) {
 		bakiyeCardBindConfirmBtn.addEventListener("click", function () {
-			clearBakiyeCardBindIdle();
 			confirmBakiyeCardBind();
 		});
 	}
@@ -2910,8 +3047,8 @@
 	}
 	if (bakiyeCardBindInput) {
 		bakiyeCardBindInput.addEventListener("input", function () {
-			scheduleBakiyeCardBindIdle();
 			scheduleBakiyeCardPayLockFetch();
+			scheduleBakiyeCardBindIdle();
 		});
 		bakiyeCardBindInput.addEventListener("keydown", function (e) {
 			if (e.key === "Enter") {
@@ -2921,6 +3058,32 @@
 			}
 		});
 	}
+
+	document.addEventListener(
+		"keydown",
+		function (e) {
+			if (currentModule !== "bakiye") {
+				return;
+			}
+			var modalOpen = bakiyeCardBindOverlay && !bakiyeCardBindOverlay.hidden;
+			if (e.key === "Enter") {
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				if (!modalOpen && keypadValue > 0) {
+					showToast("Bakiye yüklemek için «Yüklemeyi tamamla»ya basın", { duration: 4500 });
+				}
+				return;
+			}
+			if (modalOpen) {
+				return;
+			}
+			if (e.key && e.key.length === 1 && /[0-9A-Fa-f]/.test(e.key)) {
+				e.preventDefault();
+				e.stopImmediatePropagation();
+			}
+		},
+		true
+	);
 
 	/** Ürün satışı (FIRIN vb.): Satışı tamamla → kart okut → bakiye ≥ sepet */
 	var productSaleCardOverlay = document.getElementById("product-sale-card-overlay");
@@ -4863,7 +5026,7 @@
 					'</span><span class="tile-meta"></span>';
 				btn.addEventListener("click", function () {
 					selectedTileId = t.id;
-					cartAddMerged({
+					cartAddSingleTicket({
 						id: t.id,
 						label: t.label,
 						price: t.price,
@@ -4997,17 +5160,22 @@
 		renderTicketGrid();
 	}
 
+	function syncBakiyeTotalKurus() {
+		var keypadKurus = bakiyeKeypadLira * 100;
+		keypadValue = Math.min(MAX_KURUS, bakiyeQuickKurus + keypadKurus);
+	}
+
 	function updateBakiyeDisplay() {
-		bakiyeDisplay.textContent = money(keypadValue / 100);
+		bakiyeDisplay.textContent = moneyWholeTry(keypadValue / 100);
 	}
 
 	function updateBakiyeSummary() {
 		var total = keypadValue / 100;
 		if (bakSumDiscount) {
-			bakSumDiscount.textContent = money(0);
+			bakSumDiscount.textContent = moneyWholeTry(0);
 		}
 		if (bakSumDue) {
-			bakSumDue.textContent = money(total);
+			bakSumDue.textContent = moneyWholeTry(total);
 		}
 		var cash = 0;
 		var card = 0;
@@ -5017,39 +5185,44 @@
 			card = total;
 		}
 		if (bakSumCash) {
-			bakSumCash.textContent = money(cash);
+			bakSumCash.textContent = moneyWholeTry(cash);
 		}
 		if (bakSumCard) {
-			bakSumCard.textContent = money(card);
+			bakSumCard.textContent = moneyWholeTry(card);
 		}
 		if (bakSumCredit) {
-			bakSumCredit.textContent = money(0);
+			bakSumCredit.textContent = moneyWholeTry(0);
 		}
 		if (bakSumChange) {
-			bakSumChange.textContent = money(0);
+			bakSumChange.textContent = moneyWholeTry(0);
 		}
 	}
 
 	function appendDigit(d) {
-		keypadValue = Math.min(MAX_KURUS, keypadValue * 10 + d);
+		bakiyeKeypadLira = Math.min(MAX_BAKIYE_LIRA, bakiyeKeypadLira * 10 + d);
+		syncBakiyeTotalKurus();
 		updateBakiyeDisplay();
 		updateBakiyeSummary();
 	}
 
 	function appendDoubleZero() {
-		keypadValue = Math.min(MAX_KURUS, keypadValue * 100);
+		bakiyeKeypadLira = Math.min(MAX_BAKIYE_LIRA, bakiyeKeypadLira * 100);
+		syncBakiyeTotalKurus();
 		updateBakiyeDisplay();
 		updateBakiyeSummary();
 	}
 
 	function bakiyeBackspace() {
-		keypadValue = Math.floor(keypadValue / 10);
+		bakiyeKeypadLira = Math.floor(bakiyeKeypadLira / 10);
+		syncBakiyeTotalKurus();
 		updateBakiyeDisplay();
 		updateBakiyeSummary();
 	}
 
 	function bakiyeClear() {
-		keypadValue = 0;
+		bakiyeQuickKurus = 0;
+		bakiyeKeypadLira = 0;
+		syncBakiyeTotalKurus();
 		updateBakiyeDisplay();
 		updateBakiyeSummary();
 	}
@@ -5155,7 +5328,8 @@
 		btn.addEventListener("click", function () {
 			const add = parseInt(btn.getAttribute("data-add-kurus"), 10);
 			if (!isNaN(add)) {
-				keypadValue = Math.min(MAX_KURUS, keypadValue + add);
+				bakiyeQuickKurus = Math.min(MAX_KURUS, bakiyeQuickKurus + add);
+				syncBakiyeTotalKurus();
 				updateBakiyeDisplay();
 				updateBakiyeSummary();
 			}
@@ -5541,6 +5715,10 @@
 	wireLuxRail("pos-lux-rail-split", function () {
 		if (currentModule !== "kart" || !cart.length) {
 			showToast("Sepet boş");
+			return;
+		}
+		if (kartMode === "tickets") {
+			showToast("Bilet satışında yalnızca tek bilet seçilebilir");
 			return;
 		}
 		if (!luxCartSelectionValid()) {

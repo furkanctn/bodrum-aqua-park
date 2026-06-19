@@ -578,8 +578,9 @@
 		<div class="pos-rfid-overlay__panel pos-rfid-panel--hid" role="dialog" aria-modal="true" aria-labelledby="bakiye-card-bind-title">
 			<h2 id="bakiye-card-bind-title" class="pos-rfid-overlay__title">Kartı okutunuz</h2>
 			<p id="bakiye-card-bind-msg" class="pos-rfid-overlay__msg">
-				Bakiye yüklemek için kartı okuyucuya tutun veya UID yazıp Enter’a basın.
+				Kartı okuyucuya tutun veya UID yazın. Okutunca yükleme otomatik tamamlanır ve pencere kapanır.
 			</p>
+			<p id="bakiye-card-bind-amount" class="pos-rfid-overlay__msg pos-rfid-overlay__amount" hidden></p>
 			<input
 				type="text"
 				id="bakiye-card-bind-input"
@@ -590,8 +591,8 @@
 				aria-label="Bakiye — kart UID (HID okuyucu)"
 			/>
 			<div class="pos-rfid-overlay__actions">
-				<button type="button" class="footer-btn primary" id="bakiye-card-bind-confirm">Yükle</button>
-				<button type="button" class="footer-btn danger" id="bakiye-card-bind-cancel">İptal</button>
+				<button type="button" class="footer-btn primary" id="bakiye-card-bind-confirm" tabindex="-1">Yükle</button>
+				<button type="button" class="footer-btn danger" id="bakiye-card-bind-cancel" tabindex="-1">İptal</button>
 			</div>
 		</div>
 	</div>
@@ -669,6 +670,6 @@
 	</div>
 
 	<div id="pos-toast" class="toast" role="status" aria-live="polite"></div>
-	<script src="/js/pos.js?v=51" defer></script>
+	<script src="/js/pos.js?v=58" defer></script>
 </body>
 </html>

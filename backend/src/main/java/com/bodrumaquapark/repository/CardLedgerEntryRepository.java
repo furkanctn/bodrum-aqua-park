@@ -24,6 +24,8 @@ public interface CardLedgerEntryRepository extends JpaRepository<CardLedgerEntry
 			Long cardId,
 			Collection<TransactionType> types);
 
+	boolean existsByCard_IdAndTypeIn(Long cardId, Collection<TransactionType> types);
+
 	@Query("select sa.code, sa.name, count(e), coalesce(sum(-e.amountChange), 0) from CardLedgerEntry e join e.saleArea sa "
 			+ "where e.type = :saleType and e.createdAt >= :from and e.createdAt < :to "
 			+ "group by sa.code, sa.name order by coalesce(sum(-e.amountChange), 0) desc")

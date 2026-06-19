@@ -22,6 +22,7 @@ import com.bodrumaquapark.exception.CardBlockedException;
 import com.bodrumaquapark.exception.CardNotFoundException;
 import com.bodrumaquapark.exception.DuplicateCardUidException;
 import com.bodrumaquapark.policy.BalanceLoadPaymentPolicy;
+import com.bodrumaquapark.policy.TicketGrantPolicy;
 import com.bodrumaquapark.repository.CardLedgerEntryRepository;
 import com.bodrumaquapark.repository.CardRepository;
 import com.bodrumaquapark.repository.TicketAgeGroupRepository;
@@ -277,6 +278,9 @@ public class CardService {
 		if (card.getStatus() != CardStatus.ACTIVE) {
 			throw new CardBlockedException(parsed.canonical());
 		}
+		TicketGrantPolicy.assertNoPriorTicketLoad(
+				ledgerEntryRepository.existsByCard_IdAndTypeIn(card.getId(), TicketGrantPolicy.TICKET_TYPES));
+		TicketGrantPolicy.assertTicketGrantAllowed(card, lines, amt.compareTo(BigDecimal.ZERO) > 0);
 		card.setEntryGate(1);
 		Card saved = cardRepository.save(card);
 		BigDecimal bal = Money.normalize(saved.getBalance());

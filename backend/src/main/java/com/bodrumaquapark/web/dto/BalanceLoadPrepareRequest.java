@@ -7,8 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-public record BalanceLoadRequest(
+public record BalanceLoadPrepareRequest(
 		@NotNull @DecimalMin(value = "0.01", message = "Tutar en az 0,01 olmalıdır") BigDecimal amount,
-		@NotBlank @Pattern(regexp = "cash|card|rate", message = "Ödeme: cash, card veya rate") String paymentMethod,
-		@NotBlank(message = "Bakiye yükleme onayı gerekli") String confirmationToken) {
+		@NotBlank @Pattern(regexp = "cash|card|rate", message = "Ödeme: cash, card veya rate") String paymentMethod) {
 }
