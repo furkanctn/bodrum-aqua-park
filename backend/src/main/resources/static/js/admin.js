@@ -971,9 +971,10 @@
 		"printer",
 		"report-day-close",
 		"report-general",
+		"report-cash-detail",
 	];
 	var AQUAPARK_MENU_PANELS = ["users", "menu-pages", "products", "ticket-age-groups"];
-	var REPORT_MENU_PANELS = ["report-day-close", "report-general"];
+	var REPORT_MENU_PANELS = ["report-day-close", "report-general", "report-cash-detail"];
 	var REPORT_TX_LABELS = {
 		SALE: "Ürün satışı (kart)",
 		ENTRY: "Turnike / giriş",
@@ -1131,6 +1132,7 @@
 		setAdminTabPanelVisible("admin-panel-ticket-age-groups", id === "ticket-age-groups");
 		setAdminTabPanelVisible("admin-panel-report-day-close", id === "report-day-close");
 		setAdminTabPanelVisible("admin-panel-report-general", id === "report-general");
+		setAdminTabPanelVisible("admin-panel-report-cash-detail", id === "report-cash-detail");
 		if (id === "menu-pages") {
 			loadCategoriesPanel();
 		}
@@ -1155,6 +1157,9 @@
 		if (id === "report-general") {
 			loadAdminReportGeneral();
 		}
+		if (id === "report-cash-detail") {
+			loadAdminReportCashDetail();
+		}
 		if (!opts.noWriteHash) {
 			writeAdminPanelHash(id);
 		}
@@ -1177,15 +1182,22 @@
 		}
 	}
 
+	function adminReportLocalDateIso(d) {
+		var y = d.getFullYear();
+		var m = String(d.getMonth() + 1).padStart(2, "0");
+		var day = String(d.getDate()).padStart(2, "0");
+		return y + "-" + m + "-" + day;
+	}
+
 	function adminReportDefaultRange() {
 		var t = new Date();
-		var to = t.toISOString().slice(0, 10);
-		var f = new Date(t.getTime() - 6 * 86400000);
-		return { from: f.toISOString().slice(0, 10), to: to };
+		var to = adminReportLocalDateIso(t);
+		var f = new Date(t.getFullYear(), t.getMonth(), t.getDate() - 6);
+		return { from: adminReportLocalDateIso(f), to: to };
 	}
 
 	function adminReportTodayIso() {
-		return new Date().toISOString().slice(0, 10);
+		return adminReportLocalDateIso(new Date());
 	}
 
 	function formatTryAmount(v) {
@@ -1561,6 +1573,153 @@
 			.catch(function () {});
 	}
 
+	function fetchCashRegisterDetailReport(from, to) {
+		var q = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+		return fetch("/api/admin/reports/cash-register-detail?" + q, { headers: authHeaders() })
+			.then(adminReportParseResponse)
+			.then(function (x) {
+				return adminReportJsonOrThrow(x.r, x.data).then(function () {
+					return x.data;
+				});
+			});
+	}
+
+	function renderCashRegisterDetailReport(containerEl, emptyEl, data) {
+		if (!containerEl) {
+			return;
+		}
+		containerEl.innerHTML = "";
+		var sections = data && Array.isArray(data.sections) ? data.sections : [];
+		var totalRev =
+			data && data.totalRevenueTry != null ? parseFloat(String(data.totalRevenueTry), 10) : 0;
+		var totalLines =
+			data && data.totalSaleLineCount != null ? parseInt(String(data.totalSaleLineCount), 10) : 0;
+		var hasData =
+			sections.length > 0 ||
+			(!isNaN(totalRev) && totalRev > 0) ||
+			(!isNaN(totalLines) && totalLines > 0);
+		if (emptyEl) {
+			emptyEl.hidden = hasData;
+		}
+		if (!data || !hasData) {
+			containerEl.hidden = true;
+			return;
+		}
+		containerEl.hidden = false;
+
+		var period =
+			data.fromInclusive === data.toInclusive
+				? String(data.fromInclusive || "")
+				: (data.fromInclusive || "") + " – " + (data.toInclusive || "");
+		var isSingleDay = data.fromInclusive === data.toInclusive;
+
+		var periodBar = document.createElement("div");
+		periodBar.className = "admin-report-period";
+		periodBar.innerHTML =
+			'<span class="admin-report-period-label">' +
+			(isSingleDay ? "Rapor tarihi" : "Rapor dönemi") +
+			"</span><strong>" +
+			escapeHtml(period) +
+			"</strong>" +
+			(data.timeZone
+				? '<span class="admin-report-period-tz">Saat dilimi: ' + escapeHtml(data.timeZone) + "</span>"
+				: "");
+		containerEl.appendChild(periodBar);
+
+		var summaryBlock = document.createElement("section");
+		summaryBlock.className = "admin-report-block";
+		summaryBlock.innerHTML = '<h3 class="admin-report-block-title">Özet</h3>';
+		appendReportStatGrid(summaryBlock, [
+			{
+				key: "cash",
+				label: "Toplam ciro",
+				value: formatTryAmount(data.totalRevenueTry),
+				hint: "Kart ile ürün satışları",
+			},
+			{
+				key: "visitors",
+				label: "Toplam satış adedi",
+				value: String(isNaN(totalLines) ? 0 : totalLines) + " adet",
+				hint: "Tüm satış alanları",
+			},
+		]);
+		containerEl.appendChild(summaryBlock);
+
+		sections.forEach(function (section, index) {
+			var areaBlock = document.createElement("section");
+			areaBlock.className = "admin-report-block admin-report-block--sale-area";
+			var products = Array.isArray(section.products) ? section.products : [];
+			areaBlock.innerHTML =
+				'<h3 class="admin-report-block-title">' +
+				escapeHtml((index + 1) + ". " + (section.saleAreaName || "Satış alanı")) +
+				"</h3>" +
+				'<p class="admin-report-block-desc">' +
+				escapeHtml(section.saleAreaCode || "") +
+				" · " +
+				escapeHtml(String(section.saleLineCount != null ? section.saleLineCount : 0)) +
+				" adet · " +
+				escapeHtml(formatTryAmount(section.revenueTry)) +
+				" ciro</p>";
+
+			if (products.length === 0) {
+				var areaEmpty = document.createElement("p");
+				areaEmpty.className = "admin-report-empty-note";
+				areaEmpty.textContent = "Bu alanda ürün satışı yok.";
+				areaBlock.appendChild(areaEmpty);
+			} else {
+				var areaWrap = document.createElement("div");
+				areaWrap.className = "table-wrap";
+				var areaTable = document.createElement("table");
+				areaTable.className = "admin-table admin-report-detail-table";
+				areaTable.innerHTML =
+					"<thead><tr><th>Ürün</th><th>Adet</th><th>Tutar</th></tr></thead>";
+				var areaTbody = document.createElement("tbody");
+				products.forEach(function (row) {
+					var tr = document.createElement("tr");
+					tr.innerHTML =
+						"<td>" +
+						escapeHtml(row.productName || "—") +
+						"</td><td><strong>" +
+						escapeHtml(String(row.saleLineCount != null ? row.saleLineCount : 0)) +
+						"</strong></td><td><strong>" +
+						escapeHtml(formatTryAmount(row.revenueTry)) +
+						"</strong></td>";
+					areaTbody.appendChild(tr);
+				});
+				var totalRow = document.createElement("tr");
+				totalRow.className = "admin-report-agency-total-row";
+				totalRow.innerHTML =
+					"<td><strong>Alan toplamı</strong></td><td><strong>" +
+					escapeHtml(String(section.saleLineCount != null ? section.saleLineCount : 0)) +
+					"</strong></td><td><strong>" +
+					escapeHtml(formatTryAmount(section.revenueTry)) +
+					"</strong></td>";
+				areaTbody.appendChild(totalRow);
+				areaTable.appendChild(areaTbody);
+				areaWrap.appendChild(areaTable);
+				areaBlock.appendChild(areaWrap);
+			}
+			containerEl.appendChild(areaBlock);
+		});
+	}
+
+	function loadAdminReportCashDetail() {
+		var fromEl = document.getElementById("report-cash-from");
+		var toEl = document.getElementById("report-cash-to");
+		var sumEl = document.getElementById("report-cash-summary");
+		var empty = document.getElementById("report-cash-empty");
+		if (!fromEl || !toEl || !sumEl) {
+			return;
+		}
+		ensureReportRangeInputs(fromEl, toEl);
+		hideAlert();
+		fetchCashRegisterDetailReport(fromEl.value, toEl.value)
+			.then(function (data) {
+				renderCashRegisterDetailReport(sumEl, empty, data);
+			})
+			.catch(function () {});
+	}
+
 	function applyRestrictedAdminEntry() {
 		if (isFullAdmin) {
 			return;
@@ -1765,6 +1924,12 @@
 	if (btnReportGen) {
 		btnReportGen.addEventListener("click", function () {
 			loadAdminReportGeneral();
+		});
+	}
+	var btnReportCash = document.getElementById("btn-report-cash-refresh");
+	if (btnReportCash) {
+		btnReportCash.addEventListener("click", function () {
+			loadAdminReportCashDetail();
 		});
 	}
 

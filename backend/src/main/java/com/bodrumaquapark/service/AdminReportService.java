@@ -7,7 +7,9 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,6 +23,7 @@ import com.bodrumaquapark.entity.TransactionType;
 import com.bodrumaquapark.repository.CardLedgerEntryRepository;
 import com.bodrumaquapark.util.Money;
 import com.bodrumaquapark.util.TicketAgeGroupLabels;
+import com.bodrumaquapark.web.dto.AdminCashRegisterDetailReportDto;
 import com.bodrumaquapark.web.dto.AdminDayCloseReportDto;
 import com.bodrumaquapark.web.dto.BalanceLoadReportSectionDto;
 import com.bodrumaquapark.web.dto.CardInquiryRefundReportSectionDto;
@@ -31,6 +34,7 @@ import com.bodrumaquapark.web.dto.LedgerTypeAggregateDto;
 import com.bodrumaquapark.web.dto.PaymentSalesReportDto;
 import com.bodrumaquapark.web.dto.ProductRevenueDto;
 import com.bodrumaquapark.web.dto.TicketSalesReportSectionDto;
+import com.bodrumaquapark.web.dto.SaleAreaCashRegisterSectionDto;
 import com.bodrumaquapark.web.dto.SaleAreaRevenueDto;
 
 @Service
@@ -95,6 +99,61 @@ public class AdminReportService {
 			out.add(new ProductRevenueDto(pid, name, cnt, rev));
 		}
 		return out;
+	}
+
+	public AdminCashRegisterDetailReportDto cashRegisterDetail(LocalDate from, LocalDate to) {
+		InstantRange r = resolveRange(from, to);
+		List<Object[]> rows = ledgerRepository.aggregateProductSalesBySaleAreaAndProduct(TransactionType.SALE,
+				r.fromInclusive(), r.toExclusive());
+		Map<String, MutableSaleAreaSection> sections = new LinkedHashMap<>();
+		BigDecimal totalRevenue = BigDecimal.ZERO;
+		long totalLines = 0;
+		for (Object[] row : rows) {
+			String code = (String) row[0];
+			String areaName = (String) row[1];
+			long pid = ((Number) row[2]).longValue();
+			String productName = (String) row[3];
+			long cnt = ((Number) row[4]).longValue();
+			BigDecimal rev = Money.normalize((BigDecimal) row[5]);
+			MutableSaleAreaSection section = sections.computeIfAbsent(code, k -> new MutableSaleAreaSection(code, areaName));
+			section.products.add(new ProductRevenueDto(pid, productName, cnt, rev));
+			section.saleLineCount += cnt;
+			section.revenueTry = section.revenueTry.add(rev);
+			totalRevenue = totalRevenue.add(rev);
+			totalLines += cnt;
+		}
+		List<SaleAreaCashRegisterSectionDto> sectionList = sections.values().stream()
+				.map(MutableSaleAreaSection::toDto)
+				.sorted(Comparator.comparing(SaleAreaCashRegisterSectionDto::revenueTry).reversed())
+				.toList();
+		return new AdminCashRegisterDetailReportDto(
+				r.fromDay(),
+				r.toDay(),
+				REPORT_ZONE.getId(),
+				Money.normalize(totalRevenue),
+				totalLines,
+				sectionList);
+	}
+
+	private static final class MutableSaleAreaSection {
+		private final String code;
+		private final String name;
+		private long saleLineCount;
+		private BigDecimal revenueTry = BigDecimal.ZERO;
+		private final List<ProductRevenueDto> products = new ArrayList<>();
+
+		private MutableSaleAreaSection(String code, String name) {
+			this.code = code;
+			this.name = name;
+		}
+
+		private SaleAreaCashRegisterSectionDto toDto() {
+			List<ProductRevenueDto> sortedProducts = products.stream()
+					.sorted(Comparator.comparing(ProductRevenueDto::revenueTry).reversed())
+					.toList();
+			return new SaleAreaCashRegisterSectionDto(code, name, saleLineCount, Money.normalize(revenueTry),
+					sortedProducts);
+		}
 	}
 
 	public PaymentSalesReportDto paymentSales(LocalDate from, LocalDate to) {

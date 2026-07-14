@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.bodrumaquapark</groupId>
 	<artifactId>bodrum-aqua-park-parent</artifactId>
-	<version>1.2.0.1</version>
+	<version>1.2.0.5</version>
 	<packaging>pom</packaging>
 	<name>Bodrum Aqua Park</name>
 	<modules>

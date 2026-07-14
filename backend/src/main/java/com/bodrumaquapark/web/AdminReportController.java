@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.bodrumaquapark.entity.RoleCode;
 import com.bodrumaquapark.security.JwtAuthenticationFilter;
 import com.bodrumaquapark.service.AdminReportService;
+import com.bodrumaquapark.web.dto.AdminCashRegisterDetailReportDto;
 import com.bodrumaquapark.web.dto.AdminDayCloseReportDto;
 import com.bodrumaquapark.web.dto.AdminSummaryReportDto;
 import com.bodrumaquapark.web.dto.PaymentSalesReportDto;
@@ -48,6 +49,7 @@ public class AdminReportController {
 						"GET /api/admin/reports/summary?from=yyyy-MM-dd&to=yyyy-MM-dd",
 						"GET /api/admin/reports/sales-by-sale-area?from=&to=",
 						"GET /api/admin/reports/sales-by-product?from=&to=",
+						"GET /api/admin/reports/cash-register-detail?from=&to=",
 						"GET /api/admin/reports/day-close?date=&limit=500"));
 		return body;
 	}
@@ -86,6 +88,15 @@ public class AdminReportController {
 			@RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 		requireAdmin(role);
 		return adminReportService.salesByProduct(from, to);
+	}
+
+	@GetMapping("/cash-register-detail")
+	public AdminCashRegisterDetailReportDto cashRegisterDetail(
+			@RequestAttribute(JwtAuthenticationFilter.ATTR_ROLE) RoleCode role,
+			@RequestParam(name = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@RequestParam(name = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		requireAdmin(role);
+		return adminReportService.cashRegisterDetail(from, to);
 	}
 
 	@GetMapping("/day-close")

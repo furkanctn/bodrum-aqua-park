@@ -6,7 +6,7 @@
 	<title>Yönetim — Bodrum Aqua Park</title>
 	<script src="/js/ui-scale-head.js"></script>
 	<link rel="stylesheet" href="/css/pos-terminal-scale.css" />
-	<link rel="stylesheet" href="/css/admin.css?v=8" />
+	<link rel="stylesheet" href="/css/admin.css?v=9" />
 </head>
 <body>
 	<div class="pos-main-scale pos-main-scale--admin" id="pos-main-scale">
@@ -62,6 +62,9 @@
 					</button>
 					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-general" id="report-item-general">
 						Genel rapor
+					</button>
+					<button type="button" role="menuitem" class="admin-report-item" data-panel="report-cash-detail" id="report-item-cash-detail">
+						Satış Alanları Raporu
 					</button>
 				</div>
 			</div>
@@ -519,6 +522,31 @@
 				<p id="report-gen-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta tahsilat yok.</p>
 			</section>
 		</div>
+
+		<div id="admin-panel-report-cash-detail" hidden>
+			<section class="admin-card">
+				<h2>Satış Alanları Rapor</h2>
+				<p class="admin-sub admin-sub--inline">
+					Seçilen tarih aralığında her satış alanı için satılan ürünler, adetleri ve tutarları.
+					Tarihler <strong>İstanbul</strong> saatine göredir.
+				</p>
+				<div class="admin-report-toolbar">
+					<div class="field">
+						<label for="report-cash-from">Başlangıç</label>
+						<input type="date" id="report-cash-from" />
+					</div>
+					<div class="field">
+						<label for="report-cash-to">Bitiş</label>
+						<input type="date" id="report-cash-to" />
+					</div>
+					<div class="field field-actions">
+						<button type="button" class="btn btn-primary" id="btn-report-cash-refresh">Yenile</button>
+					</div>
+				</div>
+				<div id="report-cash-summary" class="admin-report-dashboard" hidden></div>
+				<p id="report-cash-empty" class="admin-catalog-empty-hint" hidden>Bu aralıkta ürün satışı yok.</p>
+			</section>
+		</div>
 	</div>
 
 	<div id="admin-modal-product" class="admin-modal" hidden role="dialog" aria-modal="true" aria-labelledby="admin-modal-product-title">
@@ -602,6 +630,6 @@
 	</div>
 
 	<script src="/js/mifare-uid.js?v=1"></script>
-	<script src="/js/admin.js?v=27" defer></script>
+	<script src="/js/admin.js?v=31" defer></script>
 </body>
 </html>

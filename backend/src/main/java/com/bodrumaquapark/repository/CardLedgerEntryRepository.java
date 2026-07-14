@@ -38,6 +38,14 @@ public interface CardLedgerEntryRepository extends JpaRepository<CardLedgerEntry
 	List<Object[]> aggregateProductSalesByProduct(@Param("saleType") TransactionType saleType,
 			@Param("from") Instant from, @Param("to") Instant to);
 
+	@Query("select sa.code, sa.name, p.id, p.name, count(e), coalesce(sum(-e.amountChange), 0) "
+			+ "from CardLedgerEntry e join e.saleArea sa join e.product p "
+			+ "where e.type = :saleType and e.createdAt >= :from and e.createdAt < :to "
+			+ "group by sa.code, sa.name, p.id, p.name "
+			+ "order by sa.name asc, coalesce(sum(-e.amountChange), 0) desc")
+	List<Object[]> aggregateProductSalesBySaleAreaAndProduct(@Param("saleType") TransactionType saleType,
+			@Param("from") Instant from, @Param("to") Instant to);
+
 	@Query("select e.type, count(e), coalesce(sum(e.amountChange), 0) from CardLedgerEntry e "
 			+ "where e.createdAt >= :from and e.createdAt < :to group by e.type")
 	List<Object[]> aggregateByTransactionType(@Param("from") Instant from, @Param("to") Instant to);

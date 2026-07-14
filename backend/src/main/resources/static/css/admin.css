@@ -759,7 +759,9 @@ body {
 	margin-left: auto;
 }
 
-.admin-report-agency-table {
+.admin-report-block--sale-area {
+	border-left: 3px solid var(--admin-accent, #0d6efd);
+}
 	margin-top: 0.25rem;
 }
 
