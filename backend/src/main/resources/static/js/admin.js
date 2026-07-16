@@ -1529,7 +1529,10 @@
 			encodeURIComponent(fromDate) +
 			"&to=" +
 			encodeURIComponent(toDate);
-		return fetch("/api/admin/reports/payment-sales?" + q, { headers: authHeaders() })
+		return fetch("/api/admin/reports/payment-sales?" + q, {
+			headers: authHeaders(),
+			cache: "no-store",
+		})
 			.then(adminReportParseResponse)
 			.then(function (x) {
 				return adminReportJsonOrThrow(x.r, x.data).then(function () {
@@ -1575,13 +1578,39 @@
 
 	function fetchCashRegisterDetailReport(from, to) {
 		var q = "from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
-		return fetch("/api/admin/reports/cash-register-detail?" + q, { headers: authHeaders() })
+		return fetch("/api/admin/reports/cash-register-detail?" + q, {
+			headers: authHeaders(),
+			cache: "no-store",
+		})
 			.then(adminReportParseResponse)
 			.then(function (x) {
 				return adminReportJsonOrThrow(x.r, x.data).then(function () {
 					return x.data;
 				});
 			});
+	}
+
+	function showReportLoading(containerEl, emptyEl, fromIso, toIso) {
+		if (emptyEl) {
+			emptyEl.hidden = true;
+		}
+		if (!containerEl) {
+			return;
+		}
+		containerEl.hidden = false;
+		containerEl.innerHTML = "";
+		var period =
+			fromIso && toIso && fromIso === toIso
+				? String(fromIso)
+				: String(fromIso || "") + " – " + String(toIso || "");
+		var periodBar = document.createElement("div");
+		periodBar.className = "admin-report-period";
+		periodBar.innerHTML =
+			'<span class="admin-report-period-label">Seçilen dönem</span><strong>' +
+			escapeHtml(period) +
+			"</strong>" +
+			'<span class="admin-report-period-tz">Yükleniyor…</span>';
+		containerEl.appendChild(periodBar);
 	}
 
 	function renderCashRegisterDetailReport(containerEl, emptyEl, data) {
@@ -1713,11 +1742,25 @@
 		}
 		ensureReportRangeInputs(fromEl, toEl);
 		hideAlert();
-		fetchCashRegisterDetailReport(fromEl.value, toEl.value)
+		var from = fromEl.value;
+		var to = toEl.value;
+		showReportLoading(sumEl, empty, from, to);
+		fetchCashRegisterDetailReport(from, to)
 			.then(function (data) {
+				if (empty) {
+					empty.textContent = "Bu aralıkta ürün satışı yok.";
+				}
 				renderCashRegisterDetailReport(sumEl, empty, data);
 			})
-			.catch(function () {});
+			.catch(function () {
+				sumEl.innerHTML = "";
+				sumEl.hidden = true;
+				if (empty) {
+					empty.hidden = false;
+					empty.textContent =
+						"Rapor yüklenemedi. Tarihleri kontrol edip tekrar deneyin; sorun sürerse sayfayı Ctrl+F5 ile yenileyin.";
+				}
+			});
 	}
 
 	function applyRestrictedAdminEntry() {

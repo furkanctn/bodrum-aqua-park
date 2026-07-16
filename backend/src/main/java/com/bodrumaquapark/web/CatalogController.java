@@ -2,7 +2,9 @@ package com.bodrumaquapark.web;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.springframework.http.HttpStatus;
@@ -111,17 +113,28 @@ public class CatalogController {
 					.map(p -> ProductResponse.from(p, area.getCode(), area.getName()))
 					.toList();
 		}
-		List<Long> allMenuIds = saleAreaRepository.findAllByCodeIn(allowedCodes).stream()
-				.flatMap(sa -> sa.getMenuPages().stream())
-				.map(MenuPage::getId)
-				.distinct()
+		List<SaleArea> areas = saleAreaRepository.findAllByCodeIn(allowedCodes).stream()
+				.sorted(Comparator.comparing(SaleArea::getCode))
 				.toList();
-		if (allMenuIds.isEmpty()) {
+		Map<Long, SaleArea> menuPageToArea = new LinkedHashMap<>();
+		for (SaleArea area : areas) {
+			for (MenuPage mp : area.getMenuPages()) {
+				menuPageToArea.putIfAbsent(mp.getId(), area);
+			}
+		}
+		if (menuPageToArea.isEmpty()) {
 			return List.of();
 		}
-		return productRepository.findByActiveTrueAndMenuPage_IdInOrderByMenuPage_SortOrderAscNameAsc(allMenuIds)
+		return productRepository
+				.findByActiveTrueAndMenuPage_IdInOrderByMenuPage_SortOrderAscNameAsc(menuPageToArea.keySet())
 				.stream()
-				.map(ProductResponse::from)
+				.map(p -> {
+					SaleArea area = p.getMenuPage() != null ? menuPageToArea.get(p.getMenuPage().getId()) : null;
+					if (area != null) {
+						return ProductResponse.from(p, area.getCode(), area.getName());
+					}
+					return ProductResponse.from(p);
+				})
 				.toList();
 	}
 }

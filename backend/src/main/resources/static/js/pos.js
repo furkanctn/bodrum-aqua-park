@@ -5093,6 +5093,7 @@
 	function renderAllAreasProductGrid() {
 		gridEl.innerHTML = "";
 		var hasAny = false;
+		var assigned = {};
 		kartDisplayAreaCodes().forEach(function (areaCode) {
 			var ac = String(areaCode || "")
 				.trim()
@@ -5103,6 +5104,9 @@
 			if (!areaProducts.length) {
 				return;
 			}
+			areaProducts.forEach(function (p) {
+				assigned[String(p.id)] = true;
+			});
 			hasAny = true;
 			var section = document.createElement("section");
 			section.className = "pos-lux-area-section";
@@ -5119,6 +5123,25 @@
 			section.appendChild(productsWrap);
 			gridEl.appendChild(section);
 		});
+		var orphanProducts = kartProducts.filter(function (p) {
+			return !assigned[String(p.id)];
+		});
+		if (orphanProducts.length) {
+			hasAny = true;
+			var orphanSection = document.createElement("section");
+			orphanSection.className = "pos-lux-area-section";
+			var orphanHeading = document.createElement("h3");
+			orphanHeading.className = "pos-lux-area-heading";
+			orphanHeading.textContent = "Ürünler";
+			var orphanWrap = document.createElement("div");
+			orphanWrap.className = "pos-lux-area-products";
+			orphanProducts.forEach(function (p) {
+				orphanWrap.appendChild(appendKartProductTile(p));
+			});
+			orphanSection.appendChild(orphanHeading);
+			orphanSection.appendChild(orphanWrap);
+			gridEl.appendChild(orphanSection);
+		}
 		if (!hasAny) {
 			var empty = document.createElement("p");
 			empty.className = "kart-grid-empty";
