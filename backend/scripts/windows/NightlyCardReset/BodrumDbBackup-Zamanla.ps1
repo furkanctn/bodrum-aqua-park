@@ -1,6 +1,9 @@
-# Bodrum Aqua Park — Windows Gorev Zamanlayici ile otomatik DB yedek (15 gunde bir)
+# Bodrum Aqua Park — Windows Gorev Zamanlayici ile gunluk DB yedek
 # Yonetici PowerShell:  Set-ExecutionPolicy -Scope Process Bypass
 #                       .\BodrumDbBackup-Zamanla.ps1
+#
+# Yedek klasoru: C:\BodrumAquaPark\backup
+# Saat: her gun 22:45 (kart sifirlama 23:00'ten once)
 
 $ErrorActionPreference = 'Stop'
 
@@ -19,23 +22,24 @@ if ($Existing) {
 }
 
 $Action = New-ScheduledTaskAction -Execute $BatPath -WorkingDirectory $ScriptDir
-$Trigger1 = New-ScheduledTaskTrigger -Monthly -DaysOfMonth 1 -At '03:00'
-$Trigger2 = New-ScheduledTaskTrigger -Monthly -DaysOfMonth 15 -At '03:00'
+$Trigger = New-ScheduledTaskTrigger -Daily -At '22:45'
 $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 
 Register-ScheduledTask `
 	-TaskName $TaskName `
 	-Action $Action `
-	-Trigger @($Trigger1, $Trigger2) `
+	-Trigger $Trigger `
 	-Settings $Settings `
-	-Description 'Bodrum Aqua Park PostgreSQL yedek — ayin 1 ve 15, saat 03:00' `
+	-Description 'Bodrum Aqua Park PostgreSQL gunluk yedek — her gun 22:45 → C:\BodrumAquaPark\backup' `
 	-RunLevel Highest `
 	-User 'SYSTEM'
 
 Write-Host ""
 Write-Host "Gorev olusturuldu: $TaskName"
-Write-Host "  Calistirma: ayin 1'i ve 15'i, 03:00"
+Write-Host "  Calistirma: her gun 22:45"
 Write-Host "  Script:     $BatPath"
+Write-Host "  Yedek:      C:\BodrumAquaPark\backup\bodrum_aqua_park_*.backup"
 Write-Host ""
 Write-Host "Test icin:  Start-ScheduledTask -TaskName '$TaskName'"
 Write-Host "Kontrol:    Get-ScheduledTask -TaskName '$TaskName' | Get-ScheduledTaskInfo"
+Write-Host "Log:        C:\BodrumAquaPark\backup\bodrum-db-backup.log"

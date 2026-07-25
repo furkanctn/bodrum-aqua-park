@@ -1,6 +1,9 @@
 package com.bodrumaquapark.service;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +40,9 @@ import com.bodrumaquapark.web.dto.TicketGrantLineRequest;
 public class CardService {
 
 	private static final Logger log = LoggerFactory.getLogger(CardService.class);
+
+	/** Kart sorgulama / POS hareket listesi gün sınırı (raporlar tüm geçmişi kullanır). */
+	public static final ZoneId PARK_ZONE = ZoneId.of("Europe/Istanbul");
 
 	private static final EnumSet<TransactionType> BALANCE_LOAD_TYPES = EnumSet.of(
 			TransactionType.LOAD_CASH,
@@ -173,10 +179,21 @@ public class CardService {
 			card = cardRepository.save(new Card(parsed.canonical(), BigDecimal.ZERO));
 			log.info("Kart detay / ilk kayit: uidHint={}", MifareUid.mask(parsed.canonical()));
 		}
-		List<CardLedgerEntry> entries = ledgerEntryRepository.findByCard_UidOrderByCreatedAtDesc(card.getUid());
+		List<CardLedgerEntry> entries = ledgerEntriesForInquiryToday(card.getUid());
 		List<LedgerEntryResponse> ledger = entries.stream().map(LedgerEntryResponse::from).toList();
 		String lockedPaymentMethod = resolveBalanceLoadPaymentMethodForCard(card).orElse(null);
 		return CardDetailResponse.build(card, entries, ledger, lockedPaymentMethod);
+	}
+
+	/**
+	 * POS kart sorgulama: yalnızca İstanbul takvim günündeki hareketler.
+	 * Geçmiş satış kayıtları silinmez; raporlar tüm {@code card_ledger} üzerinden çalışır.
+	 */
+	private List<CardLedgerEntry> ledgerEntriesForInquiryToday(String uid) {
+		LocalDate today = LocalDate.now(PARK_ZONE);
+		Instant from = today.atStartOfDay(PARK_ZONE).toInstant();
+		Instant to = today.plusDays(1).atStartOfDay(PARK_ZONE).toInstant();
+		return ledgerEntryRepository.findByCardUidAndCreatedAtRange(uid, from, to);
 	}
 
 	public static final String INQUIRY_REFUND_DESC_PREFIX = "POS sorgulama — nakit iade";
@@ -198,7 +215,7 @@ public class CardService {
 		if (req.compareTo(BigDecimal.ZERO) < 0) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "İade tutarı negatif olamaz");
 		}
-		List<CardLedgerEntry> entries = ledgerEntryRepository.findByCard_UidOrderByCreatedAtDesc(card.getUid());
+		List<CardLedgerEntry> entries = ledgerEntriesForInquiryToday(card.getUid());
 		BigDecimal cashRefundableMax = CardDetailResponse.build(card, entries, List.of(), null).cashRefundableAmount();
 		if (cashRefundableMax.compareTo(balance) > 0) {
 			cashRefundableMax = balance;

@@ -20,6 +20,12 @@ public interface CardLedgerEntryRepository extends JpaRepository<CardLedgerEntry
 	@EntityGraph(attributePaths = { "product", "product.menuPage", "saleArea" })
 	List<CardLedgerEntry> findByCard_UidOrderByCreatedAtDesc(String uid);
 
+	@EntityGraph(attributePaths = { "product", "product.menuPage", "saleArea" })
+	@Query("select e from CardLedgerEntry e where e.card.uid = :uid "
+			+ "and e.createdAt >= :from and e.createdAt < :to order by e.createdAt desc")
+	List<CardLedgerEntry> findByCardUidAndCreatedAtRange(@Param("uid") String uid, @Param("from") Instant from,
+			@Param("to") Instant to);
+
 	Optional<CardLedgerEntry> findFirstByCard_IdAndTypeInOrderByCreatedAtAscIdAsc(
 			Long cardId,
 			Collection<TransactionType> types);

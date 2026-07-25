@@ -1,18 +1,23 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
-rem Bodrum Aqua Park — PostgreSQL yedek (Windows)
+rem Bodrum Aqua Park — PostgreSQL gunluk yedek (Windows)
 rem Kurulum: backend/scripts/windows/POSTGRESQL-YEDEK-KURULUM.txt
+rem Hedef klasor: C:\BodrumAquaPark\backup
 
-rem ---------- Ayarlar (kurulumda duzenleyin) ----------
+rem ---------- Ayarlar ----------
+rem Bu script DB sunucusunun kendisinde calisir.
+rem 100.78.186.3 pg_hba'da yoksa / SSL zorunluysa baglanti reddedilir → 127.0.0.1 kullanin.
 set "PGHOST=127.0.0.1"
-set "PGPORT=5432"
+set "PGPORT=5433"
 set "PGUSER=postgres"
 set "PGDATABASE=bodrum_aqua_park"
 set "PGPASSWORD=123123"
+rem Yerel baglanti icin (pg_hba "no encryption" hatasini onler)
+set "PGSSLMODE=disable"
 
-set "BACKUP_DIR=C:\Backups\bodrum-aqua-park"
-set "KEEP_COUNT=12"
+set "BACKUP_DIR=C:\BodrumAquaPark\backup"
+set "KEEP_COUNT=30"
 rem -----------------------------------------------------
 
 set "LOG=%BACKUP_DIR%\bodrum-db-backup.log"
