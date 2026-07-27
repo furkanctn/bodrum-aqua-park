@@ -8,10 +8,15 @@ Ne yapar?
   • Yedekler: C:\BodrumAquaPark\backup\
   • Son 30 yedek saklanır, eskiler silinir
 
-Proje dosyaları:
-  • backend/scripts/windows/BodrumDbBackup.bat           → yedek script
-  • backend/scripts/windows/BodrumDbBackup-Zamanla.ps1   → otomatik zamanlama
-  • backend/scripts/windows/POSTGRESQL-YEDEK-KURULUM.txt → bu dosya
+Ayrıca (rolling — 30 dk):
+  • BodrumDbRollingBackup.bat her 30 dk aynı dosyanın üzerine yazar
+  • Dosya: C:\BodrumAquaPark\backup\bodrum_aqua_park_rolling.backup
+  • Amaç: en fazla ~30 dk öncesine dönebilmek
+
+Proje dosyaları (NightlyCardReset klasörü):
+  • BodrumDbBackup.bat / BodrumDbBackup-Zamanla.ps1           → günlük 22:45
+  • BodrumDbRollingBackup.bat / BodrumDbRollingBackup-Zamanla.ps1 → her 30 dk
+  • POSTGRESQL-YEDEK-KURULUM.txt → bu dosya
 
 Sunucu bilgileri (yedek script sunucunun kendisinde çalışır):
   • Host:     127.0.0.1

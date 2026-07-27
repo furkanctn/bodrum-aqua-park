@@ -295,8 +295,12 @@ public class CardService {
 		if (card.getStatus() != CardStatus.ACTIVE) {
 			throw new CardBlockedException(parsed.canonical());
 		}
-		TicketGrantPolicy.assertNoPriorTicketLoad(
-				ledgerEntryRepository.existsByCard_IdAndTypeIn(card.getId(), TicketGrantPolicy.TICKET_TYPES));
+		/* Ledger silinmediği için yalnızca bugünkü (İstanbul) bilet kaydı engeller — ertesi gün aynı kart OK */
+		LocalDate ticketDay = LocalDate.now(PARK_ZONE);
+		Instant ticketDayFrom = ticketDay.atStartOfDay(PARK_ZONE).toInstant();
+		Instant ticketDayTo = ticketDay.plusDays(1).atStartOfDay(PARK_ZONE).toInstant();
+		TicketGrantPolicy.assertNoPriorTicketLoad(ledgerEntryRepository.existsByCard_IdAndTypeInAndCreatedAtRange(
+				card.getId(), TicketGrantPolicy.TICKET_TYPES, ticketDayFrom, ticketDayTo));
 		TicketGrantPolicy.assertTicketGrantAllowed(card, lines, amt.compareTo(BigDecimal.ZERO) > 0);
 		card.setEntryGate(1);
 		Card saved = cardRepository.save(card);

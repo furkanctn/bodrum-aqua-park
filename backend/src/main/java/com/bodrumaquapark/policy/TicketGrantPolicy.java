@@ -12,7 +12,8 @@ import com.bodrumaquapark.entity.TransactionType;
 import com.bodrumaquapark.web.dto.TicketGrantLineRequest;
 
 /**
- * Bir fiziksel karta yalnızca tek bilet yüklenmesini zorunlu kılar (turnike entryGate=1).
+ * Bir fiziksel karta aynı İstanbul gününde yalnızca tek bilet yüklenmesini zorunlu kılar
+ * (turnike entryGate=1 veya bugün TICKET_* ledger kaydı). Geçmiş günlerin ledger kayıtları engel değildir.
  */
 public final class TicketGrantPolicy {
 
@@ -36,9 +37,10 @@ public final class TicketGrantPolicy {
 		}
 	}
 
-	public static void assertNoPriorTicketLoad(boolean hasTicketLedger) {
-		if (hasTicketLedger) {
-			throw conflict("Bu karta zaten bilet yüklenmiş.");
+	/** {@code hasTicketLedgerToday}: yalnızca bugünkü TICKET_* kaydı varsa true olmalı. */
+	public static void assertNoPriorTicketLoad(boolean hasTicketLedgerToday) {
+		if (hasTicketLedgerToday) {
+			throw conflict("Bu karta bugün zaten bilet yüklenmiş.");
 		}
 	}
 

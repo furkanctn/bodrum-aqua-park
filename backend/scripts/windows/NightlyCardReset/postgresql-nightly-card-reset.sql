@@ -13,10 +13,14 @@
 -- pgAdmin / psql (Windows veya Linux — pg_cron gerekmez):
 --   Bu dosyanın tamamını çalıştırın. (Canlıda fonksiyonu güncellemek için yeniden çalıştırın.)
 --
--- Zamanlama:
---   Windows → backend/scripts/windows/NightlyCardReset/BodrumNightlyCardReset-Zamanla.ps1
+-- Zamanlama (yedek + sifirlama):
+--   Windows → BodrumNightlyCardReset.bat
+--     1) pg_dump → C:\BodrumAquaPark\backup\*_prereset_*.backup
+--     2) yedek OK ise bu fonksiyonu cagirir
 --   Linux pg_cron → postgresql-nightly-card-reset-pgcron.sql (isteğe bağlı)
---   Linux cron → aşağıdaki crontab satırı
+--
+-- UYARI: Asagidaki SELECT kartlari HEMEN sifirlar. Test icin CALISTIRMAYIN.
+--        Yedeksiz pgAdmin'den cagirmayin — once BodrumNightlyCardReset.bat kullanin.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION bodrum_nightly_card_reset()
@@ -66,8 +70,10 @@ $$;
 COMMENT ON FUNCTION bodrum_nightly_card_reset() IS
 	'Bodrum Aqua Park: her akşam 23:00 bakiye, entry_gate ve RFID pas sıfırlama; card_ledger korunur';
 
--- Manuel test:
+-- TEHLIKELI — yedeksiz kart sifirlar. CALISTIRMAYIN:
 -- SELECT * FROM bodrum_nightly_card_reset();
+--
+-- Guvenli yol: BodrumNightlyCardReset.bat (once yedek, sonra sifirlama)
 
--- Linux cron (pg_cron yoksa, DB sunucusunda crontab -e):
--- 0 23 * * * psql -h 127.0.0.1 -U postgres -d bodrum_aqua_park -c "SELECT bodrum_nightly_card_reset();" >> /var/log/bodrum-nightly-reset.log 2>&1
+-- Linux cron ornegi (once pg_dump, basariliysa fonksiyon):
+-- 0 23 * * * pg_dump -h 127.0.0.1 -U postgres -d bodrum_aqua_park -F c -f /var/backups/bodrum_prereset_$(date +\%F_\%H\%M\%S).backup && psql -h 127.0.0.1 -U postgres -d bodrum_aqua_park -c "SELECT bodrum_nightly_card_reset();" >> /var/log/bodrum-nightly-reset.log 2>&1
