@@ -8,7 +8,7 @@
 	function strip(raw) {
 		var t = String(raw || "")
 			.trim()
-			.replace(/\s+/g, "");
+			.replace(/[\s:\-_.]+/g, "");
 		if (/^0x/i.test(t)) {
 			t = t.slice(2);
 		}

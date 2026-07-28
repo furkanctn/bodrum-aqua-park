@@ -75,8 +75,12 @@ public class CardService {
 		if (card == null || card.getId() == null) {
 			return Optional.empty();
 		}
+		/* Ertesi gün sıfır kart: ödeme kilidi yalnızca bugünkü ilk yüklemeye göre */
+		LocalDate day = LocalDate.now(PARK_ZONE);
+		Instant from = day.atStartOfDay(PARK_ZONE).toInstant();
+		Instant to = day.plusDays(1).atStartOfDay(PARK_ZONE).toInstant();
 		return ledgerEntryRepository
-				.findFirstByCard_IdAndTypeInOrderByCreatedAtAscIdAsc(card.getId(), BALANCE_LOAD_TYPES)
+				.findFirstByCard_IdAndTypeInAndCreatedAtRange(card.getId(), BALANCE_LOAD_TYPES, from, to)
 				.flatMap(entry -> BalanceLoadPaymentPolicy.paymentMethodFromLoadType(entry.getType()));
 	}
 
@@ -391,7 +395,11 @@ public class CardService {
 			throw new CardBlockedException(parsed.canonical());
 		}
 		ledgerEntryRepository
-				.findFirstByCard_IdAndTypeInOrderByCreatedAtAscIdAsc(card.getId(), BALANCE_LOAD_TYPES)
+				.findFirstByCard_IdAndTypeInAndCreatedAtRange(
+						card.getId(),
+						BALANCE_LOAD_TYPES,
+						LocalDate.now(PARK_ZONE).atStartOfDay(PARK_ZONE).toInstant(),
+						LocalDate.now(PARK_ZONE).plusDays(1).atStartOfDay(PARK_ZONE).toInstant())
 				.ifPresent(first -> BalanceLoadPaymentPolicy.assertBalanceLoadPaymentAllowed(pm, first.getType()));
 		BigDecimal before = Money.normalize(card.getBalance());
 		BigDecimal after = Money.normalize(before.add(amt));

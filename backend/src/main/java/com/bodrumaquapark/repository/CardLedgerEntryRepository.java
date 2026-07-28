@@ -30,6 +30,17 @@ public interface CardLedgerEntryRepository extends JpaRepository<CardLedgerEntry
 			Long cardId,
 			Collection<TransactionType> types);
 
+	@Query("select e from CardLedgerEntry e where e.card.id = :cardId and e.type in :types "
+			+ "and e.createdAt >= :from and e.createdAt < :to order by e.createdAt asc, e.id asc")
+	List<CardLedgerEntry> findBalanceLoadsInRange(@Param("cardId") Long cardId,
+			@Param("types") Collection<TransactionType> types, @Param("from") Instant from, @Param("to") Instant to);
+
+	default Optional<CardLedgerEntry> findFirstByCard_IdAndTypeInAndCreatedAtRange(
+			Long cardId, Collection<TransactionType> types, Instant from, Instant to) {
+		List<CardLedgerEntry> list = findBalanceLoadsInRange(cardId, types, from, to);
+		return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+	}
+
 	boolean existsByCard_IdAndTypeIn(Long cardId, Collection<TransactionType> types);
 
 	@Query("select case when count(e) > 0 then true else false end from CardLedgerEntry e "

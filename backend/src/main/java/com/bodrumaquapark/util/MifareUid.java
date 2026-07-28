@@ -85,7 +85,8 @@ public final class MifareUid {
 		if (raw == null) {
 			return "";
 		}
-		String t = raw.trim().replaceAll("\\s+", "");
+		/* Okuyucu sıkça 04:AB:CD:EF veya 04-AB-CD-EF gönderir */
+		String t = raw.trim().replaceAll("[\\s:\\-_.]+", "");
 		if (t.regionMatches(true, 0, "0X", 0, 2)) {
 			t = t.substring(2);
 		}

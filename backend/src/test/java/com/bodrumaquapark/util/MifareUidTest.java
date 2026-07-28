@@ -37,6 +37,12 @@ class MifareUidTest {
 	}
 
 	@Test
+	void parse_colonSeparatedHex_accepted() {
+		var parsed = MifareUid.parse("04:A1:B2:C3", true, false).orElseThrow();
+		assertEquals("04A1B2C3", parsed.canonical());
+	}
+
+	@Test
 	void parse_invalidRejected() {
 		assertFalse(MifareUid.parse("ZZZZ", true, true).isPresent());
 		assertFalse(MifareUid.parse("ABCDEFGH", true, true).isPresent());
