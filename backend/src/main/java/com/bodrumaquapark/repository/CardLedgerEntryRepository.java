@@ -43,11 +43,16 @@ public interface CardLedgerEntryRepository extends JpaRepository<CardLedgerEntry
 
 	boolean existsByCard_IdAndTypeIn(Long cardId, Collection<TransactionType> types);
 
-	@Query("select case when count(e) > 0 then true else false end from CardLedgerEntry e "
+	@Query("select count(e) from CardLedgerEntry e "
 			+ "where e.card.id = :cardId and e.type in :types "
 			+ "and e.createdAt >= :from and e.createdAt < :to")
-	boolean existsByCard_IdAndTypeInAndCreatedAtRange(@Param("cardId") Long cardId,
+	long countByCard_IdAndTypeInAndCreatedAtRange(@Param("cardId") Long cardId,
 			@Param("types") Collection<TransactionType> types, @Param("from") Instant from, @Param("to") Instant to);
+
+	default boolean existsByCard_IdAndTypeInAndCreatedAtRange(
+			Long cardId, Collection<TransactionType> types, Instant from, Instant to) {
+		return countByCard_IdAndTypeInAndCreatedAtRange(cardId, types, from, to) > 0;
+	}
 
 	@Query("select sa.code, sa.name, count(e), coalesce(sum(-e.amountChange), 0) from CardLedgerEntry e join e.saleArea sa "
 			+ "where e.type = :saleType and e.createdAt >= :from and e.createdAt < :to "
