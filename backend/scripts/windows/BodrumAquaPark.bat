@@ -51,14 +51,28 @@ echo [%date% %time%] Sunucu gunlugu: %SERVER_LOG%>> "%LOG%"
 echo [%date% %time%] Profil: %SPRING_PROFILES_ACTIVE% config: %HERE%\config>> "%LOG%"
 start "BodrumAquaPark Sunucu" /min cmd /c "cd /d ""%HERE%"" && set ""SPRING_PROFILES_ACTIVE=%SPRING_PROFILES_ACTIVE%"" && set ""LOG_FILE=%LOG_FILE%"" && set ""APP_PRINTER_WINDOWS_QUEUE=%APP_PRINTER_WINDOWS_QUEUE%"" && set ""AQUAPARK_LAUNCHER_JAR=%HERE%\%LAUNCHER_JAR%"" && java %JAVA_OPTS_SERVER% -jar ""%HERE%\%JAR%"" >> ""%SERVER_LOG%"" 2>&1"
 
-set "WAIT_MAX=60"
+set "WAIT_MAX=90"
 echo Edge icin bekleniyor (sunucu hazir olunca acilir; max %WAIT_MAX% sn)...
-for /L %%S in (1,1,%WAIT_MAX%) do (
-	powershell -NoProfile -Command ^
-		"try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 'http://127.0.0.1:8081/api/health'; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
-	if not errorlevel 1 goto :server_ready
-	timeout /t 1 /nobreak >nul
-)
+rem Beklemenin tamami TEK powershell icinde: her tur yeni powershell acmak
+rem "60 sn" yazan dongunun gercekte 2-3 dakika surmesine ve ekranin donmus
+rem gorunmesine yol aciyordu. Nokta basarak ilerlediigini gosterir.
+powershell -NoProfile -Command "$d = (Get-Date).AddSeconds(%WAIT_MAX%); while ((Get-Date) -lt $d) { try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8081/api/health'; if ($r.StatusCode -eq 200) { Write-Host ''; exit 0 } } catch { }; Write-Host -NoNewline '.'; Start-Sleep -Milliseconds 700 }; Write-Host ''; exit 1"
+if not errorlevel 1 goto :server_ready
+
+echo.
+echo [HATA] Sunucu %WAIT_MAX% saniyede hazir olmadi; tarayici acilmadi.
+echo        Sik sebep: PostgreSQL adresi/sifresi yanlis veya sunucuya erisilemiyor.
+echo        Ayarlar: %HERE%\config\application.properties
+echo        Gunluk : %SERVER_LOG%
+echo.
+echo --- bodrum-sunucu.log (son 20 satir) ---
+if exist "%SERVER_LOG%" powershell -NoProfile -Command "Get-Content -Tail 20 -LiteralPath '%SERVER_LOG%'"
+if not exist "%SERVER_LOG%" echo (gunluk dosyasi olusmamis - java hic baslamamis olabilir)
+echo ----------------------------------------
+echo.
+pause
+exit /b 1
+
 :server_ready
 
 set "POS_BASE=http://127.0.0.1:8081"

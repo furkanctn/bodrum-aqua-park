@@ -83,8 +83,10 @@ public class TicketSchemaMigrationService {
 			Session session = entityManager.unwrap(Session.class);
 			return Boolean.TRUE.equals(session.doReturningWork(connection -> {
 				DatabaseMetaData meta = connection.getMetaData();
-				String tablePattern = meta.storesUpperCaseIdentifiers() ? table.toUpperCase() : table;
-				String columnPattern = meta.storesUpperCaseIdentifiers() ? column.toUpperCase() : column;
+				/* Locale.ROOT sart: tr_TR'de "i".toUpperCase() -> "İ" ve desen hicbir sutuna uymaz. */
+				boolean upper = meta.storesUpperCaseIdentifiers();
+				String tablePattern = upper ? table.toUpperCase(Locale.ROOT) : table;
+				String columnPattern = upper ? column.toUpperCase(Locale.ROOT) : column;
 				try (ResultSet cols = meta.getColumns(null, null, tablePattern, columnPattern)) {
 					return cols.next();
 				}
